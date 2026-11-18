@@ -164,5 +164,43 @@ class TestFetch(unittest.TestCase):
             lt.fetch_clearance_parts(cfg, session=session)
 
 
+import copy
+
+FIXTURE = json.loads((REPO / "tests" / "fixture_clearance.json").read_text(encoding="utf-8"))
+
+
+class TestFilterDiff(unittest.TestCase):
+    def test_filter_mainboards_case_insensitive(self):
+        boards = lt.filter_mainboards(FIXTURE["data"], ["system boards"])
+        self.assertEqual(len(boards), 4)
+        self.assertEqual({b["id"] for b in boards}, {"01YT022", "00FC857", "5A10W86303", "03NOSTOCK"})
+
+    def test_compute_totals(self):
+        boards = lt.filter_mainboards(FIXTURE["data"], ["system boards"])
+        self.assertEqual(lt.compute_totals(boards), (100, 4))
+
+    def test_stock_of_handles_missing_and_garbage(self):
+        self.assertEqual(lt._stock_of({}), 0)
+        self.assertEqual(lt._stock_of({"stock": None}), 0)
+        self.assertEqual(lt._stock_of({"stock": "7"}), 7)
+        self.assertEqual(lt._stock_of({"stock": -5}), 0)
+        self.assertEqual(lt._stock_of({"stock": "kaputt"}), 0)
+
+    def test_build_diff_increase_sorted(self):
+        old_map = {"A": {"s": 5, "n": "A"}, "B": {"s": 90, "n": "B"}}
+        new_map = {"A": {"s": 25, "n": "A"}, "B": {"s": 95, "n": "B"}, "C": {"s": 3, "n": "C"}}
+        diff = lt.build_diff(old_map, new_map)
+        self.assertEqual(diff.delta, 28)  # 123 - 95
+        self.assertEqual([d["id"] for d in diff.increased], ["A", "B"])  # delta 20 vor 5
+        self.assertEqual(diff.increased[0]["delta"], 20)
+        self.assertEqual([p["id"] for p in diff.new_parts], ["C"])
+
+    def test_build_diff_decrease_and_equal(self):
+        old_map = {"A": {"s": 5, "n": "A"}}
+        self.assertEqual(lt.build_diff(old_map, {"A": {"s": 2, "n": "A"}}).delta, -3)
+        self.assertEqual(lt.build_diff(old_map, {"A": {"s": 5, "n": "A"}}).delta, 0)
+        self.assertEqual(lt.build_diff(old_map, {"A": {"s": 2, "n": "A"}}).increased, [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -181,3 +181,59 @@ def fetch_clearance_parts(cfg, session=None, sleep=time.sleep):
             last_error = exc
             log.warning("API-Abruf fehlgeschlagen (Versuch %d/%d): %s", attempt + 1, attempts, exc)
     raise last_error
+
+
+# ---------------------------------------------------------------------------
+# Mainboard-Filter, Summe, Diff
+# ---------------------------------------------------------------------------
+
+
+def _stock_of(part):
+    try:
+        return max(0, int(part.get("stock") or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def filter_mainboards(parts, commodity_keys):
+    keys = {str(k).strip().lower() for k in commodity_keys}
+    return [p for p in parts if str(p.get("commodityKey", "")).strip().lower() in keys]
+
+
+def compute_totals(mainboards):
+    return sum(_stock_of(p) for p in mainboards), len(mainboards)
+
+
+def parts_to_map(mainboards):
+    return {
+        str(p["id"]): {"s": _stock_of(p), "n": str(p.get("name") or "")}
+        for p in mainboards
+        if p.get("id")
+    }
+
+
+@dataclass
+class Diff:
+    old_total: int
+    new_total: int
+    increased: list
+    new_parts: list
+
+    @property
+    def delta(self):
+        return self.new_total - self.old_total
+
+
+def build_diff(old_map, new_map):
+    old_total = sum(v["s"] for v in old_map.values())
+    new_total = sum(v["s"] for v in new_map.values())
+    increased, new_parts = [], []
+    for pid, nv in new_map.items():
+        ov = old_map.get(pid)
+        if ov is None:
+            new_parts.append({"id": pid, "name": nv["n"], "stock": nv["s"]})
+        elif nv["s"] > ov["s"]:
+            increased.append({"id": pid, "name": nv["n"], "old": ov["s"], "new": nv["s"], "delta": nv["s"] - ov["s"]})
+    increased.sort(key=lambda item: (-item["delta"], item["id"]))
+    new_parts.sort(key=lambda item: (-item["stock"], item["id"]))
+    return Diff(old_total, new_total, increased, new_parts)
