@@ -105,6 +105,27 @@ to = ["Lenovo@aomme.de"]
 extra_recipients = []   # z. B. ["du@anderswo.de"]
 ```
 
+## Alpine-Linux-Variante (OpenRC statt systemd)
+
+Getestet auf Alpine 3.24 (LXC, Python 3.14, musl): `curl_cffi` installiert
+sauber über pip (musl-Wheel) und liefert identische Daten. Abweichungen:
+
+```bash
+apk update && apk add python3 py3-pip postfix ca-certificates
+pip3 install --break-system-packages curl-cffi
+mkdir -p /opt/lenovo-tracker /etc/lenovotracker /var/lib/lenovotracker
+cp lenovo_tracker.py /opt/lenovo-tracker/
+cp config.example.toml /etc/lenovotracker/config.toml
+newaliases                       # aliases.db für postfix bauen
+rc-update add postfix default && rc-service postfix start
+cp lenovo-tracker.openrc /etc/init.d/lenovo-tracker && chmod +x /etc/init.d/lenovo-tracker
+rc-update add lenovo-tracker default && rc-service lenovo-tracker start
+```
+
+- Dienst: `rc-service lenovo-tracker status|restart` — Log unter
+  `/var/log/lenovo-tracker.log` (Postfix loggt nach `/var/log/messages`)
+- Staat: `/var/lib/lenovotracker/state.json` + `history.csv` (identisch zu Debian)
+
 ## Tests (Entwicklung)
 
 ```bash

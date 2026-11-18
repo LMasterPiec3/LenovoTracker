@@ -1,0 +1,17 @@
+#!/sbin/openrc-run
+export PYTHONUNBUFFERED=1
+
+name="lenovo-tracker"
+description="Lenovo Clearance-Sale Mainboard-Tracker"
+
+command="/usr/bin/python3"
+command_args="/opt/lenovo-tracker/lenovo_tracker.py --config /etc/lenovotracker/config.toml"
+command_background="yes"
+pidfile="/run/lenovo-tracker.pid"
+output_log="/var/log/lenovo-tracker.log"
+error_log="/var/log/lenovo-tracker.err.log"
+
+depend() {
+  need net
+  after postfix
+}
