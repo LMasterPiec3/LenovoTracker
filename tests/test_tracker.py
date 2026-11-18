@@ -202,5 +202,36 @@ class TestFilterDiff(unittest.TestCase):
         self.assertEqual(lt.build_diff(old_map, {"A": {"s": 2, "n": "A"}}).increased, [])
 
 
+class TestState(unittest.TestCase):
+    def test_load_state_missing_returns_none(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.assertIsNone(lt.load_state(Path(td) / "state.json"))
+
+    def test_save_and_load_roundtrip(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "state.json"
+            lt.save_state(path, "2026-11-18T20:00:00+00:00", 100, 3, {"A": {"s": 5, "n": "A"}})
+            state = lt.load_state(path)
+            self.assertEqual(state["total_stock"], 100)
+            self.assertEqual(state["part_count"], 3)
+            self.assertEqual(state["parts"]["A"]["s"], 5)
+
+    def test_load_state_corrupt_returns_none(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "state.json"
+            path.write_text("{kaputt", encoding="utf-8")
+            self.assertIsNone(lt.load_state(path))
+
+    def test_append_history_writes_header_once(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "history.csv"
+            lt.append_history(path, "2026-11-18T20:00:00+00:00", 100, 3)
+            lt.append_history(path, "2026-11-18T20:30:00+00:00", 101, 3)
+            lines = path.read_text(encoding="utf-8").strip().splitlines()
+            self.assertEqual(lines[0], "timestamp,total_stock,part_count")
+            self.assertEqual(lines[1], "2026-11-18T20:00:00+00:00,100,3")
+            self.assertEqual(lines[2], "2026-11-18T20:30:00+00:00,101,3")
+
+
 if __name__ == "__main__":
     unittest.main()

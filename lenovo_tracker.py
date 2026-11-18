@@ -13,6 +13,7 @@ import argparse
 import csv
 import json
 import logging
+import os
 import smtplib
 import subprocess
 import sys
@@ -237,3 +238,41 @@ def build_diff(old_map, new_map):
     increased.sort(key=lambda item: (-item["delta"], item["id"]))
     new_parts.sort(key=lambda item: (-item["stock"], item["id"]))
     return Diff(old_total, new_total, increased, new_parts)
+
+
+# ---------------------------------------------------------------------------
+# State & Verlauf
+# ---------------------------------------------------------------------------
+
+
+def load_state(state_path):
+    try:
+        return json.loads(Path(state_path).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    except json.JSONDecodeError as exc:
+        log.error("state.json ist beschädigt (%s) – Baseline wird neu gesetzt", exc)
+        return None
+
+
+def save_state(state_path, ts, total, count, part_map):
+    payload = {
+        "last_check": ts,
+        "total_stock": total,
+        "part_count": count,
+        "parts": part_map,
+    }
+    tmp = Path(str(state_path) + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, state_path)
+
+
+def append_history(history_path, ts, total, count):
+    history_path = Path(history_path)
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    is_new = not history_path.exists()
+    with open(history_path, "a", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        if is_new:
+            writer.writerow(["timestamp", "total_stock", "part_count"])
+        writer.writerow([ts, total, count])
