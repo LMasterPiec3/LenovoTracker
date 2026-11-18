@@ -106,14 +106,33 @@ class FakeSession:
         return item
 
 
-def make_cfg(**overrides):
+def make_cfg(state_dir=None, **overrides):
+    if state_dir is None:
+        state_dir = tempfile.mkdtemp()
+    defaults = dict(state_dir=state_dir)
+    defaults.update(overrides)
     return lt.Config(
         api_url="https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get",
         referer=lt.PAGE_URL,
         mail_from="Lenovo@aomme.de",
         mail_to=["Lenovo@aomme.de"],
-        **overrides,
+        **defaults,
     )
+
+
+class CapturingDeliver:
+    def __init__(self):
+        self.messages = []
+
+    def __call__(self, cfg, msg):
+        self.messages.append(msg)
+
+
+def fixture_payload(mutate=None):
+    payload = copy.deepcopy(FIXTURE)
+    if mutate:
+        mutate(payload["data"])
+    return payload
 
 
 GOOD_PAYLOAD = {"code": 0, "data": [{"id": "01YT022", "commodityKey": "system boards", "stock": 2}]}
@@ -279,6 +298,85 @@ class TestMail(unittest.TestCase):
         cfg = make_cfg(extra_recipients=["chef@example.com"])
         msg = lt.compose_mail(cfg, "B", "T", "<p>H</p>")
         self.assertEqual(msg["To"], "Lenovo@aomme.de, chef@example.com")
+
+
+class TestRunOnce(unittest.TestCase):
+    def test_run_once_baseline_no_mail(self):
+        cfg = make_cfg()
+        deliver = CapturingDeliver()
+        session = FakeSession([FakeResponse(200, fixture_payload())])
+        result = lt.run_once(cfg, session=session, deliver=deliver)
+        self.assertTrue(result.baseline)
+        self.assertFalse(result.sent_mail)
+        self.assertEqual(result.total, 100)
+        self.assertEqual(deliver.messages, [])
+        state = lt.load_state(Path(cfg.state_dir) / "state.json")
+        self.assertEqual(state["total_stock"], 100)
+
+    def test_run_once_increase_sends_mail(self):
+        cfg = make_cfg()
+        deliver = CapturingDeliver()
+        # Lauf 1: Baseline
+        lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload())]), deliver=deliver)
+        # Lauf 2: Bestand steigt +15, neues Teil +3 → +18 gesamt
+        def bump(data):
+            for part in data:
+                if part["id"] == "5A10W86303":
+                    part["stock"] = 112
+            data.append({"id": "NEU0001", "name": "Neues Board", "commodityKey": "system boards", "stock": 3})
+        result = lt.run_once(
+            cfg,
+            session=FakeSession([FakeResponse(200, fixture_payload(bump))]),
+            deliver=deliver,
+        )
+        self.assertTrue(result.sent_mail)
+        self.assertEqual(result.total, 118)
+        self.assertEqual(len(deliver.messages), 1)
+        subject = deliver.messages[0]["Subject"]
+        self.assertIn("100 → 118 (+18)", subject)
+
+    def test_run_once_decrease_no_mail(self):
+        cfg = make_cfg()
+        deliver = CapturingDeliver()
+        lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload())]), deliver=deliver)
+        def drop(data):
+            for part in data:
+                if part["id"] == "5A10W86303":
+                    part["stock"] = 10
+        result = lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload(drop))]), deliver=deliver)
+        self.assertFalse(result.sent_mail)
+        self.assertEqual(result.total, 13)  # 2 + 1 + 10 + 0 (Teil ohne stock-Feld)
+        self.assertEqual(deliver.messages, [])
+
+    def test_run_once_fetch_error_keeps_state(self):
+        cfg = make_cfg()
+        deliver = CapturingDeliver()
+        lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload())]), deliver=deliver)
+        before = lt.load_state(Path(cfg.state_dir) / "state.json")
+        result = lt.run_once(cfg, session=FakeSession([OSError("boom")]), deliver=deliver, sleep=lambda s: None)
+        self.assertIsNotNone(result.error)
+        self.assertEqual(lt.load_state(Path(cfg.state_dir) / "state.json"), before)
+        self.assertEqual(deliver.messages, [])
+
+    def test_run_once_no_mainboards_zero_sum_no_mail(self):
+        cfg = make_cfg()
+        deliver = CapturingDeliver()
+        lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload())]), deliver=deliver)
+        def no_boards(data):
+            data[:] = [p for p in data if p.get("commodityKey") != "system boards"]
+        result = lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload(no_boards))]), deliver=deliver)
+        self.assertEqual(result.total, 0)
+        self.assertFalse(result.sent_mail)
+        self.assertEqual(deliver.messages, [])
+        self.assertEqual(lt.load_state(Path(cfg.state_dir) / "state.json")["total_stock"], 0)
+
+    def test_run_once_dry_run_touches_nothing(self):
+        cfg = make_cfg()
+        deliver = CapturingDeliver()
+        result = lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload())]), deliver=deliver, dry_run=True)
+        self.assertEqual(result.total, 100)
+        self.assertFalse((Path(cfg.state_dir) / "state.json").exists())
+        self.assertFalse((Path(cfg.state_dir) / "history.csv").exists())
 
 
 if __name__ == "__main__":

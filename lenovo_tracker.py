@@ -417,3 +417,104 @@ def send_test_mail(cfg, deliver=deliver_mail):
     )
     deliver(cfg, compose_mail(cfg, subject, text, html))
     return True
+
+
+# ---------------------------------------------------------------------------
+# Ablauf: run_once, Dauer-Loop, CLI
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class CheckResult:
+    total: int = 0
+    count: int = 0
+    sent_mail: bool = False
+    baseline: bool = False
+    error: str = None
+
+
+def _state_paths(cfg):
+    state_dir = Path(cfg.state_dir)
+    return state_dir / "state.json", state_dir / "history.csv"
+
+
+def run_once(cfg, session=None, sleep=time.sleep, deliver=deliver_mail, dry_run=False):
+    ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    state_path, history_path = _state_paths(cfg)
+    try:
+        parts = fetch_clearance_parts(cfg, session=session, sleep=sleep)
+    except FetchError as exc:
+        log.error("Abruf fehlgeschlagen – kein State-Update: %s", exc)
+        return CheckResult(error=str(exc))
+    boards = filter_mainboards(parts, cfg.commodity_keys)
+    if not boards:
+        log.warning("Keine Mainboards in der API-Response (Filter: %s)", cfg.commodity_keys)
+    total, count = compute_totals(boards)
+    if dry_run:
+        log.info("DRY-RUN: %d Mainboard-Teile, Summe %d Stück", count, total)
+        return CheckResult(total=total, count=count)
+    part_map = parts_to_map(boards)
+    old_state = load_state(state_path)
+    save_state(state_path, ts, total, count, part_map)
+    append_history(history_path, ts, total, count)
+    if old_state is None:
+        log.info("Baseline gesetzt: %d Stück über %d Mainboard-Teile", total, count)
+        return CheckResult(total=total, count=count, baseline=True)
+    diff = build_diff(old_state.get("parts", {}), part_map)
+    if diff.delta > 0:
+        subject = build_subject(cfg, diff)
+        text = build_mail_text(diff, PAGE_URL, ts)
+        html = build_mail_html(diff, PAGE_URL, ts)
+        deliver(cfg, compose_mail(cfg, subject, text, html))
+        log.info("Mail gesendet: %s", subject)
+        return CheckResult(total=total, count=count, sent_mail=True)
+    log.info("Kein Anstieg (vorher %d → jetzt %d)", diff.old_total, diff.new_total)
+    return CheckResult(total=total, count=count)
+
+
+def run_loop(cfg):
+    interval = max(1, cfg.interval_minutes) * 60
+    while True:
+        started = time.monotonic()
+        try:
+            run_once(cfg)
+        except Exception:
+            log.exception("Unerwarteter Fehler im Zyklus")
+        elapsed = time.monotonic() - started
+        sleep_s = max(60, interval - elapsed)
+        log.debug("Nächster Lauf in %.0f Sekunden", sleep_s)
+        time.sleep(sleep_s)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Lenovo Clearance-Sale Mainboard-Tracker")
+    parser.add_argument("--config", default=DEFAULT_CONFIG_PATH, help="Pfad zur config.toml")
+    parser.add_argument("--once", action="store_true", help="einmal prüfen und beenden")
+    parser.add_argument("--dry-run", action="store_true", help="einmal abrufen und zusammenfassen (kein State, keine Mail)")
+    parser.add_argument("--test-mail", action="store_true", help="Testmail mit aktuellem Bestand senden")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    args = parser.parse_args(argv)
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        stream=sys.stdout,
+    )
+    try:
+        cfg = load_config(args.config)
+    except ConfigError as exc:
+        log.error("%s", exc)
+        return 1
+    if args.dry_run:
+        run_once(cfg, dry_run=True)
+        return 0
+    if args.test_mail:
+        return 0 if send_test_mail(cfg) else 2
+    if args.once:
+        result = run_once(cfg)
+        return 2 if result.error else 0
+    run_loop(cfg)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
