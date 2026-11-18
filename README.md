@@ -19,7 +19,9 @@ Die Antwort enthält pro Teil u. a. `id`, `name`, `commodityKey`, `stock`
 1. filtert `commodityKey == "system boards"` (Mainboards),
 2. summiert `stock`,
 3. vergleicht mit dem letzten Lauf (`state.json`),
-4. mailt bei Anstieg — **nur** dann.
+4. mailt bei Anstieg — **nur** dann. Die allererste gültige Prüfung legt still
+   (ohne Mail) die Baseline fest; fehlgeschlagene Mailversände aktualisieren den
+   State nicht, sodass der Anstieg im nächsten Lauf erneut gemeldet wird.
 
 Lenovos Akamai-Schutz blockt normale HTTP-Clients (curl → HTTP 403). Der Tracker
 nutzt deshalb [`curl_cffi`](https://pypi.org/project/curl-cffi/) mit Chrome-TLS-Imitation

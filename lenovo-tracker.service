@@ -9,6 +9,8 @@ ExecStart=/opt/lenovo-tracker/venv/bin/python /opt/lenovo-tracker/lenovo_tracker
 Restart=on-failure
 RestartSec=60
 Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target

@@ -150,6 +150,7 @@ def _fetch_once(cfg, session=None):
     except Exception as exc:  # Netzwerk-/TLS-/HTTP-Fehler → FetchError (Retry-fähig)
         raise FetchError(f"Abruf fehlgeschlagen: {type(exc).__name__}: {exc}")
     if resp.status_code == 403:
+        log.warning("HTTP 403 – Akamai blockiert den Abruf (Fallback: Headless-Chromium, siehe README)")
         raise FetchError(
             "HTTP 403 – Akamai blockiert den Abruf (Fallback: Headless-Chromium, siehe README)",
             status=403,
@@ -192,7 +193,7 @@ def fetch_clearance_parts(cfg, session=None, sleep=time.sleep):
 def _stock_of(part):
     try:
         return max(0, int(part.get("stock") or 0))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return 0
 
 
@@ -202,7 +203,10 @@ def filter_mainboards(parts, commodity_keys):
 
 
 def compute_totals(mainboards):
-    return sum(_stock_of(p) for p in mainboards), len(mainboards)
+    # Nur Teile mit id zählen – identisch zum Filter in parts_to_map,
+    # damit total_stock immer zur Summe der State-Map passt.
+    with_id = [p for p in mainboards if p.get("id")]
+    return sum(_stock_of(p) for p in with_id), len(with_id)
 
 
 def parts_to_map(mainboards):
@@ -247,15 +251,23 @@ def build_diff(old_map, new_map):
 
 def load_state(state_path):
     try:
-        return json.loads(Path(state_path).read_text(encoding="utf-8"))
+        data = json.loads(Path(state_path).read_text(encoding="utf-8"))
     except FileNotFoundError:
         return None
     except json.JSONDecodeError as exc:
         log.error("state.json ist beschädigt (%s) – Baseline wird neu gesetzt", exc)
         return None
+    except OSError as exc:
+        log.error("state.json nicht lesbar (%s) – Baseline wird neu gesetzt", exc)
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("parts"), dict):
+        log.error("state.json hat ein unerwartetes Format – Baseline wird neu gesetzt")
+        return None
+    return data
 
 
 def save_state(state_path, ts, total, count, part_map):
+    Path(state_path).parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "last_check": ts,
         "total_stock": total,
@@ -379,6 +391,7 @@ def deliver_mail(cfg, msg):
             [cfg.sendmail_path, "-t", "-oi"],
             input=msg.as_bytes(),
             capture_output=True,
+            timeout=60,
         )
         if proc.returncode != 0:
             stderr = proc.stderr.decode(errors="replace")[:300]
@@ -455,9 +468,9 @@ def run_once(cfg, session=None, sleep=time.sleep, deliver=deliver_mail, dry_run=
         return CheckResult(total=total, count=count)
     part_map = parts_to_map(boards)
     old_state = load_state(state_path)
-    save_state(state_path, ts, total, count, part_map)
-    append_history(history_path, ts, total, count)
     if old_state is None:
+        save_state(state_path, ts, total, count, part_map)
+        append_history(history_path, ts, total, count)
         log.info("Baseline gesetzt: %d Stück über %d Mainboard-Teile", total, count)
         return CheckResult(total=total, count=count, baseline=True)
     diff = build_diff(old_state.get("parts", {}), part_map)
@@ -465,9 +478,19 @@ def run_once(cfg, session=None, sleep=time.sleep, deliver=deliver_mail, dry_run=
         subject = build_subject(cfg, diff)
         text = build_mail_text(diff, PAGE_URL, ts)
         html = build_mail_html(diff, PAGE_URL, ts)
-        deliver(cfg, compose_mail(cfg, subject, text, html))
+        try:
+            deliver(cfg, compose_mail(cfg, subject, text, html))
+        except Exception as exc:
+            # State NICHT aktualisieren: der Anstieg wird beim nächsten Lauf
+            # erneut gemeldet (Duplikat-Alarm schlägt verlorenen Alarm).
+            log.error("Mailversand fehlgeschlagen – Anstieg wird erneut gemeldet: %s", exc)
+            return CheckResult(total=total, count=count, error=f"Mailversand fehlgeschlagen: {exc}")
+        save_state(state_path, ts, total, count, part_map)
+        append_history(history_path, ts, total, count)
         log.info("Mail gesendet: %s", subject)
         return CheckResult(total=total, count=count, sent_mail=True)
+    save_state(state_path, ts, total, count, part_map)
+    append_history(history_path, ts, total, count)
     log.info("Kein Anstieg (vorher %d → jetzt %d)", diff.old_total, diff.new_total)
     return CheckResult(total=total, count=count)
 
@@ -481,6 +504,7 @@ def run_loop(cfg):
         except Exception:
             log.exception("Unerwarteter Fehler im Zyklus")
         elapsed = time.monotonic() - started
+        log.info("Zyklus beendet (%.1fs)", elapsed)
         sleep_s = max(60, interval - elapsed)
         log.debug("Nächster Lauf in %.0f Sekunden", sleep_s)
         time.sleep(sleep_s)
@@ -489,9 +513,10 @@ def run_loop(cfg):
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Lenovo Clearance-Sale Mainboard-Tracker")
     parser.add_argument("--config", default=DEFAULT_CONFIG_PATH, help="Pfad zur config.toml")
-    parser.add_argument("--once", action="store_true", help="einmal prüfen und beenden")
-    parser.add_argument("--dry-run", action="store_true", help="einmal abrufen und zusammenfassen (kein State, keine Mail)")
-    parser.add_argument("--test-mail", action="store_true", help="Testmail mit aktuellem Bestand senden")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--once", action="store_true", help="einmal prüfen und beenden")
+    mode.add_argument("--dry-run", action="store_true", help="einmal abrufen und zusammenfassen (kein State, keine Mail)")
+    mode.add_argument("--test-mail", action="store_true", help="Testmail mit aktuellem Bestand senden")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
     logging.basicConfig(
@@ -505,8 +530,8 @@ def main(argv=None):
         log.error("%s", exc)
         return 1
     if args.dry_run:
-        run_once(cfg, dry_run=True)
-        return 0
+        result = run_once(cfg, dry_run=True)
+        return 2 if result.error else 0
     if args.test_mail:
         return 0 if send_test_mail(cfg) else 2
     if args.once:

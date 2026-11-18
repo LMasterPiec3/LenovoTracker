@@ -1,8 +1,10 @@
+import copy
 import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -183,9 +185,7 @@ class TestFetch(unittest.TestCase):
             lt.fetch_clearance_parts(cfg, session=session)
 
 
-import copy
-
-FIXTURE = json.loads((REPO / "tests" / "fixture_clearance.json").read_text(encoding="utf-8"))
+FIXTURE = json.loads((REPO / "tests" / "fixture_clearance.json").read_text(encoding="utf-8"))  # noqa: E402
 
 
 class TestFilterDiff(unittest.TestCase):
@@ -349,11 +349,11 @@ class TestRunOnce(unittest.TestCase):
         self.assertEqual(deliver.messages, [])
 
     def test_run_once_fetch_error_keeps_state(self):
-        cfg = make_cfg()
+        cfg = make_cfg(retries=0)  # kein Retry → kein Backoff-Stub nötig
         deliver = CapturingDeliver()
         lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload())]), deliver=deliver)
         before = lt.load_state(Path(cfg.state_dir) / "state.json")
-        result = lt.run_once(cfg, session=FakeSession([OSError("boom")]), deliver=deliver, sleep=lambda s: None)
+        result = lt.run_once(cfg, session=FakeSession([OSError("boom")]), deliver=deliver)
         self.assertIsNotNone(result.error)
         self.assertEqual(lt.load_state(Path(cfg.state_dir) / "state.json"), before)
         self.assertEqual(deliver.messages, [])
@@ -377,6 +377,57 @@ class TestRunOnce(unittest.TestCase):
         self.assertEqual(result.total, 100)
         self.assertFalse((Path(cfg.state_dir) / "state.json").exists())
         self.assertFalse((Path(cfg.state_dir) / "history.csv").exists())
+
+
+class TestMainAndDeliver(unittest.TestCase):
+    def test_main_config_error_exit_1(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = write_config(td, VALID_TOML.replace('from = "Lenovo@aomme.de"\n', ""))
+            self.assertEqual(lt.main(["--once", "--config", p]), 1)
+
+    def test_main_once_fetch_error_exit_2(self):
+        class BrokenModule:
+            def get(self, *args, **kwargs):
+                raise OSError("net down")
+
+        with tempfile.TemporaryDirectory() as td:
+            toml = (
+                VALID_TOML.replace("retries = 3", "retries = 0")
+                .replace('state_dir = "/var/lib/lenovotracker"', f"state_dir = '{td}'")  # TOML-Literal-String: keine Escape-Sequenzen
+            )
+            p = write_config(td, toml)
+            with patch.object(lt, "cc_requests", BrokenModule()):
+                self.assertEqual(lt.main(["--once", "--config", p]), 2)
+
+    def test_run_once_deliver_failure_keeps_baseline_and_retries_next_cycle(self):
+        cfg = make_cfg()
+        # Baseline setzen
+        lt.run_once(cfg, session=FakeSession([FakeResponse(200, fixture_payload())]), deliver=CapturingDeliver())
+
+        def bump(data):
+            for part in data:
+                if part["id"] == "5A10W86303":
+                    part["stock"] = 112
+
+        def broken_deliver(c, m):
+            raise RuntimeError("sendmail down")
+
+        # Lauf mit fehlgeschlagenem Versand: State bleibt auf Baseline
+        result = lt.run_once(
+            cfg, session=FakeSession([FakeResponse(200, fixture_payload(bump))]),
+            deliver=broken_deliver,
+        )
+        self.assertIsNotNone(result.error)
+        self.assertEqual(lt.load_state(Path(cfg.state_dir) / "state.json")["total_stock"], 100)
+
+        # Nächster Lauf meldet den Anstieg erneut
+        deliver = CapturingDeliver()
+        result2 = lt.run_once(
+            cfg, session=FakeSession([FakeResponse(200, fixture_payload(bump))]),
+            deliver=deliver,
+        )
+        self.assertTrue(result2.sent_mail)
+        self.assertIn("100 → 115 (+15)", deliver.messages[0]["Subject"])
 
 
 if __name__ == "__main__":
