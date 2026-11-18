@@ -116,3 +116,68 @@ def load_config(path: str) -> Config:
     if cfg.mail_mode == "smtp" and not cfg.smtp_host:
         raise ConfigError("mail.smtp_host fehlt, obwohl mail.mode = 'smtp'")
     return cfg
+
+
+# ---------------------------------------------------------------------------
+# API-Abruf
+# ---------------------------------------------------------------------------
+
+
+class FetchError(Exception):
+    """API-Abruf fehlgeschlagen (inkl. 403 Bot-Block)."""
+
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
+
+
+def _fetch_once(cfg, session=None):
+    headers = {
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+        "Referer": cfg.referer,
+    }
+    try:
+        if session is None:
+            if cc_requests is None:
+                raise FetchError("curl_cffi ist nicht installiert (pip install curl-cffi)")
+            resp = cc_requests.get(cfg.api_url, headers=headers, timeout=cfg.timeout_seconds, impersonate="chrome")
+        else:
+            resp = session.get(cfg.api_url, headers=headers, timeout=cfg.timeout_seconds)
+    except FetchError:
+        raise
+    except Exception as exc:  # Netzwerk-/TLS-/HTTP-Fehler → FetchError (Retry-fähig)
+        raise FetchError(f"Abruf fehlgeschlagen: {type(exc).__name__}: {exc}")
+    if resp.status_code == 403:
+        raise FetchError(
+            "HTTP 403 – Akamai blockiert den Abruf (Fallback: Headless-Chromium, siehe README)",
+            status=403,
+        )
+    if resp.status_code >= 400:
+        raise FetchError(f"HTTP {resp.status_code} von der Lenovo-API")
+    try:
+        payload = resp.json()
+    except Exception as exc:
+        raise FetchError(f"Antwort ist kein gültiges JSON: {exc}")
+    if not isinstance(payload, dict) or payload.get("code") != 0:
+        raise FetchError(f"API-Fehlercode: {repr(payload)[:200]}")
+    data = payload.get("data")
+    if not isinstance(data, list) or not data:
+        raise FetchError("API lieferte keine/leere Datenliste – Abbruch, State bleibt unangetastet")
+    return data
+
+
+def fetch_clearance_parts(cfg, session=None, sleep=time.sleep):
+    attempts = max(1, int(cfg.retries) + 1)
+    last_error = None
+    for attempt in range(attempts):
+        if attempt:
+            sleep(BACKOFFS[min(attempt - 1, len(BACKOFFS) - 1)])
+        try:
+            return _fetch_once(cfg, session=session)
+        except FetchError as exc:
+            if exc.status == 403:
+                raise  # Bot-Block: sofort aufgeben
+            last_error = exc
+            log.warning("API-Abruf fehlgeschlagen (Versuch %d/%d): %s", attempt + 1, attempts, exc)
+    raise last_error

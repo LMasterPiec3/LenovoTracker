@@ -81,5 +81,88 @@ class TestLoadConfig(unittest.TestCase):
             self.assertEqual(cfg.mail_to, ["Lenovo@aomme.de"])
 
 
+class FakeResponse:
+    def __init__(self, status_code=200, payload=None, raw=b"not json"):
+        self.status_code = status_code
+        self._payload = payload
+        self._raw = raw
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("kein JSON")
+        return self._payload
+
+
+class FakeSession:
+    def __init__(self, responses):
+        self.responses = list(responses)  # Liste von FakeResponse oder Exception-Instanzen
+        self.calls = []
+
+    def get(self, url, headers=None, timeout=None):
+        self.calls.append({"url": url, "headers": headers, "timeout": timeout})
+        item = self.responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+
+def make_cfg(**overrides):
+    return lt.Config(
+        api_url="https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get",
+        referer=lt.PAGE_URL,
+        mail_from="Lenovo@aomme.de",
+        mail_to=["Lenovo@aomme.de"],
+        **overrides,
+    )
+
+
+GOOD_PAYLOAD = {"code": 0, "data": [{"id": "01YT022", "commodityKey": "system boards", "stock": 2}]}
+
+
+class TestFetch(unittest.TestCase):
+    def test_fetch_ok(self):
+        cfg = make_cfg()
+        session = FakeSession([FakeResponse(200, GOOD_PAYLOAD)])
+        parts = lt.fetch_clearance_parts(cfg, session=session)
+        self.assertEqual(len(parts), 1)
+        self.assertEqual(session.calls[0]["headers"]["Accept"], "application/json, text/plain, */*")
+        self.assertEqual(session.calls[0]["headers"]["Referer"], lt.PAGE_URL)
+
+    def test_fetch_403_no_retry(self):
+        cfg = make_cfg(retries=3)
+        session = FakeSession([FakeResponse(403)])
+        with self.assertRaises(lt.FetchError) as ctx:
+            lt.fetch_clearance_parts(cfg, session=session, sleep=lambda s: None)
+        self.assertEqual(ctx.exception.status, 403)
+        self.assertEqual(len(session.calls), 1)  # kein Retry bei Bot-Block
+
+    def test_fetch_retries_then_raises(self):
+        cfg = make_cfg(retries=2)
+        sleeps = []
+        session = FakeSession([OSError("net down"), OSError("net down"), OSError("net down")])
+        with self.assertRaises(lt.FetchError):
+            lt.fetch_clearance_parts(cfg, session=session, sleep=sleeps.append)
+        self.assertEqual(len(session.calls), 3)
+        self.assertEqual(sleeps, [5, 15])  # BACKOFFS
+
+    def test_fetch_rejects_bad_code(self):
+        cfg = make_cfg(retries=0)
+        session = FakeSession([FakeResponse(200, {"code": 104, "msg": "err"})])
+        with self.assertRaises(lt.FetchError):
+            lt.fetch_clearance_parts(cfg, session=session)
+
+    def test_fetch_rejects_empty_data(self):
+        cfg = make_cfg(retries=0)
+        session = FakeSession([FakeResponse(200, {"code": 0, "data": []})])
+        with self.assertRaises(lt.FetchError):
+            lt.fetch_clearance_parts(cfg, session=session)
+
+    def test_fetch_rejects_invalid_json(self):
+        cfg = make_cfg(retries=0)
+        session = FakeSession([FakeResponse(200, None, raw=b"<html>blocked</html>")])
+        with self.assertRaises(lt.FetchError):
+            lt.fetch_clearance_parts(cfg, session=session)
+
+
 if __name__ == "__main__":
     unittest.main()
