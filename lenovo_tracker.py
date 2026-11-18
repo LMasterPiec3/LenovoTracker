@@ -276,3 +276,144 @@ def append_history(history_path, ts, total, count):
         if is_new:
             writer.writerow(["timestamp", "total_stock", "part_count"])
         writer.writerow([ts, total, count])
+
+
+# ---------------------------------------------------------------------------
+# E-Mail
+# ---------------------------------------------------------------------------
+
+
+def fmt_de(number):
+    return f"{number:,}".replace(",", ".")
+
+
+def build_subject(cfg, diff):
+    return (
+        f"{cfg.subject_prefix} Mainboard-Bestand gestiegen: "
+        f"{fmt_de(diff.old_total)} → {fmt_de(diff.new_total)} (+{fmt_de(diff.delta)})"
+    )
+
+
+def build_mail_text(diff, page_url, checked_at):
+    lines = [
+        "Mainboard-Bestand gestiegen!",
+        "",
+        f"Vorher: {fmt_de(diff.old_total)} Stück",
+        f"Jetzt:  {fmt_de(diff.new_total)} Stück",
+        f"Änderung: +{fmt_de(diff.delta)}",
+        "",
+    ]
+    if diff.increased:
+        lines.append(f"Top-Neuzugänge ({len(diff.increased)} Teile mit mehr Bestand):")
+        for item in diff.increased[:20]:
+            lines.append(f"  +{item['delta']}  {item['id']}  {item['name']}  ({item['old']} → {item['new']})")
+        rest = diff.increased[20:]
+        if rest:
+            lines.append(f"  (+ {len(rest)} weitere Teile: +{fmt_de(sum(i['delta'] for i in rest))})")
+        lines.append("")
+    if diff.new_parts:
+        lines.append(f"Neu im Sale: {len(diff.new_parts)} Teile")
+        for item in diff.new_parts[:20]:
+            lines.append(f"  {item['id']}  {item['name']}  ({item['stock']} Stück)")
+        lines.append("")
+    lines += ["Seite: " + page_url, "Geprüft: " + checked_at]
+    return "\n".join(lines)
+
+
+def build_mail_html(diff, page_url, checked_at):
+    rows = []
+    for item in diff.increased[:20]:
+        rows.append(
+            f"<tr><td>+{item['delta']}</td><td>{escape(item['id'])}</td>"
+            f"<td>{escape(item['name'])}</td><td>{item['old']} → {item['new']}</td></tr>"
+        )
+    new_rows = [
+        f"<tr><td>{escape(item['id'])}</td><td>{escape(item['name'])}</td><td>{item['stock']} Stück</td></tr>"
+        for item in diff.new_parts[:20]
+    ]
+    parts = [
+        "<html><body style='font-family:sans-serif'>",
+        "<h2>Mainboard-Bestand gestiegen!</h2>",
+        "<p><b>"
+        f"{fmt_de(diff.old_total)} → {fmt_de(diff.new_total)} Stück "
+        f"(+{fmt_de(diff.delta)})</b></p>",
+    ]
+    if rows:
+        parts += [
+            "<h3>Top-Neuzugänge</h3>",
+            "<table border='1' cellpadding='4' cellspacing='0'>",
+            "<tr><th>Δ</th><th>Teilenummer</th><th>Bezeichnung</th><th>Bestand</th></tr>",
+            *rows,
+            "</table>",
+        ]
+    if new_rows:
+        parts += [
+            f"<h3>Neu im Sale ({len(diff.new_parts)} Teile)</h3>",
+            "<table border='1' cellpadding='4' cellspacing='0'>",
+            "<tr><th>Teilenummer</th><th>Bezeichnung</th><th>Bestand</th></tr>",
+            *new_rows,
+            "</table>",
+        ]
+    parts += [
+        f"<p><a href='{escape(page_url)}'>{escape(page_url)}</a><br>Geprüft: {escape(checked_at)}</p>",
+        "</body></html>",
+    ]
+    return "\n".join(parts)
+
+
+def compose_mail(cfg, subject, text, html):
+    msg = EmailMessage()
+    msg["From"] = cfg.mail_from
+    msg["To"] = ", ".join(list(cfg.mail_to) + list(cfg.extra_recipients))
+    msg["Subject"] = subject
+    msg["Date"] = formatdate(localtime=True)
+    msg["X-Mailer"] = "lenovo-tracker"
+    msg.set_content(text)
+    msg.add_alternative(html, subtype="html")
+    return msg
+
+
+def deliver_mail(cfg, msg):
+    if cfg.mail_mode == "sendmail":
+        proc = subprocess.run(
+            [cfg.sendmail_path, "-t", "-oi"],
+            input=msg.as_bytes(),
+            capture_output=True,
+        )
+        if proc.returncode != 0:
+            stderr = proc.stderr.decode(errors="replace")[:300]
+            raise RuntimeError(f"sendmail fehlgeschlagen (rc={proc.returncode}): {stderr}")
+        log.info("Mail an sendmail übergeben: %s", msg["To"])
+    else:
+        with smtplib.SMTP(cfg.smtp_host, cfg.smtp_port, timeout=60) as smtp:
+            if cfg.smtp_starttls:
+                smtp.starttls()
+            if cfg.smtp_user:
+                smtp.login(cfg.smtp_user, cfg.smtp_password)
+            smtp.send_message(msg)
+        log.info("Mail via SMTP %s gesendet: %s", cfg.smtp_host, msg["To"])
+
+
+def send_test_mail(cfg, deliver=deliver_mail):
+    try:
+        parts = fetch_clearance_parts(cfg)
+        boards = filter_mainboards(parts, cfg.commodity_keys)
+        total, count = compute_totals(boards)
+    except FetchError as exc:
+        log.error("Testmail ohne Datenabruf nicht möglich: %s", exc)
+        return False
+    ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    subject = f"{cfg.subject_prefix} Testmail – Tracker aktiv"
+    text = (
+        "Testmail des Lenovo-Mainboard-Trackers.\n\n"
+        f"Aktueller Mainboard-Bestand: {fmt_de(total)} Stück über {count} Teile.\n"
+        f"Versandweg: {cfg.mail_mode}\nGeprüft: {ts}\nSeite: {PAGE_URL}\n"
+    )
+    html = (
+        "<html><body><h2>Testmail – Tracker aktiv</h2>"
+        f"<p>Aktueller Mainboard-Bestand: <b>{fmt_de(total)} Stück</b> über {count} Teile.</p>"
+        f"<p>Versandweg: {cfg.mail_mode}<br>Geprüft: {escape(ts)}<br>"
+        f"<a href='{PAGE_URL}'>{PAGE_URL}</a></p></body></html>"
+    )
+    deliver(cfg, compose_mail(cfg, subject, text, html))
+    return True

@@ -233,5 +233,53 @@ class TestState(unittest.TestCase):
             self.assertEqual(lines[2], "2026-11-18T20:30:00+00:00,101,3")
 
 
+DIFF = lt.build_diff(
+    {"01YT022": {"s": 2, "n": "i3-7100U System Board"},
+     "5A10W86303": {"s": 97, "n": "Mainboard <Top> & Board"}},
+    {"01YT022": {"s": 30, "n": "i3-7100U System Board"},
+     "5A10W86303": {"s": 112, "n": "Mainboard <Top> & Board"},
+     "NEU0001": {"s": 5, "n": "Neues Board"}},
+)  # alt 99 → neu 147, delta 48; increased: 01YT022 (+28), 5A10W86303 (+15); new_parts: NEU0001
+
+
+class TestMail(unittest.TestCase):
+    def setUp(self):
+        self.cfg = make_cfg()
+
+    def test_fmt_de(self):
+        self.assertEqual(lt.fmt_de(16489), "16.489")
+        self.assertEqual(lt.fmt_de(999), "999")
+
+    def test_subject_contains_delta(self):
+        subject = lt.build_subject(self.cfg, DIFF)
+        self.assertTrue(subject.startswith("[Lenovo Tracker]"))
+        self.assertIn("99 → 147 (+48)", subject)
+
+    def test_mail_text_lists_top_increase(self):
+        text = lt.build_mail_text(DIFF, lt.PAGE_URL, "2026-11-18T20:00:00+00:00")
+        self.assertIn("+28", text)
+        self.assertIn("01YT022", text)
+        self.assertIn("Neu im Sale: 1", text)
+
+    def test_mail_html_escapes_part_names(self):
+        html = lt.build_mail_html(DIFF, lt.PAGE_URL, "2026-11-18T20:00:00+00:00")
+        self.assertIn("Mainboard &lt;Top&gt; &amp; Board", html)  # Teil ist in der increased-Liste
+        self.assertNotIn("<Top>", html)
+
+    def test_compose_mail_headers_and_bodies(self):
+        msg = lt.compose_mail(self.cfg, "Betreff", "TEXT", "<html>HTML</html>")
+        self.assertEqual(msg["From"], "Lenovo@aomme.de")
+        self.assertEqual(msg["To"], "Lenovo@aomme.de")
+        self.assertEqual(msg["Subject"], "Betreff")
+        raw = msg.as_bytes().decode("utf-8")
+        self.assertIn("TEXT", raw)
+        self.assertIn("<html>HTML</html>", raw)
+
+    def test_compose_mail_with_extra_recipients(self):
+        cfg = make_cfg(extra_recipients=["chef@example.com"])
+        msg = lt.compose_mail(cfg, "B", "T", "<p>H</p>")
+        self.assertEqual(msg["To"], "Lenovo@aomme.de, chef@example.com")
+
+
 if __name__ == "__main__":
     unittest.main()
