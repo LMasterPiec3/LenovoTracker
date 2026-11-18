@@ -1,0 +1,30 @@
+# Lenovo Clearance-Sale Mainboard-Tracker
+# Kopie nach /etc/lenovotracker/config.toml und anpassen.
+
+[api]
+url = "https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get"
+referer = "https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
+timeout_seconds = 60
+retries = 3                # Retry-Backoff: 5s, 15s, 45s
+
+[tracker]
+interval_minutes = 30
+commodity_keys = ["system boards"]   # Filter: Mainboards (lowercase, translationssicher)
+
+[mail]
+mode = "sendmail"                    # "sendmail" (Default, wie Proxmox) | "smtp"
+sendmail_path = "/usr/sbin/sendmail"
+from = "Lenovo@aomme.de"
+to = ["Lenovo@aomme.de"]
+extra_recipients = []                # weitere Adressen, optionale Liste
+subject_prefix = "[Lenovo Tracker]"
+
+# Nur relevant bei mode = "smtp" (Plan B, falls der MTA-Pfad Probleme macht):
+smtp_host = ""
+smtp_port = 587
+smtp_user = ""
+smtp_password = ""
+smtp_starttls = true
+
+[paths]
+state_dir = "/var/lib/lenovotracker"  # state.json + history.csv
