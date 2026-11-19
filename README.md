@@ -52,9 +52,14 @@ bash lenovo-tracker-setup.sh
 ```
 
 Das Script richtet **alles** ein (Stil der Proxmox-Community-Helper-Scripts):
-Build-CT (temporär, Rust-Toolchain ohne OpenSSL) → Binary + 12 Unit-Tests →
-Produktions-CT (Alpine, minimal) → curl-impersonate → Config → Cron →
-Dry-Run-Verifikation.
+Binary aus den GitHub Releases laden (GitHub Actions baut das musl-Binary bei
+jedem Push — **kein Build nötig**) → Produktions-CT (Alpine, minimal) →
+curl-impersonate → Config → Cron → Dry-Run-Verifikation.
+
+Binary-Quelle mit Fallback-Kette: **GitHub-Release-Download** → vorhandenes
+`/root/lenovo-tracker-rs` (`SKIP_BUILD=1`) → temporärer Build-CT (Fallback,
+`BUILD_METHOD=build` erzwingen). Der Build-CT wird nur noch gebraucht, wenn
+mal kein Release-Asset existiert.
 
 | Variable | Default | Bedeutung |
 |---|---|---|
