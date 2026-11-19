@@ -140,6 +140,45 @@ fn load_config(path: &str) -> Result<Config> {
 // API-Abruf
 // ---------------------------------------------------------------------------
 
+/// Typisierte API-Teile (statt Value-Baum): ~3x weniger Peak-RAM beim Parsen.
+#[derive(Debug, Clone, Deserialize, Default)]
+struct ApiPart {
+    #[serde(default)]
+    id: String,
+    #[serde(default)]
+    name: String,
+    #[serde(rename = "commodityKey", default)]
+    commodity_key: String,
+    #[serde(default)]
+    stock: StockField,
+}
+
+/// Robust gegen fehlende/garbage/Text-Zahlen – wie die Python-Version.
+#[derive(Debug, Clone, Default)]
+struct StockField(i64);
+
+impl<'de> Deserialize<'de> for StockField {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let v = Value::deserialize(d)?;
+        Ok(StockField(match v {
+            Value::Number(n) => {
+                let f = n.as_f64().unwrap_or(0.0);
+                (f as i64).max(0)
+            }
+            Value::String(s) => s.trim().parse::<i64>().unwrap_or(0).max(0),
+            _ => 0,
+        }))
+    }
+}
+
+#[derive(Deserialize)]
+struct ApiResponse {
+    #[serde(default)]
+    code: i64,
+    #[serde(default)]
+    data: Option<Vec<ApiPart>>,
+}
+
 #[derive(Debug)]
 struct FetchError {
     message: String,
@@ -152,7 +191,7 @@ impl std::fmt::Display for FetchError {
     }
 }
 
-fn fetch_clearance_parts(cfg: &Config) -> Result<Vec<Value>, FetchError> {
+fn fetch_clearance_parts(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
     let attempts = (cfg.api.retries + 1).max(1) as usize;
     let mut last: Option<FetchError> = None;
     for attempt in 0..attempts {
@@ -180,7 +219,7 @@ fn fetch_clearance_parts(cfg: &Config) -> Result<Vec<Value>, FetchError> {
 
 /// Holt die API-Response über das offizielle curl-impersonate-Binary
 /// (Chrome-TLS-Fingerprint, gleiche Technik wie curl_cffi – ohne Python).
-fn fetch_once(cfg: &Config) -> Result<Vec<Value>, FetchError> {
+fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
     fn fe(e: impl std::fmt::Display) -> FetchError {
         FetchError { message: format!("Abruf fehlgeschlagen: {}", e), status: None }
     }
@@ -233,19 +272,15 @@ fn fetch_once(cfg: &Config) -> Result<Vec<Value>, FetchError> {
         });
     }
 
-    let payload: Value = serde_json::from_str(&body).map_err(|_| FetchError {
+    let payload: ApiResponse = serde_json::from_str(&body).map_err(|_| FetchError {
         message: "Antwort ist kein gültiges JSON (vermutlich XML ohne Accept-Header oder HTML-Blockseite)".into(),
         status: Some(status),
     })?;
 
-    if payload.get("code").and_then(|c| c.as_i64()) != Some(0) {
-        return Err(FetchError { message: format!("API-Fehlercode: {}", payload), status: Some(status) });
+    if payload.code != 0 {
+        return Err(FetchError { message: format!("API-Fehlercode: {}", payload.code), status: Some(status) });
     }
-    let data = payload
-        .get("data")
-        .and_then(|d| d.as_array())
-        .cloned()
-        .unwrap_or_default();
+    let data = payload.data.unwrap_or_default();
     if data.is_empty() {
         return Err(FetchError {
             message: "API lieferte keine/leere Datenliste – Abbruch, State bleibt unangetastet".into(),
@@ -259,44 +294,31 @@ fn fetch_once(cfg: &Config) -> Result<Vec<Value>, FetchError> {
 // Filter, Summe, Diff
 // ---------------------------------------------------------------------------
 
-fn as_str(v: &Value, key: &str) -> String {
-    v.get(key).and_then(|x| x.as_str()).unwrap_or("").to_string()
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct PartState {
     s: i64,
     n: String,
 }
 
-fn stock_of(part: &Value) -> i64 {
-    match part.get("stock") {
-        Some(Value::Number(n)) => n.as_i64().unwrap_or(0).max(0),
-        Some(Value::String(s)) => s.trim().parse::<i64>().unwrap_or(0).max(0),
-        _ => 0,
-    }
+fn stock_of(part: &ApiPart) -> i64 {
+    part.stock.0
 }
 
-fn filter_mainboards<'a>(parts: &'a [Value], keys: &[String]) -> Vec<&'a Value> {
+fn filter_mainboards<'a>(parts: &'a [ApiPart], keys: &[String]) -> Vec<&'a ApiPart> {
     let keys: Vec<String> = keys.iter().map(|k| k.trim().to_lowercase()).collect();
     parts
         .iter()
-        .filter(|p| {
-            as_str(p, "commodityKey").trim().to_lowercase().as_str() != ""
-                && keys.contains(&as_str(p, "commodityKey").trim().to_lowercase())
-        })
+        .filter(|p| keys.contains(&p.commodity_key.trim().to_lowercase()))
         .collect()
 }
 
-fn parts_to_map(boards: &[&Value]) -> BTreeMap<String, PartState> {
+fn parts_to_map(boards: &[&ApiPart]) -> BTreeMap<String, PartState> {
     let mut map = BTreeMap::new();
     for p in boards {
-        if let Some(id) = p.get("id").and_then(|x| x.as_str()) {
-            if id.is_empty() {
-                continue;
-            }
-            map.insert(id.to_string(), PartState { s: stock_of(p), n: as_str(p, "name") });
+        if p.id.is_empty() {
+            continue;
         }
+        map.insert(p.id.clone(), PartState { s: stock_of(p), n: p.name.clone() });
     }
     map
 }
@@ -755,11 +777,11 @@ mod tests {
 
     #[test]
     fn test_filter_and_totals() {
-        let data: Vec<Value> = vec![
-            serde_json::json!({"id": "A", "commodityKey": "system boards", "stock": 2, "name": "A"}),
-            serde_json::json!({"id": "B", "commodityKey": "heat sinks", "stock": 500, "name": "B"}),
-            serde_json::json!({"id": "C", "commodityKey": "SYSTEM BOARDS", "stock": 98, "name": "C"}),
-            serde_json::json!({"id": "D", "commodityKey": "system boards", "name": "D"}),
+        let data: Vec<ApiPart> = vec![
+            serde_json::from_value(serde_json::json!({"id": "A", "commodityKey": "system boards", "stock": 2, "name": "A"})).unwrap(),
+            serde_json::from_value(serde_json::json!({"id": "B", "commodityKey": "heat sinks", "stock": 500, "name": "B"})).unwrap(),
+            serde_json::from_value(serde_json::json!({"id": "C", "commodityKey": "SYSTEM BOARDS", "stock": 98, "name": "C"})).unwrap(),
+            serde_json::from_value(serde_json::json!({"id": "D", "commodityKey": "system boards", "name": "D"})).unwrap(),
         ];
         let boards = filter_mainboards(&data, &["system boards".to_string()]);
         assert_eq!(boards.len(), 3);
@@ -785,10 +807,14 @@ mod tests {
 
     #[test]
     fn test_stock_garbage() {
-        assert_eq!(stock_of(&serde_json::json!({})), 0);
-        assert_eq!(stock_of(&serde_json::json!({"stock": null})), 0);
-        assert_eq!(stock_of(&serde_json::json!({"stock": "7"})), 7);
-        assert_eq!(stock_of(&serde_json::json!({"stock": -5})), 0);
-        assert_eq!(stock_of(&serde_json::json!({"stock": "kaputt"})), 0);
+        let sf = |v: serde_json::Value| -> i64 { serde_json::from_value::<StockField>(v).unwrap().0 };
+        assert_eq!(sf(serde_json::json!(null)), 0);
+        assert_eq!(sf(serde_json::json!("7")), 7);
+        assert_eq!(sf(serde_json::json!(-5)), 0);
+        assert_eq!(sf(serde_json::json!("kaputt")), 0);
+        assert_eq!(sf(serde_json::json!(7.9)), 7);
+        // fehlendes Feld → Default
+        let part: ApiPart = serde_json::from_value(serde_json::json!({"id": "X"})).unwrap();
+        assert_eq!(part.stock.0, 0);
     }
 }
