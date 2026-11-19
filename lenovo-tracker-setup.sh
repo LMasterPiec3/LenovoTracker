@@ -202,6 +202,7 @@ ui_available() {
 wt_menu() {  # wt_menu <title> <text> item1 desc1 [item2 desc2 …] -> echo Auswahl
   local title="$1" text="$2"; shift 2
   whiptail --backtitle "$BACKTITLE" --title "$title" --menu "$text" 20 72 8 "$@" \
+    --ok-button "<Select>" --cancel-button "<Exit Script>" \
     3>&1 1>&2 2>&3
 }
 
