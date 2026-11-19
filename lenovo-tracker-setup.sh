@@ -30,8 +30,10 @@
 set -uo pipefail
 
 # --------------------------------- Farben -----------------------------------
-RED='\033[1;31m'; GREEN='\033[1;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
-BOLD='\033[1m'; NC='\033[0m'
+# $'…' = echte ESC-Bytes in der Variable → funktionieren in echo, printf UND
+# read -rp (kein echo -e nötig, keine rohen \033 im Output).
+RED=$'\033[1;31m'; GREEN=$'\033[1;32m'; YELLOW=$'\033[1;33m'; BLUE=$'\033[1;34m'
+BOLD=$'\033[1m'; NC=$'\033[0m'
 C_INFO=$BLUE; C_OK=$GREEN; C_ERR=$RED; C_WARN=$YELLOW; C_HEAD=$BOLD
 
 msg_info()  { echo -e "  ${C_INFO}⏳ ${*}${NC}"; }
@@ -202,9 +204,12 @@ ui_config() {
     echo "  ${C_HEAD}1)${NC} Standard-Setup    (empfohlene Defaults, nur bestätigen)"
     echo "  ${C_HEAD}2)${NC} Erweitert         (alles einzeln abfragen)"
     echo "  ${C_HEAD}0)${NC} Abbrechen"
-    ask MODECHOICE "Auswahl" "1"
+    ask MODECHOICE "Auswahl (Ziffer eingeben)" "1"
+    # Pfeiltasten/Escapes im Input abwaschen → nur Ziffern zählen
+    MODECHOICE="$(printf '%s' "$MODECHOICE" | tr -dc '0-9')"
+    [[ -z "$MODECHOICE" ]] && MODECHOICE="1"
     mode="$MODECHOICE"
-    [[ "$mode" == "0" ]] && die "Abgebrochen."
+    if [[ "$mode" == "0" ]]; then die "Abgebrochen."; fi
     if [[ "$mode" == "2" ]]; then
       ask VMID "CT-ID (Produktion)" "$VMID"
       ask BUILD_VMID "CT-ID (temporärer Build)" "$BUILD_VMID"
