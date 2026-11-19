@@ -129,6 +129,26 @@ rc-update add lenovo-tracker default && rc-service lenovo-tracker start
   `/var/log/lenovo-tracker.log` (Postfix loggt nach `/var/log/messages`)
 - Staat: `/var/lib/lenovotracker/state.json` + `history.csv` (identisch zu Debian)
 
+### Keyword-Filter (nur Rust-Version, optional)
+
+Die API kennt keine serverseitige Filterung (siehe [Lenovo-API.md](Lenovo-API.md),
+§4) — aber der Rust-Tracker kann zusätzlich **innerhalb** der Mainboards nach
+Keyword eingrenzen:
+
+```toml
+[tracker]
+commodity_keys = ["system boards"]
+name_keywords = ["B650", "AM5"]   # optional; leer/entfernt = alle Mainboards
+```
+
+- ODER-verknüpft, case-insensitiv, Substring-Match auf **Bezeichnung und
+  Teilenummer** (`b650` findet „AMD B650M …", `5A10W86303` trackt ein
+  konkretes Teil)
+- Summe, Mail-Diff und Verlauf beziehen sich dann nur auf die passenden Teile
+- Filterwechsel (Keywords oder `commodity_keys` geändert) setzt die Baseline
+  **automatisch still neu** – der State trägt einen Filter-Fingerprint, es
+  gibt keine Garbage-Mail mit pseudo „Neu im Sale"-Teilen
+
 ### Produktivstand (CT 105, Alpine, maximal kompakt)
 
 - **33 MB Disk-Limit** (~17 MB belegt — Alpine-Base + gestrippte Binaries, kein

@@ -105,6 +105,10 @@ struct TrackerCfg {
     interval_minutes: u64,
     #[serde(default = "default_commodity_keys")]
     commodity_keys: Vec<String>,
+    /// Optionaler Keyword-Filter INHALTB der Boards (ODER, case-insensitive,
+    /// Substring auf `name` UND `id`). Leer = alle Mainboards (bisheriges Verhalten).
+    #[serde(default = "default_name_keywords")]
+    name_keywords: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -138,6 +142,7 @@ fn default_curl_path() -> String { "/opt/lenovo-tracker/curl-impersonate".into()
 fn default_impersonate() -> String { "chrome124".into() }
 fn default_interval() -> u64 { 30 }
 fn default_commodity_keys() -> Vec<String> { vec!["system boards".into()] }
+fn default_name_keywords() -> Vec<String> { Vec::new() }
 fn default_mode() -> String { "smtp".into() }
 fn default_subject_prefix() -> String { "[Lenovo Tracker]".into() }
 fn default_smtp_port() -> u16 { 25 }
@@ -367,15 +372,47 @@ fn stock_of(part: &ApiPart) -> i64 {
     part.stock.0
 }
 
-fn filter_mainboards<'a>(parts: &'a [ApiPart], keys: &[String]) -> Vec<&'a ApiPart> {
+/// Case-insensitiver Substring-Test ohne Allocation (ASCII-Folding; Nicht-ASCII
+/// wird byte-genau verglichen, für Modellcodes/Chipsätze ausreichend).
+fn ci_contains(haystack: &str, needle: &str) -> bool {
+    let h = haystack.as_bytes();
+    let n = needle.as_bytes();
+    if n.is_empty() {
+        return true;
+    }
+    if n.len() > h.len() {
+        return false;
+    }
+    h.windows(n.len()).any(|w| w.eq_ignore_ascii_case(n))
+}
+
+/// Keyword-Filter: ODER-verknüpft auf `name` UND `id`. Leere Liste = kein Zusatzfilter.
+fn keyword_matches(part: &ApiPart, keywords: &[String]) -> bool {
+    keywords.is_empty()
+        || keywords.iter().any(|kw| ci_contains(&part.name, kw) || ci_contains(&part.id, kw))
+}
+
+fn filter_mainboards<'a>(parts: &'a [ApiPart], keys: &[String], keywords: &[String]) -> Vec<&'a ApiPart> {
     // Allocation-frei: case-insensitiver Vergleich statt pro Teil lowercase zu allokieren.
     parts
         .iter()
         .filter(|p| {
             keys.iter()
                 .any(|k| p.commodity_key.trim().eq_ignore_ascii_case(k))
+                && keyword_matches(p, keywords)
         })
         .collect()
+}
+
+/// Kanonischer Fingerprint der aktiven Filter (commodity_keys + name_keywords).
+/// Landet im state.json – ändert er sich, wird die Baseline neu gesetzt
+/// (sonst würde ein Filterwechsel als riesiger „Anstieg" alarmieren).
+fn filter_fingerprint(keys: &[String], keywords: &[String]) -> String {
+    let mut ks: Vec<String> = keys.iter().map(|s| s.trim().to_lowercase()).collect();
+    ks.sort();
+    let mut kw: Vec<String> = keywords.iter().map(|s| s.trim().to_lowercase()).collect();
+    kw.sort();
+    format!("c={};k={}", ks.join("|"), kw.join("|"))
 }
 
 fn parts_to_map(boards: &[&ApiPart]) -> BTreeMap<String, PartState> {
@@ -445,15 +482,29 @@ fn build_diff(old_map: &BTreeMap<String, PartState>, new_map: &BTreeMap<String, 
 
 /// Typisiertes State-File: ein einziger Parse-Pass – kein Value-Baum,
 /// kein Teilbaum-Clone mehr (bei ~3.100 Teilen einige MB Peak-RAM gespart).
+/// `filter` trägt den Filter-Fingerprint; fehlt er (alter State) oder weicht
+/// ab (Filterwechsel), wird die Baseline neu gesetzt.
 #[derive(Deserialize)]
 struct StateFileIn {
     parts: BTreeMap<String, PartState>,
+    #[serde(default)]
+    filter: Option<String>,
 }
 
-fn load_state(path: &Path) -> Option<BTreeMap<String, PartState>> {
+fn load_state(path: &Path, expected_filter: &str) -> Option<BTreeMap<String, PartState>> {
     match fs::read_to_string(path) {
         Ok(text) => match serde_json::from_str::<StateFileIn>(&text) {
-            Ok(sf) => Some(sf.parts),
+            Ok(sf) => {
+                if sf.filter.as_deref() != Some(expected_filter) {
+                    log_info!(
+                        "Filter hat sich geändert (state: {:?} → jetzt {:?}) – Baseline wird neu gesetzt",
+                        sf.filter.unwrap_or_else(|| "(alt, ohne Filtermarkierung)".into()),
+                        expected_filter
+                    );
+                    return None;
+                }
+                Some(sf.parts)
+            }
             Err(e) => {
                 log_error!("state.json ist beschädigt/unerwartetes Format ({}) – Baseline wird neu gesetzt", e);
                 None
@@ -467,17 +518,25 @@ fn load_state(path: &Path) -> Option<BTreeMap<String, PartState>> {
     }
 }
 
-/// Nur die vier State-Felder, direkt in die Datei serialisiert –
+/// Nur die State-Felder, direkt in die Datei serialisiert –
 /// kein `json!`-Value-Baum und kein JSON-String als Zwischenkopie im RAM.
 #[derive(Serialize)]
 struct StateFileOut<'a> {
     last_check: &'a str,
     total_stock: i64,
     part_count: usize,
+    filter: &'a str,
     parts: &'a BTreeMap<String, PartState>,
 }
 
-fn save_state(state_path: &Path, ts: &str, total: i64, count: usize, part_map: &BTreeMap<String, PartState>) -> Result<()> {
+fn save_state(
+    state_path: &Path,
+    ts: &str,
+    total: i64,
+    count: usize,
+    filter: &str,
+    part_map: &BTreeMap<String, PartState>,
+) -> Result<()> {
     if let Some(parent) = state_path.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -485,7 +544,10 @@ fn save_state(state_path: &Path, ts: &str, total: i64, count: usize, part_map: &
     {
         let f = fs::File::create(&tmp)?;
         let mut w = std::io::BufWriter::with_capacity(64 * 1024, f);
-        serde_json::to_writer(&mut w, &StateFileOut { last_check: ts, total_stock: total, part_count: count, parts: part_map })?;
+        serde_json::to_writer(
+            &mut w,
+            &StateFileOut { last_check: ts, total_stock: total, part_count: count, filter, parts: part_map },
+        )?;
         w.flush()?;
     }
     fs::rename(&tmp, state_path)?;
@@ -494,15 +556,17 @@ fn save_state(state_path: &Path, ts: &str, total: i64, count: usize, part_map: &
 
 /// save_state + append_history als Einheit – der Aufruf ist an drei Stellen
 /// identisch gekoppelt.
+#[allow(clippy::too_many_arguments)]
 fn persist(
     state_path: &Path,
     history_path: &Path,
     ts: &str,
     total: i64,
     count: usize,
+    filter: &str,
     part_map: &BTreeMap<String, PartState>,
 ) -> Result<()> {
-    save_state(state_path, ts, total, count, part_map)?;
+    save_state(state_path, ts, total, count, filter, part_map)?;
     append_history(history_path, ts, total, count)
 }
 
@@ -663,7 +727,7 @@ fn deliver_mail(cfg: &Config, msg: &lettre::Message) -> Result<()> {
 
 fn send_test_mail(cfg: &Config) -> Result<()> {
     let parts = fetch_clearance_parts(cfg).map_err(|e| anyhow!("Abruf fehlgeschlagen: {}", e))?;
-    let boards = filter_mainboards(&parts, &cfg.tracker.commodity_keys);
+    let boards = filter_mainboards(&parts, &cfg.tracker.commodity_keys, &cfg.tracker.name_keywords);
     let part_map = parts_to_map(&boards);
     let (total, count) = compute_totals(&part_map);
     let ts = now_iso();
@@ -695,6 +759,7 @@ fn state_paths(cfg: &Config) -> (PathBuf, PathBuf) {
 fn run_once(cfg: &Config, dry_run: bool) -> i32 {
     let ts = now_iso();
     let (state_path, history_path) = state_paths(cfg);
+    let fp = filter_fingerprint(&cfg.tracker.commodity_keys, &cfg.tracker.name_keywords);
 
     let parts = match fetch_clearance_parts(cfg) {
         Ok(p) => p,
@@ -704,11 +769,11 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
         }
     };
 
-    let boards = filter_mainboards(&parts, &cfg.tracker.commodity_keys);
+    let boards = filter_mainboards(&parts, &cfg.tracker.commodity_keys, &cfg.tracker.name_keywords);
     if boards.is_empty() {
         log_warn!(
-            "Keine Mainboards in der API-Response (Filter: {:?})",
-            cfg.tracker.commodity_keys
+            "Keine Mainboards in der API-Response (Filter: {:?}, Keywords: {:?})",
+            cfg.tracker.commodity_keys, cfg.tracker.name_keywords
         );
     }
     let new_map = parts_to_map(&boards);
@@ -719,10 +784,10 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
         return 0;
     }
 
-    let old_map = load_state(&state_path);
+    let old_map = load_state(&state_path, &fp);
 
     if old_map.is_none() {
-        if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &new_map) {
+        if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &fp, &new_map) {
             log_error!("State konnte nicht geschrieben werden: {}", e);
             return 2;
         }
@@ -749,7 +814,7 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
             log_error!("Mailversand fehlgeschlagen – Anstieg wird erneut gemeldet: {}", e);
             return 2;
         }
-        if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &new_map) {
+        if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &fp, &new_map) {
             log_error!("State konnte nicht geschrieben werden: {}", e);
             return 2;
         }
@@ -757,7 +822,7 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
         return 0;
     }
 
-    if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &new_map) {
+    if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &fp, &new_map) {
         log_error!("State konnte nicht geschrieben werden: {}", e);
         return 2;
     }
@@ -860,11 +925,60 @@ mod tests {
             serde_json::from_value(serde_json::json!({"id": "C", "commodityKey": "SYSTEM BOARDS", "stock": 98, "name": "C"})).unwrap(),
             serde_json::from_value(serde_json::json!({"id": "D", "commodityKey": "system boards", "name": "D"})).unwrap(),
         ];
-        let boards = filter_mainboards(&data, &["system boards".to_string()]);
+        let boards = filter_mainboards(&data, &["system boards".to_string()], &[]);
         assert_eq!(boards.len(), 3);
         let map = parts_to_map(&boards);
         let (total, count) = compute_totals(&map);
         assert_eq!((total, count), (100, 3));
+    }
+
+    #[test]
+    fn test_ci_contains() {
+        assert!(ci_contains("AMD B650M Board", "b650"));
+        assert!(ci_contains("AMD B650M Board", "B650M"));
+        assert!(!ci_contains("AMD B550M Board", "b650"));
+        assert!(ci_contains("irgendwas", ""));
+        assert!(!ci_contains("kurz", "länger-als-haystack"));
+        // Nicht-ASCII: byte-genau (kein Folding) — dokumentiertes Verhalten
+        assert!(ci_contains("TÜV-Board", "TÜV"));
+    }
+
+    #[test]
+    fn test_keyword_filter() {
+        let mk = |id: &str, name: &str, stock: i64| -> ApiPart {
+            serde_json::from_value(serde_json::json!({"id": id, "commodityKey": "system boards", "stock": stock, "name": name})).unwrap()
+        };
+        let data = vec![
+            mk("P1", "AMD B650M Board", 5),
+            mk("P2", "Intel H610 Board", 7),
+            mk("P3", "Lenovo AM5 Board", 9),
+        ];
+        let keys = vec!["system boards".to_string()];
+        // leer → alle
+        assert_eq!(filter_mainboards(&data, &keys, &[]).len(), 3);
+        // ODER auf name, case-insensitiv
+        let b = filter_mainboards(&data, &keys, &["b650".to_string(), "am5".to_string()]);
+        assert_eq!(b.iter().map(|p| p.id.as_str()).collect::<Vec<_>>(), vec!["P1", "P3"]);
+        // Match auf id statt name
+        let b = filter_mainboards(&data, &keys, &["P2".to_string()]);
+        assert_eq!(b.iter().map(|p| p.id.as_str()).collect::<Vec<_>>(), vec!["P2"]);
+        // nichts passt
+        assert!(filter_mainboards(&data, &keys, &["x999".to_string()]).is_empty());
+    }
+
+    #[test]
+    fn test_filter_fingerprint() {
+        let keys = vec!["system boards".to_string()];
+        let empty: Vec<String> = vec![];
+        let kw = vec!["B650".to_string(), "AM5".to_string()];
+        let f0 = filter_fingerprint(&keys, &empty);
+        let f1 = filter_fingerprint(&keys, &kw);
+        // Reihenfolge der Keywords ist egal (sortiert)
+        let f1_rev = filter_fingerprint(&keys, &["am5".to_string(), "b650".to_string()]);
+        assert_eq!(f1, f1_rev);
+        assert_ne!(f0, f1);
+        assert!(f0.starts_with("c=system boards;k="));
+        assert_eq!(filter_fingerprint(&["SYSTEM BOARDS".to_string()], &empty), f0); // case/trim-normalisiert
     }
 
     #[test]
@@ -920,14 +1034,20 @@ mod tests {
         let mut map = BTreeMap::new();
         map.insert("5A10W86303".to_string(), PartState { s: 98, n: "Board A".into() });
         map.insert("X".to_string(), PartState { s: 2, n: "Board \"B\" <ö>".to_string() });
-        save_state(&path, "2026-11-19T00:00:00Z", 100, 2, &map).expect("save");
-        let loaded = load_state(&path).expect("roundtrip");
+        save_state(&path, "2026-11-19T00:00:00Z", 100, 2, "c=system boards;k=", &map).expect("save");
+        // gleicher Filter → geladen
+        let loaded = load_state(&path, "c=system boards;k=").expect("roundtrip");
         assert_eq!(loaded, map);
-        // kaputte Datei → Baseline-Reset (None), keine Panic
+        // anderer Filter → Baseline-Reset
+        assert!(load_state(&path, "c=system boards;k=b650").is_none());
+        // alter State ohne Filter-Feld → Baseline-Reset
+        std::fs::write(&path, "{\"last_check\": \"x\", \"total_stock\": 1, \"part_count\": 1, \"parts\": {}}").unwrap();
+        assert!(load_state(&path, "c=system boards;k=").is_none());
+        // kaputte Datei → None, keine Panic
         std::fs::write(&path, "{\"parts\": 42}").unwrap();
-        assert!(load_state(&path).is_none());
+        assert!(load_state(&path, "c=system boards;k=").is_none());
         std::fs::write(&path, "{\"last_check\": \"x\"}").unwrap(); // parts fehlt
-        assert!(load_state(&path).is_none());
+        assert!(load_state(&path, "c=system boards;k=").is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
