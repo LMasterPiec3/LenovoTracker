@@ -152,7 +152,10 @@ name_keywords = ["B650", "AM5"]   # optional; leer/entfernt = alle Mainboards
 ### Produktivstand (CT 105, Alpine, maximal kompakt)
 
 - **33 MB Disk-Limit** (~17 MB belegt — Alpine-Base + gestrippte Binaries, kein
-  dhcpcd/logrotate/doas/alpine-conf/dcron; `pct resize 105 rootfs +16M` falls je nötig)
+  dhcpcd/logrotate/doas/alpine-conf/dcron; `pct resize 105 rootfs +16M` falls je nötig).
+  **Achtung:** nur ~9 MB frei — der Tracker räumt seine Body-Temp-Datei selbst weg,
+  aber Debug-/Probe-Tools müssen `/tmp` sauber hinterlassen, sonst schlagen Abrufe
+  mit curl `exit=23` (Write error, ENOSPC) mitten im Transfer fehl
 - **32 MB RAM-Limit** (Peak ~20 MB über 3 gemessene Läufe, Boot-Peak ~15 MB:
   curl streamt den Body in eine Temp-Datei, Rust parst mit `from_reader` streckend
   – der JSON-Body liegt nie komplett im RAM; State-I/O single-pass in typisierte
