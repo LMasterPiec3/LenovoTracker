@@ -549,6 +549,16 @@ fn filter_fingerprint(keys: &[String], keywords: &[String]) -> String {
     format!("c={};k={}", ks.join("|"), kw.join("|"))
 }
 
+/// Menschlich lesbares Filter-Label für Mail-Footer ("system boards · RTX").
+fn filter_label(keys: &[String], keywords: &[String]) -> String {
+    keys.iter()
+        .chain(keywords.iter())
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(" · ")
+}
+
 fn parts_to_map(boards: &[&ApiPart]) -> BTreeMap<String, PartState> {
     let mut map = BTreeMap::new();
     for p in boards {
@@ -755,7 +765,7 @@ fn build_subject(prefix: &str, diff: &Diff) -> String {
     )
 }
 
-fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeMap<String, String>) -> String {
+fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeMap<String, String>, filter_label: &str) -> String {
     let mut lines = vec![
         "Mainboard-Bestand gestiegen!".to_string(),
         String::new(),
@@ -794,64 +804,124 @@ fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeM
     }
     lines.push(format!("Seite: {}", page_url));
     lines.push(format!("Geprüft: {}", checked_at));
+    lines.push(format!("Filter: {}", filter_label));
     lines.join("\n")
 }
 
-fn build_mail_html(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeMap<String, String>) -> String {
-    let mut parts = vec![
-        "<html><body style='font-family:sans-serif'>".to_string(),
-        "<h2>Mainboard-Bestand gestiegen!</h2>".to_string(),
+/// "2026-11-19T19:22:48Z" → "2026-11-19 19:22:48 UTC"
+fn pretty_ts(ts: &str) -> String {
+    format!("{} UTC", ts.replace('T', " ").trim_end_matches('Z'))
+}
+
+/// Tech-Daten als Chip-Badges (Inline-Styles, mail-client-sicher).
+fn html_spec_chips(info: &str) -> String {
+    info.split(";;")
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            format!(
+                "<span style='display:inline-block;background:#f1f3f5;border:1px solid #e0e4e8;border-radius:4px;padding:2px 8px;margin:3px 4px 3px 0;font-size:11px;color:#3d434b'>{}</span>&nbsp;",
+                esc(s)
+            )
+        })
+        .collect()
+}
+
+fn html_delta_badge(delta: i64) -> String {
+    format!(
+        "<span style='display:inline-block;background:#e6f4ea;color:#137333;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:bold'>+{}</span>",
+        fmt_de(delta)
+    )
+}
+
+const MAIL_CELL: &str = "padding:10px;border-bottom:1px solid #eceff2;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222222;vertical-align:top";
+
+fn build_mail_html(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeMap<String, String>, filter_label: &str) -> String {
+    let mut h: Vec<String> = vec![
+        "<html><body style='margin:0;padding:0;background:#eef1f4'>".to_string(),
+        "<table role='presentation' width='100%' cellpadding='0' cellspacing='0' bgcolor='#eef1f4' style='background:#eef1f4'><tr><td align='center' style='padding:24px 8px'>".to_string(),
+        "<table role='presentation' width='600' cellpadding='0' cellspacing='0' style='width:600px;max-width:600px;background:#ffffff;border:1px solid #e3e6ea;border-radius:8px;overflow:hidden'>".to_string(),
+        // Marken-Kopf
+        "<tr><td bgcolor='#e2231a' style='background:#e2231a;padding:10px 24px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;color:#ffffff;font-weight:bold'>LENOVO CLEARANCE-TRACKER</td></tr>".to_string(),
+        // Titel + Delta-Badge
         format!(
-            "<p><b>{} → {} Stück (+{})</b></p>",
-            fmt_de(diff.old_total),
-            fmt_de(diff.new_total),
-            fmt_de(diff.delta())
+            "<tr><td style='padding:24px 24px 10px 24px;font-family:Arial,Helvetica,sans-serif'><div style='font-size:22px;line-height:1.3;font-weight:bold;color:#111111'>Mainboard-Bestand gestiegen!</div><div style='font-size:14px;color:#555555;margin-top:8px'>{} → {} Stück&nbsp;&nbsp;{}</div></td></tr>",
+            fmt_de(diff.old_total), fmt_de(diff.new_total), html_delta_badge(diff.delta())
         ),
     ];
+
+    let section = |title: &str| {
+        format!(
+            "<tr><td style='padding:14px 24px 4px 24px;font-family:Arial,Helvetica,sans-serif'><div style='font-size:13px;font-weight:bold;color:#111111;text-transform:uppercase;letter-spacing:1px;border-left:4px solid #e2231a;padding-left:10px'>{}</div></td></tr>",
+            esc(title)
+        )
+    };
+    let table_open = "<tr><td style='padding:8px 24px 8px 24px'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse'>";
+    let table_close = "</table></td></tr>";
+    let head_cell = "background:#111111;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1px;font-weight:bold;padding:8px 10px;text-align:left";
+
     if !diff.increased.is_empty() {
-        parts.push("<h3>Top-Neuzugänge</h3>".to_string());
-        parts.push("<table border='1' cellpadding='4' cellspacing='0'>".to_string());
-        parts.push("<tr><th>Δ</th><th>Teilenummer</th><th>Bezeichnung</th><th>Bestand</th></tr>".to_string());
+        h.push(section(&format!("Top-Neuzugänge ({})", diff.increased.len())));
+        h.push(table_open.to_string());
+        h.push(format!(
+            "<tr><th style='{}'>Δ</th><th style='{}'>Teilenummer</th><th style='{}'>Bezeichnung</th><th style='{};text-align:center'>Bestand</th></tr>",
+            head_cell, head_cell, head_cell, head_cell
+        ));
         for item in diff.increased.iter().take(20) {
-            let spec_html = match specs.get(&item.id) {
-                Some(info) => format!(
-                    "<br><span style='font-size:11px;color:#555'>{}</span>",
-                    esc(&format_specs(info))
-                ),
+            let chips = match specs.get(&item.id) {
+                Some(info) => format!("<div style='margin-top:6px'>{}</div>", html_spec_chips(info)),
                 None => String::new(),
             };
-            parts.push(format!(
-                "<tr><td>+{}</td><td>{}</td><td>{}{}</td><td>{} → {}</td></tr>",
-                item.delta, esc(&item.id), esc(&item.name), spec_html, item.old, item.new
+            h.push(format!(
+                "<tr><td style='{};color:#137333;font-weight:bold'>+{}</td><td style='{};font-family:Consolas,Menlo,monospace;font-weight:bold'>{}</td><td style='{}'><b>{}</b>{}</td><td style='{};text-align:center'>{} → {}</td></tr>",
+                MAIL_CELL, item.delta, MAIL_CELL, esc(&item.id), MAIL_CELL, esc(&item.name), chips, MAIL_CELL, item.old, item.new
             ));
         }
-        parts.push("</table>".to_string());
+        if diff.increased.len() > 20 {
+            let rest_delta: i64 = diff.increased.iter().skip(20).map(|i| i.delta).sum();
+            h.push(format!(
+                "<tr><td colspan='4' style='{};color:#8a8f98;font-size:12px'>+ {} weitere Teile: +{}</td></tr>",
+                MAIL_CELL, diff.increased.len() - 20, fmt_de(rest_delta)
+            ));
+        }
+        h.push(table_close.to_string());
     }
     if !diff.new_parts.is_empty() {
-        parts.push(format!("<h3>Neu im Sale ({} Teile)</h3>", diff.new_parts.len()));
-        parts.push("<table border='1' cellpadding='4' cellspacing='0'>".to_string());
-        parts.push("<tr><th>Teilenummer</th><th>Bezeichnung</th><th>Bestand</th></tr>".to_string());
+        h.push(section(&format!("Neu im Sale ({})", diff.new_parts.len())));
+        h.push(table_open.to_string());
+        h.push(format!(
+            "<tr><th style='{}'>Teilenummer</th><th style='{}'>Bezeichnung</th><th style='{};text-align:center'>Bestand</th></tr>",
+            head_cell, head_cell, head_cell
+        ));
         for (id, name, stock) in diff.new_parts.iter().take(20) {
-            let spec_html = match specs.get(id) {
-                Some(info) => format!(
-                    "<br><span style='font-size:11px;color:#555'>{}</span>",
-                    esc(&format_specs(info))
-                ),
+            let chips = match specs.get(id) {
+                Some(info) => format!("<div style='margin-top:6px'>{}</div>", html_spec_chips(info)),
                 None => String::new(),
             };
-            parts.push(format!(
-                "<tr><td>{}</td><td>{}{}</td><td>{} Stück</td></tr>",
-                esc(id), esc(name), spec_html, stock
+            h.push(format!(
+                "<tr><td style='{};font-family:Consolas,Menlo,monospace;font-weight:bold'>{}</td><td style='{}'><b>{}</b>{}</td><td style='{};text-align:center'>{} Stück</td></tr>",
+                MAIL_CELL, esc(id), MAIL_CELL, esc(name), chips, MAIL_CELL, stock
             ));
         }
-        parts.push("</table>".to_string());
+        if diff.new_parts.len() > 20 {
+            h.push(format!(
+                "<tr><td colspan='3' style='{};color:#8a8f98;font-size:12px'>+ {} weitere Teile</td></tr>",
+                MAIL_CELL, diff.new_parts.len() - 20
+            ));
+        }
+        h.push(table_close.to_string());
     }
-    parts.push(format!(
-        "<p><a href='{}'>{}</a><br>Geprüft: {}</p>",
-        esc(page_url), esc(page_url), esc(checked_at)
+
+    h.push(format!(
+        "<tr><td align='center' style='padding:16px 24px 22px 24px'><table role='presentation' cellpadding='0' cellspacing='0'><tr><td bgcolor='#e2231a' style='border-radius:6px'><a href='{}' style='display:inline-block;padding:12px 28px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none'>Clearance-Sale ansehen →</a></td></tr></table></td></tr>",
+        esc(page_url)
     ));
-    parts.push("</body></html>".to_string());
-    parts.join("\n")
+    h.push(format!(
+        "<tr><td bgcolor='#f7f8fa' style='background:#f7f8fa;padding:14px 24px;border-top:1px solid #e3e6ea;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8f98'>Geprüft: {} · Filter: {}<br><a href='{}' style='color:#e2231a'>{}</a></td></tr>",
+        esc(&pretty_ts(checked_at)), esc(filter_label), esc(page_url), esc(page_url)
+    ));
+    h.push("</table></td></tr></table></body></html>".to_string());
+    h.join("\n")
 }
 
 fn compose_mail(cfg: &Config, subject: &str, text: &str, html: &str) -> Result<lettre::Message> {
@@ -964,8 +1034,9 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
             }
         };
         let subject = build_subject(&cfg.mail.subject_prefix, &diff);
-        let text = build_mail_text(&diff, PAGE_URL, &ts, &specs);
-        let html = build_mail_html(&diff, PAGE_URL, &ts, &specs);
+        let label = filter_label(&cfg.tracker.commodity_keys, &cfg.tracker.name_keywords);
+        let text = build_mail_text(&diff, PAGE_URL, &ts, &specs, &label);
+        let html = build_mail_html(&diff, PAGE_URL, &ts, &specs, &label);
         let msg = match compose_mail(cfg, &subject, &text, &html) {
             Ok(m) => m,
             Err(e) => {
@@ -1235,14 +1306,24 @@ mod tests {
         let diff = build_diff(&old, &new);
         let mut specs = BTreeMap::new();
         specs.insert("A".to_string(), "DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;".to_string());
-        let text = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs);
+        let label = filter_label(&["system boards".to_string()], &["RTX".to_string()]);
+        assert_eq!(label, "system boards · RTX");
+        let text = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs, &label);
         assert!(text.contains("DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"));
-        let html = build_mail_html(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs);
-        assert!(html.contains("DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"));
-        assert!(html.contains("font-size:11px"));
-        // ohne Specs: Mail normal
-        let text2 = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &BTreeMap::new());
+        assert!(text.contains("Filter: system boards · RTX"));
+        let html = build_mail_html(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs, &label);
+        assert!(html.contains("LENOVO CLEARANCE-TRACKER"));
+        assert!(html.contains("display:inline-block;background:#f1f3f5")); // Chip
+        assert!(html.contains("DPK: WIN"));
+        assert!(html.contains("system boards · RTX"));
+        assert!(html.contains("+20")); // Delta-Badge
+        assert!(html.contains("2026-11-19 00:00:00 UTC")); // pretty_ts
+        assert!(html.contains("Clearance-Sale ansehen"));
+        // ohne Specs: Mail normal, keine Chips
+        let text2 = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &BTreeMap::new(), &label);
         assert!(!text2.contains("DPK"));
+        let html2 = build_mail_html(&diff, "https://example.com", "2026-11-19T00:00:00Z", &BTreeMap::new(), &label);
+        assert!(!html2.contains("background:#f1f3f5"));
     }
 
     #[test]
