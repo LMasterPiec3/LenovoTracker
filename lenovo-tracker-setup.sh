@@ -88,6 +88,7 @@ CONF_DIR="/etc/lenovotracker"
 STATE_DIR="/var/lib/lenovotracker"
 LOG_FILE="/var/log/lenovo-tracker.log"
 HOST_BIN="/root/lenovo-tracker-rs"
+RELEASE_URL="https://github.com/LMasterPiec3/LenovoTracker/releases/latest/download/lenovo-tracker"
 
 REPO_RAW="${REPO_RAW:-https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/${REPO_REF:-main}}"
 MAIL_FROM="${MAIL_FROM:-Lenovo@aomme.de}"
@@ -100,6 +101,7 @@ COMMODITY_KEYS="${COMMODITY_KEYS:-system boards}"
 KEYWORDS="${KEYWORDS:-}"
 FORCE="${FORCE:-0}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
+BUILD_METHOD="${BUILD_METHOD:-release}"   # release (GitHub-Download) | build (Build-CT erzwingen)
 NONINTERACTIVE="${NONINTERACTIVE:-0}"
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${0}}")" 2>/dev/null && pwd || echo "")"
@@ -269,6 +271,30 @@ ui_ct_exists() {  # rc 0 = neu aufbauen
 }
 
 # ------------------------------- Unterkommandos ------------------------------
+build_in_ct() {  # Fallback: Binary im temporären Build-CT bauen
+  fetch_sources
+  msg_info "Build-CT ${BUILD_VMID} vorbereiten (Fallback-Build)"
+  pct destroy "${BUILD_VMID}" --purge >/dev/null 2>&1 || true
+  spin_run "Build-CT anlegen" pct create "${BUILD_VMID}" "$1" \
+    --hostname rust-build --memory "${BUILD_RAM}" --cores 4 --swap 512 \
+    --net0 "${NET0/${VMID}/${BUILD_VMID}}" \
+    --rootfs "${BUILD_DISK}" --unprivileged 1 --start 1
+  if ! wait_ct "${BUILD_VMID}"; then die "Build-CT startet nicht"; fi
+  msg_ok "Build-CT läuft"
+  spin_run "Rust-Toolchain installieren (kein OpenSSL/cmake/go)" \
+    pct exec "${BUILD_VMID}" -- sh -c 'apk update -q && apk add -q rust cargo build-base pkgconf musl-dev ca-certificates'
+  msg_info "Quellen übertragen + bauen (12 Unit-Tests inklusive)"
+  pct exec "${BUILD_VMID}" -- mkdir -p /build/src
+  pct push "${BUILD_VMID}" "$SRC_CARGO" /build/Cargo.toml
+  pct push "${BUILD_VMID}" "$SRC_MAIN" /build/src/main.rs
+  spin_run "cargo build --release" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo build --release'
+  spin_run "cargo test --release (12 Tests)" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo test --release 2>&1 | grep "test result"'
+  pct pull "${BUILD_VMID}" /build/target/release/lenovo-tracker "$HOST_BIN"
+  command -v strip >/dev/null 2>&1 && strip -s "$HOST_BIN" || true
+  pct destroy "${BUILD_VMID}" --purge >/dev/null
+  msg_ok "Binary gebaut: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B) – Build-CT entfernt"
+}
+
 cmd_setup() {
   local tpl; tpl="$(prereq)"
 
@@ -297,34 +323,25 @@ cmd_setup() {
     msg_warn "Whiptail/TTY nicht verfügbar – fahre mit Env-Defaults fort (NONINTERACTIVE)."
   fi
 
-  fetch_sources
-
-  # ---------- 1) Binary bauen ----------
-  if [[ "$SKIP_BUILD" == "1" && -f "$HOST_BIN" ]]; then
+  # ---------- 1) Binary besorgen (GitHub-Release → lokal → Build-CT-Fallback) ----------
+  local bin_ok=0
+  if [[ "$BUILD_METHOD" != "build" ]]; then
+    msg_info "1/6  Binary von GitHub Releases laden (kein Build-CT nötig)"
+    if spin_run "Release-Download" ct_download "$RELEASE_URL" "${HOST_BIN}.tmp" && [[ -s "${HOST_BIN}.tmp" ]]; then
+      mv "${HOST_BIN}.tmp" "$HOST_BIN" && chmod +x "$HOST_BIN"
+      msg_ok "Binary aus Releases: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B)"
+      bin_ok=1
+    else
+      msg_warn "Release-Download fehlgeschlagen (kein Release-Asset yet?) – Build-CT-Fallback"
+      rm -f "${HOST_BIN}.tmp"
+    fi
+  fi
+  if [[ $bin_ok -eq 0 && "$SKIP_BUILD" == "1" && -f "$HOST_BIN" ]]; then
     msg_ok "SKIP_BUILD=1 – nutze vorhandenes Binary ${HOST_BIN}"
-  else
-    msg_info "1/6  Build-CT ${BUILD_VMID} vorbereiten"
-    pct destroy "${BUILD_VMID}" --purge >/dev/null 2>&1 || true
-    spin_run "Build-CT ${BUILD_VMID} anlegen" pct create "${BUILD_VMID}" "$tpl" \
-      --hostname rust-build --memory "${BUILD_RAM}" --cores 4 --swap 512 \
-      --net0 "${NET0/${VMID}/${BUILD_VMID}}" \
-      --rootfs "${BUILD_DISK}" --unprivileged 1 --start 1
-    if ! wait_ct "${BUILD_VMID}"; then die "Build-CT startet nicht"; fi
-    msg_ok "Build-CT läuft"
-
-    spin_run "Rust-Toolchain installieren (kein OpenSSL/cmake/go)" \
-      pct exec "${BUILD_VMID}" -- sh -c 'apk update -q && apk add -q rust cargo build-base pkgconf musl-dev ca-certificates'
-
-    msg_info "1/6  Quellen übertragen + bauen (12 Unit-Tests inklusive)"
-    pct exec "${BUILD_VMID}" -- mkdir -p /build/src
-    pct push "${BUILD_VMID}" "$SRC_CARGO" /build/Cargo.toml
-    pct push "${BUILD_VMID}" "$SRC_MAIN" /build/src/main.rs
-    spin_run "cargo build --release" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo build --release'
-    spin_run "cargo test --release (12 Tests)" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo test --release 2>&1 | grep "test result"'
-    pct pull "${BUILD_VMID}" /build/target/release/lenovo-tracker "$HOST_BIN"
-    command -v strip >/dev/null 2>&1 && strip -s "$HOST_BIN" || true
-    pct destroy "${BUILD_VMID}" --purge >/dev/null
-    msg_ok "Binary gebaut: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B) – Build-CT entfernt"
+    bin_ok=1
+  fi
+  if [[ $bin_ok -eq 0 ]]; then
+    build_in_ct "$tpl"
   fi
 
   # ---------- 2) Produktions-CT ----------

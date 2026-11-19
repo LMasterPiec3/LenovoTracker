@@ -1,0 +1,6 @@
+# Cross-Compile für den Alpine-Container (musl) direkt aus der Codebase:
+# alle Dependencies sind pure Rust (kein OpenSSL seit der TLS-Entfernung),
+# daher genügt rust-lld als Linker — kein musl-GCC nötig.
+# Build:  cargo build --release --target x86_64-unknown-linux-musl
+[target.x86_64-unknown-linux-musl]
+linker = "rust-lld"
