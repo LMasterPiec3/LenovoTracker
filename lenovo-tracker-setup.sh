@@ -5,26 +5,32 @@
 #  Läuft auf dem PVE-Host und richtet alles ein (im Stil der bekannten
 #  Proxmox-Community-Helper-Scripts):
 #
-#    1. Build-CT (temporär) erstellen, Rust-Toolchain installieren,
+#    1. Quellen laden (lokales Repo bevorzugt, sonst GitHub raw)
+#    2. Build-CT (temporär) erstellen, Rust-Toolchain installieren,
 #       Binary bauen + Tests laufen lassen, Binary auf den Host ziehen
-#    2. Produktions-CT (Alpine, minimal) erstellen
-#    3. Binary + curl-impersonate (Chrome-TLS-Imitation) installieren
-#    4. Config (/etc/lenovotracker/config.toml) generieren
-#    5. Cron (*/30) via busybox-crond (init-überwacht) einrichten
-#    6. Verifikation (--dry-run gegen die Live-API)
+#    3. Produktions-CT (Alpine, minimal) erstellen
+#    4. Binary + curl-impersonate (Chrome-TLS-Imitation) installieren
+#    5. Config (/etc/lenovotracker/config.toml) generieren
+#    6. Cron (*/30) via busybox-crond (init-überwacht) + Verifikation
 #
-#  Aufruf (auf dem PVE-Host, im Repo-Verzeichnis):
+#  Der Klassiker (auf dem Proxmox-Host):
+#    bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
+#
+#  Oder mit Repo-Klon:
 #    bash lenovo-tracker-setup.sh                 # komplettes Setup
 #    SKIP_BUILD=1 bash lenovo-tracker-setup.sh    # vorhandenes Binary nutzen
 #    FORCE=1 bash lenovo-tracker-setup.sh         # existierenden CT löschen+neu
 #    VMID=110 BUILD_VMID=111 bash lenovo-tracker-setup.sh   # eigene IDs
 #
-#  Weitere Unterkommandos:
-#    bash lenovo-tracker-setup.sh --probe [VMID]  # API-Parameter-Matrix testen
-#    bash lenovo-tracker-setup.sh --peak [VMID]   # Peak-RAM messen (CT-Restart)
-#    bash lenovo-tracker-setup.sh --uninstall     # CT + Host-Artefakte entfernen
+#  Weitere Unterkommandos (funktionieren auch im One-Liner):
+#    … --probe [VMID]   # API-Parameter-Matrix testen
+#    … --peak [VMID]    # Peak-RAM messen (CT-Restart)
+#    … --uninstall      # CT + Host-Artefakte entfernen
 #
 #  Alle Werte sind per Umgebungsvariable übersteuerbar (siehe DEFAULTS unten).
+#
+#  Lizenz: MIT – free to use (siehe LICENSE im Repo).
+#  Copyright (c) 2026 LMasterPiec3
 # ============================================================================
 set -euo pipefail
 
@@ -58,6 +64,8 @@ CONF_DIR="/etc/lenovotracker"
 STATE_DIR="/var/lib/lenovotracker"
 LOG_FILE="/var/log/lenovo-tracker.log"
 HOST_BIN="/root/lenovo-tracker-rs"
+
+REPO_RAW="${REPO_RAW:-https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/${REPO_REF:-main}}"
 
 MAIL_FROM="${MAIL_FROM:-Lenovo@aomme.de}"
 MAIL_TO="${MAIL_TO:-Lenovo@aomme.de}"
@@ -110,16 +118,37 @@ ct_download() {  # curl- oder wget-Fallback auf dem Host
 prereq() {
   [[ $EUID -eq 0 ]] || die "Bitte als root ausführen (pct braucht root)."
   command -v pct >/dev/null 2>&1 || die "pct nicht gefunden – das Script gehört auf einen Proxmox-VE-Host."
-  [[ -f "${REPO_DIR}/rust-tracker/Cargo.toml" && -f "${REPO_DIR}/rust-tracker/src/main.rs" ]] \
-    || die "Repo unvollständig: ${REPO_DIR}/rust-tracker/{Cargo.toml,src/main.rs} fehlt."
   local tpl; tpl="$(template_path)"
   [[ -n "$tpl" ]] || die "Kein Alpine-Template in /var/lib/vz/template/cache/ – erst laden (pveam)."
   echo "$tpl"
 }
 
+# Quellen: lokales Repo bevorzugen, sonst von GitHub raw laden
+# (damit der curl-One-Liner ohne Repo-Klon funktioniert).
+SRC_CARGO=""; SRC_MAIN=""
+fetch_sources() {
+  if [[ -f "${REPO_DIR}/rust-tracker/Cargo.toml" && -f "${REPO_DIR}/rust-tracker/src/main.rs" ]]; then
+    SRC_CARGO="${REPO_DIR}/rust-tracker/Cargo.toml"
+    SRC_MAIN="${REPO_DIR}/rust-tracker/src/main.rs"
+    ok "Quellen: lokales Repo (${REPO_DIR})"
+    return
+  fi
+  local tmp="/root/.lenovo-tracker-src"
+  msg "Quellen von GitHub laden (${REPO_RAW})"
+  rm -rf "$tmp" && mkdir -p "$tmp"
+  ct_download "${REPO_RAW}/rust-tracker/Cargo.toml" "${tmp}/Cargo.toml"
+  ct_download "${REPO_RAW}/rust-tracker/src/main.rs" "${tmp}/main.rs"
+  [[ -s "${tmp}/Cargo.toml" && -s "${tmp}/main.rs" ]] \
+    || die "Quellen nicht ladbar von ${REPO_RAW} – Repo public? REPO_RAW/REPO_REF prüfen."
+  SRC_CARGO="${tmp}/Cargo.toml"
+  SRC_MAIN="${tmp}/main.rs"
+  ok "Quellen geladen (main.rs $(stat -c %s "$SRC_MAIN") B)"
+}
+
 # ------------------------------- Unterkommandos ------------------------------
 cmd_setup() {
   local tpl; tpl="$(prereq)"
+  fetch_sources
   echo -e "${BLUE}"
   echo "  ╔══════════════════════════════════════════════════════════╗"
   echo "  ║   Lenovo Clearance-Tracker – Proxmox-Setup               ║"
@@ -150,8 +179,8 @@ cmd_setup() {
 
     msg "1/6  Quellen übertragen + bauen (12 Unit-Tests inklusive)"
     pct exec "${BUILD_VMID}" -- mkdir -p /build/src
-    pct push "${BUILD_VMID}" "${REPO_DIR}/rust-tracker/Cargo.toml" /build/Cargo.toml
-    pct push "${BUILD_VMID}" "${REPO_DIR}/rust-tracker/src/main.rs" /build/src/main.rs
+    pct push "${BUILD_VMID}" "$SRC_CARGO" /build/Cargo.toml
+    pct push "${BUILD_VMID}" "$SRC_MAIN" /build/src/main.rs
     pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo build --release 2>&1 | tail -1'
     pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo test --release 2>&1 | grep "test result"'
     pct pull "${BUILD_VMID}" /build/target/release/lenovo-tracker "$HOST_BIN"
@@ -326,14 +355,20 @@ cmd_uninstall() {
 }
 
 cmd_help() {
-  sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,48p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
-case "${1:-setup}" in
+# bash -c "$(curl …)" --probe legt das Argument in $0 (nicht $1) — beides akzeptieren:
+ARGS=()
+[[ "${0:-}" == --* ]] && ARGS+=("$0")
+ARGS+=("$@")
+MODE="${ARGS[0]:-setup}"
+
+case "$MODE" in
   setup)        cmd_setup ;;
-  --probe)      cmd_probe "${2:-$VMID}" ;;
-  --peak)       cmd_peak "${2:-$VMID}" ;;
+  --probe)      cmd_probe "${ARGS[1]:-$VMID}" ;;
+  --peak)       cmd_peak "${ARGS[1]:-$VMID}" ;;
   --uninstall)  cmd_uninstall ;;
   --help|-h)    cmd_help ;;
-  *)            err "Unbekanntes Kommando: $1 (siehe --help)"; exit 1 ;;
+  *)            err "Unbekanntes Kommando: $MODE (siehe --help)"; exit 1 ;;
 esac

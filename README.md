@@ -30,8 +30,24 @@ Mailversände aktualisieren den State nicht (Anstieg wird erneut gemeldet).
 
 ## Schnellstart (Proxmox-Host)
 
+**Der Klassiker** — eine Zeile, lädt das Script direkt von GitHub (Repo muss
+public sein, Quellen werden automatisch von GitHub raw nachgeladen):
+
 ```bash
-# Repo auf den Host bringen (git clone oder scp), dann:
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
+```
+
+Mit Parametern (Environment-Variablen funktionieren wie gehabt):
+
+```bash
+VMID=110 KEYWORDS="RTX" MAIL_TO="du@example.de" \
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
+```
+
+**Oder mit Repo-Klon** (lokales Repo wird bevorzugt — praktisch für Entwicklung):
+
+```bash
+git clone https://github.com/LMasterPiec3/LenovoTracker.git && cd LenovoTracker
 bash lenovo-tracker-setup.sh
 ```
 
@@ -54,7 +70,13 @@ Dry-Run-Verifikation.
 | `FORCE=1` | – | existierenden CT löschen + neu aufbauen |
 | `SKIP_BUILD=1` | – | vorhandenes `/root/lenovo-tracker-rs` nutzen |
 
-Weitere Kommandos:
+Weitere Kommandos (funktionieren auch im One-Liner):
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)" --probe 105
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)" --peak 105
+bash lenovo-tracker-setup.sh --uninstall    # bei Repo-Klon
+```
 
 ```bash
 bash lenovo-tracker-setup.sh --probe 105    # API-Parameter-Matrix live testen
@@ -138,6 +160,12 @@ cargo build --release
 ```
 
 Release-Profil: `opt-level=z`, LTO, `codegen-units=1`, `strip`, `panic=abort`.
+
+## Lizenz
+
+**MIT** — free to use. Siehe [LICENSE](LICENSE).
+
+Copyright © 2026 LMasterPiec3
 
 ## Troubleshooting
 
