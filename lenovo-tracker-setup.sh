@@ -2,61 +2,83 @@
 # ============================================================================
 #  Lenovo Clearance-Sale Mainboard-Tracker – Proxmox-Helper-Setup
 # ----------------------------------------------------------------------------
-#  Läuft auf dem PVE-Host und richtet alles ein (im Stil der bekannten
-#  Proxmox-Community-Helper-Scripts):
+#  Im Stil der Proxmox-Community-Helper-Scripts: interaktives Menü, Spinner,
+#  Settings-Box – läuft auf dem PVE-Host und richtet alles ein:
 #
 #    1. Quellen laden (lokales Repo bevorzugt, sonst GitHub raw)
-#    2. Build-CT (temporär) erstellen, Rust-Toolchain installieren,
-#       Binary bauen + Tests laufen lassen, Binary auf den Host ziehen
-#    3. Produktions-CT (Alpine, minimal) erstellen
-#    4. Binary + curl-impersonate (Chrome-TLS-Imitation) installieren
-#    5. Config (/etc/lenovotracker/config.toml) generieren
-#    6. Cron (*/30) via busybox-crond (init-überwacht) + Verifikation
+#    2. Build-CT (temporär) – Rust-Toolchain, Binary, 12 Unit-Tests
+#    3. Produktions-CT (Alpine, minimal)
+#    4. Binary + curl-impersonate (Chrome-TLS-Imitation)
+#    5. Config /etc/lenovotracker/config.toml
+#    6. Cron (*/30, init-überwacht) + Dry-Run-Verifikation
 #
 #  Der Klassiker (auf dem Proxmox-Host):
 #    bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
 #
-#  Oder mit Repo-Klon:
-#    bash lenovo-tracker-setup.sh                 # komplettes Setup
-#    SKIP_BUILD=1 bash lenovo-tracker-setup.sh    # vorhandenes Binary nutzen
-#    FORCE=1 bash lenovo-tracker-setup.sh         # existierenden CT löschen+neu
-#    VMID=110 BUILD_VMID=111 bash lenovo-tracker-setup.sh   # eigene IDs
+#  Unterkommandos (auch im One-Liner):
+#    … --probe [VMID]    API-Parameter-Matrix live testen
+#    … --peak [VMID]     Peak-RAM messen (CT-Restart)
+#    … --uninstall       CT + Host-Artefakte entfernen
+#    … --help            Usage
 #
-#  Weitere Unterkommandos (funktionieren auch im One-Liner):
-#    … --probe [VMID]   # API-Parameter-Matrix testen
-#    … --peak [VMID]    # Peak-RAM messen (CT-Restart)
-#    … --uninstall      # CT + Host-Artefakte entfernen
-#
-#  Alle Werte sind per Umgebungsvariable übersteuerbar (siehe DEFAULTS unten).
+#  Automatisierung: NONINTERACTIVE=1 (keine Prompts, nur Env/Defaults)
+#  Env-Overrides: VMID BUILD_VMID RAM SWAP CPULIMIT DISK NET0 MAIL_FROM …
 #
 #  Lizenz: MIT – free to use (siehe LICENSE im Repo).
 #  Copyright (c) 2026 LMasterPiec3
 # ============================================================================
-set -euo pipefail
+set -uo pipefail
 
 # --------------------------------- Farben -----------------------------------
-RED='\033[1;31m'; GREEN='\033[1;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'; NC='\033[0m'
-msg()  { echo -e "${BLUE}⏳${NC} $*"; }
-ok()   { echo -e "${GREEN}✓${NC} $*"; }
-warn() { echo -e "${YELLOW}⚠${NC} $*"; }
-err()  { echo -e "${RED}✗${NC} $*" >&2; }
-die()  { err "$*"; exit 1; }
+RED='\033[1;31m'; GREEN='\033[1;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
+BOLD='\033[1m'; NC='\033[0m'
+C_INFO=$BLUE; C_OK=$GREEN; C_ERR=$RED; C_WARN=$YELLOW; C_HEAD=$BOLD
+
+msg_info()  { echo -e "  ${C_INFO}⏳ ${*}${NC}"; }
+msg_ok()    { echo -e "  ${C_OK}✔ ${*}${NC}"; }
+msg_error() { echo -e "  ${C_ERR}✗ ${*}${NC}" >&2; }
+msg_warn()  { echo -e "  ${C_WARN}⚠ ${*}${NC}"; }
+die()       { msg_error "$*"; exit 1; }
+
+LAST_LOG="/tmp/.lenovo-setup-last.log"
+
+# Spinner um einen Hintergrund-Job (Output → $LAST_LOG, bei Fehler Tail-Ausgabe)
+spin_run() {
+  local desc="$1"; shift
+  printf "  ${C_INFO}⏳ %s ...${NC}" "$desc"
+  local rc=0
+  ( "$@" ) >"$LAST_LOG" 2>&1 &
+  local pid=$!
+  local spin='|/-\' i=0
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r  ${C_INFO}⏳ %s %s${NC}   " "$desc" "${spin:$((i % 4)):1}"
+    i=$((i + 1)); sleep 0.12
+  done
+  wait "$pid" 2>/dev/null; rc=$?
+  if [[ $rc -eq 0 ]]; then
+    printf "\r  ${C_OK}✔ %s${NC}                          \n" "$desc"
+  else
+    printf "\r  ${C_ERR}✗ %s (rc=%s)${NC}                          \n" "$desc" "$rc"
+    tail -6 "$LAST_LOG" | sed 's/^/      /'
+  fi
+  return $rc
+}
 
 # --------------------------------- Defaults ---------------------------------
 VMID="${VMID:-105}"
 BUILD_VMID="${BUILD_VMID:-104}"
 CT_HOSTNAME="${CT_HOSTNAME:-lenovo-tracker-rust}"
-RAM="${RAM:-32}"              # MB – Peak liegt gemessen bei ~20 MB
-SWAP="${SWAP:-32}"            # MB – Überlauf-Puffer
+RAM="${RAM:-32}"
+SWAP="${SWAP:-32}"
 CPULIMIT="${CPULIMIT:-0.25}"
-DISK="${DISK:-local:0.05}"    # ~50 MB Rootfs (Alpine + Binaries + ~10 MB Luft)
+DISK="${DISK:-local:0.05}"
 BRIDGE="${BRIDGE:-vmbr1}"
 GATEWAY="${GATEWAY:-10.10.10.1}"
-BASE_IP="${BASE_IP:-10.10.10}"   # CT bekommt ${BASE_IP}.${VMID}/24
+BASE_IP="${BASE_IP:-10.10.10}"
 NET0="${NET0:-name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth}"
 BUILD_RAM="${BUILD_RAM:-3072}"
 BUILD_DISK="${BUILD_DISK:-local:4}"
-CI_VERSION="${CI_VERSION:-v2.3.2}"   # curl-impersonate Release (musl)
+CI_VERSION="${CI_VERSION:-v2.3.2}"
 CI_URL="https://github.com/lexiforest/curl-impersonate/releases/download/${CI_VERSION}/curl-impersonate-${CI_VERSION}.x86_64-linux-musl.tar.gz"
 
 APP_DIR="/opt/lenovo-tracker"
@@ -66,7 +88,6 @@ LOG_FILE="/var/log/lenovo-tracker.log"
 HOST_BIN="/root/lenovo-tracker-rs"
 
 REPO_RAW="${REPO_RAW:-https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/${REPO_REF:-main}}"
-
 MAIL_FROM="${MAIL_FROM:-Lenovo@aomme.de}"
 MAIL_TO="${MAIL_TO:-Lenovo@aomme.de}"
 EXTRA_RECIPIENTS="${EXTRA_RECIPIENTS:-}"
@@ -74,11 +95,12 @@ SUBJECT_PREFIX="${SUBJECT_PREFIX:-[Lenovo Tracker]}"
 SMTP_HOST="${SMTP_HOST:-mail.protonmail.ch}"
 SMTP_PORT="${SMTP_PORT:-25}"
 COMMODITY_KEYS="${COMMODITY_KEYS:-system boards}"
-KEYWORDS="${KEYWORDS:-}"     # Komma-Liste, z. B. "RTX" oder "RTX,B650" – leer = alle Mainboards
+KEYWORDS="${KEYWORDS:-}"
 FORCE="${FORCE:-0}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
+NONINTERACTIVE="${NONINTERACTIVE:-0}"
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${0}}")" 2>/dev/null && pwd || echo "")"
 
 # ------------------------------- Hilfsfunktionen -----------------------------
 template_path() {
@@ -86,10 +108,8 @@ template_path() {
 }
 
 toml_array() {
-  # "a,b,c" -> '["a", "b", "c"]', leer -> "[]"
-  local in="${1// /}"
+  local in="${1// /}" out="" p
   if [[ -z "$in" ]]; then echo "[]"; return; fi
-  local out=""
   IFS=',' read -ra parts <<< "$in"
   for p in "${parts[@]}"; do
     [[ -z "$p" ]] && continue
@@ -102,17 +122,47 @@ wait_ct() {
   local id="$1" i=0
   until pct exec "$id" -- true >/dev/null 2>&1; do
     sleep 2; i=$((i+2))
-    if [[ $i -ge 60 ]]; then die "CT $id startet nicht (60 s Timeout)"; fi
+    if [[ $i -ge 60 ]]; then return 1; fi
   done
+  return 0
 }
 
-ct_download() {  # curl- oder wget-Fallback auf dem Host
+ct_download() {
   local url="$1" out="$2"
-  if command -v curl >/dev/null 2>&1; then
-    curl -sSfL -o "$out" "$url"
-  else
-    wget -qO "$out" "$url"
+  if command -v curl >/dev/null 2>&1; then curl -sSfL -o "$out" "$url"; else wget -qO "$out" "$url"; fi
+}
+
+ask() {  # ask VARNAME "Prompt" "Default"  (non-tty → Default)
+  local input=""
+  if [[ -t 0 ]]; then
+    read -rp "  ${C_INFO}→ ${2} [${3}]: ${NC}" input || input=""
   fi
+  input="${input:-$3}"
+  printf -v "$1" '%s' "$input"
+}
+
+confirm() {  # confirm "Frage" default(j|n)  → rc 0 = ja
+  local d="${2:-n}" a=""
+  if [[ ! -t 0 ]]; then [[ "$d" == "j" ]]; return; fi
+  read -rp "  ${C_INFO}→ ${1} [${d^^}]: ${NC}" a || a=""
+  a="${a:-$d}"
+  [[ "$a" =~ ^[JjYy] ]]
+}
+
+header_info() {
+  clear
+  echo -e "${GREEN}"
+  cat <<'BANNER'
+ _                          _____                    _
+| |                        |_   _|                  | |
+| |     ___  _ __   _   _    | |_  _ ____   ____ _  | | __ _ _   _
+| |    / _ \| '_ \ | | | |   | | | | |_  / / _  |  | |/ _  | | | |
+| |___| (_) | | | || |_| |  _| | |_| |/ / | (_| |  | | (_| | |_| |
+\_____|\___/|_| |_|\__, |  \___/\__,_/____|\__,_|  |_|\__,_|\__, |
+                   |___/                                    |___/
+BANNER
+  echo -e "${NC}  ${C_HEAD}Clearance-Sale Mainboard-Tracker${NC} – Proxmox-Setup  ${C_OK}(MIT, free to use)${NC}"
+  echo
 }
 
 prereq() {
@@ -123,98 +173,138 @@ prereq() {
   echo "$tpl"
 }
 
-# Quellen: lokales Repo bevorzugen, sonst von GitHub raw laden
+# Quellen: lokales Repo bevorzugt, sonst von GitHub raw laden
 # (damit der curl-One-Liner ohne Repo-Klon funktioniert).
 SRC_CARGO=""; SRC_MAIN=""
 fetch_sources() {
   if [[ -f "${REPO_DIR}/rust-tracker/Cargo.toml" && -f "${REPO_DIR}/rust-tracker/src/main.rs" ]]; then
     SRC_CARGO="${REPO_DIR}/rust-tracker/Cargo.toml"
     SRC_MAIN="${REPO_DIR}/rust-tracker/src/main.rs"
-    ok "Quellen: lokales Repo (${REPO_DIR})"
+    msg_ok "Quellen: lokales Repo (${REPO_DIR})"
     return
   fi
   local tmp="/root/.lenovo-tracker-src"
-  msg "Quellen von GitHub laden (${REPO_RAW})"
+  msg_info "Quellen von GitHub laden (${REPO_RAW})"
   rm -rf "$tmp" && mkdir -p "$tmp"
-  ct_download "${REPO_RAW}/rust-tracker/Cargo.toml" "${tmp}/Cargo.toml"
-  ct_download "${REPO_RAW}/rust-tracker/src/main.rs" "${tmp}/main.rs"
+  ct_download "${REPO_RAW}/rust-tracker/Cargo.toml" "${tmp}/Cargo.toml" || die "Cargo.toml nicht ladbar von ${REPO_RAW}"
+  ct_download "${REPO_RAW}/rust-tracker/src/main.rs" "${tmp}/main.rs" || die "main.rs nicht ladbar von ${REPO_RAW}"
   [[ -s "${tmp}/Cargo.toml" && -s "${tmp}/main.rs" ]] \
     || die "Quellen nicht ladbar von ${REPO_RAW} – Repo public? REPO_RAW/REPO_REF prüfen."
   SRC_CARGO="${tmp}/Cargo.toml"
   SRC_MAIN="${tmp}/main.rs"
-  ok "Quellen geladen (main.rs $(stat -c %s "$SRC_MAIN") B)"
+  msg_ok "Quellen geladen (main.rs $(stat -c %s "$SRC_MAIN") B)"
+}
+
+# ------------------------------- Interaktive UI ------------------------------
+ui_config() {
+  local mode="1"
+  if [[ -t 0 && "$NONINTERACTIVE" != "1" ]]; then
+    echo "  ${C_HEAD}1)${NC} Standard-Setup    (empfohlene Defaults, nur bestätigen)"
+    echo "  ${C_HEAD}2)${NC} Erweitert         (alles einzeln abfragen)"
+    echo "  ${C_HEAD}0)${NC} Abbrechen"
+    ask MODECHOICE "Auswahl" "1"
+    mode="$MODECHOICE"
+    [[ "$mode" == "0" ]] && die "Abgebrochen."
+    if [[ "$mode" == "2" ]]; then
+      ask VMID "CT-ID (Produktion)" "$VMID"
+      ask BUILD_VMID "CT-ID (temporärer Build)" "$BUILD_VMID"
+      ask CT_HOSTNAME "Hostname" "$CT_HOSTNAME"
+      ask RAM "RAM in MB" "$RAM"
+      ask SWAP "Swap in MB" "$SWAP"
+      ask CPULIMIT "CPU-Limit" "$CPULIMIT"
+      ask DISK "Rootfs" "$DISK"
+      ask BRIDGE "Bridge" "$BRIDGE"
+      ask BASE_IP "IP-Basis (CT bekommt x.x.x.\$VMID)" "$BASE_IP"
+      ask MAIL_FROM "Mail von" "$MAIL_FROM"
+      ask MAIL_TO "Mail an" "$MAIL_TO"
+      ask SMTP_HOST "SMTP-Host" "$SMTP_HOST"
+      ask SMTP_PORT "SMTP-Port" "$SMTP_PORT"
+      ask COMMODITY_KEYS "Commodity-Keys (Komma)" "$COMMODITY_KEYS"
+      ask KEYWORDS "Keyword-Filter (Komma, leer = alle)" "$KEYWORDS"
+      NET0="name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth"
+    fi
+    echo
+  fi
+
+  # Settings-Box
+  echo -e "  ${C_HEAD}┌───────────────────── Einstellungen ─────────────────────┐${NC}"
+  echo -e "  │ ${C_INFO}CT:${NC} ${BOLD}${VMID}${NC} (${CT_HOSTNAME})   ${C_INFO}Build-CT:${NC} ${BUILD_VMID}              "
+  echo -e "  │ ${C_INFO}RAM:${NC} ${RAM} MB + ${SWAP} MB Swap   ${C_INFO}CPU-Limit:${NC} ${CPULIMIT}   ${C_INFO}Disk:${NC} ${DISK}"
+  echo -e "  │ ${C_INFO}Netz:${NC} ${BRIDGE} · ${BASE_IP}.${VMID}/24"
+  echo -e "  │ ${C_INFO}Mail:${NC} ${MAIL_FROM} → ${MAIL_TO}"
+  echo -e "  │ ${C_INFO}SMTP:${NC} ${SMTP_HOST}:${SMTP_PORT}"
+  echo -e "  │ ${C_INFO}Filter:${NC} ${COMMODITY_KEYS}  ${C_INFO}Keywords:${NC} ${KEYWORDS:-alle}"
+  echo -e "  └─────────────────────────────────────────────────────────┘"
+  if [[ -t 0 && "$NONINTERACTIVE" != "1" ]]; then
+    confirm "Weiter mit dem Setup?" "j" || die "Abgebrochen."
+  fi
+  echo
 }
 
 # ------------------------------- Unterkommandos ------------------------------
 cmd_setup() {
   local tpl; tpl="$(prereq)"
+  header_info
   fetch_sources
-  echo -e "${BLUE}"
-  echo "  ╔══════════════════════════════════════════════════════════╗"
-  echo "  ║   Lenovo Clearance-Tracker – Proxmox-Setup               ║"
-  echo "  ╚══════════════════════════════════════════════════════════╝"
-  echo -e "${NC}"
-  msg "CT ${VMID} (${CT_HOSTNAME}) · Build-CT ${BUILD_VMID} · RAM ${RAM} MB · Disk ${DISK}"
-  msg "Mail: ${MAIL_FROM} → ${MAIL_TO} via ${SMTP_HOST}:${SMTP_PORT}"
-  msg "Filter: commodity=[${COMMODITY_KEYS}] keywords=[${KEYWORDS:-alle}]"
+  ui_config
 
   # ---------- 1) Binary bauen ----------
   if [[ "$SKIP_BUILD" == "1" && -f "$HOST_BIN" ]]; then
-    ok "SKIP_BUILD=1 – nutze vorhandenes Binary ${HOST_BIN}"
+    msg_ok "SKIP_BUILD=1 – nutze vorhandenes Binary ${HOST_BIN}"
   else
-    msg "1/6  Build-CT ${BUILD_VMID} vorbereiten"
+    msg_info "1/6  Build-CT ${BUILD_VMID} vorbereiten"
     pct destroy "${BUILD_VMID}" --purge >/dev/null 2>&1 || true
-    pct create "${BUILD_VMID}" "$tpl" \
+    spin_run "Build-CT ${BUILD_VMID} anlegen" pct create "${BUILD_VMID}" "$tpl" \
       --hostname rust-build --memory "${BUILD_RAM}" --cores 4 --swap 512 \
       --net0 "${NET0/${VMID}/${BUILD_VMID}}" \
-      --rootfs "${BUILD_DISK}" --unprivileged 1 --start 1 >/dev/null
-    wait_ct "${BUILD_VMID}"
-    ok "Build-CT läuft"
+      --rootfs "${BUILD_DISK}" --unprivileged 1 --start 1
+    if ! wait_ct "${BUILD_VMID}"; then die "Build-CT startet nicht"; fi
+    msg_ok "Build-CT läuft"
 
-    msg "1/6  Rust-Toolchain installieren (kein OpenSSL/cmake/go nötig)"
-    pct exec "${BUILD_VMID}" -- sh -c \
-      'apk update -q && apk add -q rust cargo build-base pkgconf musl-dev ca-certificates' \
-      >/dev/null
-    ok "Toolchain bereit"
+    spin_run "Rust-Toolchain installieren (kein OpenSSL/cmake/go)" \
+      pct exec "${BUILD_VMID}" -- sh -c 'apk update -q && apk add -q rust cargo build-base pkgconf musl-dev ca-certificates'
 
-    msg "1/6  Quellen übertragen + bauen (12 Unit-Tests inklusive)"
+    msg_info "1/6  Quellen übertragen + bauen (12 Unit-Tests inklusive)"
     pct exec "${BUILD_VMID}" -- mkdir -p /build/src
     pct push "${BUILD_VMID}" "$SRC_CARGO" /build/Cargo.toml
     pct push "${BUILD_VMID}" "$SRC_MAIN" /build/src/main.rs
-    pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo build --release 2>&1 | tail -1'
-    pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo test --release 2>&1 | grep "test result"'
+    spin_run "cargo build --release" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo build --release'
+    spin_run "cargo test --release (12 Tests)" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo test --release 2>&1 | grep "test result"'
     pct pull "${BUILD_VMID}" /build/target/release/lenovo-tracker "$HOST_BIN"
     command -v strip >/dev/null 2>&1 && strip -s "$HOST_BIN" || true
     pct destroy "${BUILD_VMID}" --purge >/dev/null
-    ok "Binary gebaut: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B) – Build-CT entfernt"
+    msg_ok "Binary gebaut: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B) – Build-CT entfernt"
   fi
 
   # ---------- 2) Produktions-CT ----------
-  msg "2/6  Produktions-CT ${VMID} anlegen"
+  msg_info "2/6  Produktions-CT ${VMID} anlegen"
   if pct status "${VMID}" >/dev/null 2>&1; then
     if [[ "$FORCE" == "1" ]]; then
-      warn "CT ${VMID} existiert – FORCE=1: stoppe + lösche"
+      msg_warn "CT ${VMID} existiert – FORCE=1: stoppe + lösche"
+      pct stop "${VMID}" >/dev/null 2>&1 || true
+      pct destroy "${VMID}" --purge
+    elif confirm "CT ${VMID} existiert bereits – löschen und NEU aufbauen? (State/History geht verloren)" "n"; then
       pct stop "${VMID}" >/dev/null 2>&1 || true
       pct destroy "${VMID}" --purge
     else
-      die "CT ${VMID} existiert bereits. FORCE=1 für Neuaufbau (State geht verloren!) oder VMID ändern."
+      die "Abgebrochen – CT ${VMID} bleibt unangetastet."
     fi
   fi
-  pct create "${VMID}" "$tpl" \
+  spin_run "CT ${VMID} erstellen" pct create "${VMID}" "$tpl" \
     --hostname "${CT_HOSTNAME}" --memory "${RAM}" --swap "${SWAP}" --cpulimit "${CPULIMIT}" \
     --net0 "$NET0" --rootfs "${DISK}" --unprivileged 1 --onboot 1 \
-    --tags lenovo-tracker --start 1 >/dev/null
-  sleep 3; wait_ct "${VMID}"
-  ok "CT ${VMID} läuft"
+    --tags lenovo-tracker --start 1
+  sleep 3
+  if ! wait_ct "${VMID}"; then die "CT ${VMID} startet nicht"; fi
+  msg_ok "CT ${VMID} läuft"
 
   # ---------- 3) Binary + curl-impersonate ----------
-  msg "3/6  Binary + curl-impersonate installieren"
+  msg_info "3/6  Binary + curl-impersonate installieren"
   pct exec "${VMID}" -- mkdir -p "$APP_DIR" "$CONF_DIR" "$STATE_DIR"
   pct push "${VMID}" "$HOST_BIN" "${APP_DIR}/lenovo-tracker"
   pct exec "${VMID}" -- chmod +x "${APP_DIR}/lenovo-tracker"
   local ci_tar="/tmp/curl-impersonate-${CI_VERSION}.tar.gz"
-  msg "3/6  curl-impersonate ${CI_VERSION} laden"
-  ct_download "$CI_URL" "$ci_tar"
+  spin_run "curl-impersonate ${CI_VERSION} laden" ct_download "$CI_URL" "$ci_tar"
   rm -rf /tmp/ci-extract && mkdir -p /tmp/ci-extract
   tar xzf "$ci_tar" -C /tmp/ci-extract
   local ci_bin
@@ -223,11 +313,14 @@ cmd_setup() {
   pct push "${VMID}" "$ci_bin" "${APP_DIR}/curl-impersonate"
   pct exec "${VMID}" -- chmod +x "${APP_DIR}/curl-impersonate"
   rm -rf /tmp/ci-extract "$ci_tar"
-  pct exec "${VMID}" -- "${APP_DIR}/curl-impersonate" --version >/dev/null 2>&1 \
-    && ok "curl-impersonate einsatzbereit" || warn "curl-impersonate --version schlug fehl – prüfen!"
+  if pct exec "${VMID}" -- "${APP_DIR}/curl-impersonate" --version >/dev/null 2>&1; then
+    msg_ok "curl-impersonate einsatzbereit"
+  else
+    msg_warn "curl-impersonate --version schlug fehl – prüfen!"
+  fi
 
   # ---------- 4) Config ----------
-  msg "4/6  Config generieren (${CONF_DIR}/config.toml)"
+  msg_info "4/6  Config generieren (${CONF_DIR}/config.toml)"
   local cfg="/root/lenovotracker-config.toml"
   cat > "$cfg" <<EOF
 # Lenovo Clearance-Tracker – generiert von lenovo-tracker-setup.sh
@@ -258,41 +351,41 @@ state_dir = "${STATE_DIR}"
 EOF
   pct push "${VMID}" "$cfg" "${CONF_DIR}/config.toml"
   rm -f "$cfg"
-  ok "Config installiert"
+  msg_ok "Config installiert"
 
   # ---------- 5) Cron + Logging ----------
-  msg "5/6  Cron (*/30) + Logging einrichten"
+  msg_info "5/6  Cron (*/30) + Logging einrichten"
   pct exec "${VMID}" -- sh -c \
     "grep -q 'lenovo-tracker' /etc/crontabs/root 2>/dev/null || echo '*/30 * * * * ${APP_DIR}/lenovo-tracker --config ${CONF_DIR}/config.toml --once >> ${LOG_FILE} 2>&1' >> /etc/crontabs/root"
   pct exec "${VMID}" -- sh -c \
     "grep -q 'crond -f' /etc/inittab || echo '::respawn:/usr/sbin/crond -f -l 8 -c /etc/crontabs' >> /etc/inittab"
   pct exec "${VMID}" -- touch "$LOG_FILE"
-  # init re-read inittab (startet crond, falls noch nicht laufend)
   pct exec "${VMID}" -- sh -c 'kill -HUP 1 2>/dev/null || true' >/dev/null 2>&1 || true
-  ok "crond läuft init-überwacht (::respawn), Intervall */30"
+  msg_ok "crond läuft init-überwacht (::respawn), Intervall */30"
 
   # ---------- 6) Verifikation ----------
-  msg "6/6  Verifikation (--dry-run gegen die Live-API)"
+  msg_info "6/6  Verifikation (--dry-run gegen die Live-API)"
   local dry
   dry="$(pct exec "${VMID}" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --dry-run 2>&1 || true)"
   if echo "$dry" | grep -q "DRY-RUN"; then
-    ok "$dry"
+    msg_ok "$dry"
   else
-    warn "Dry-Run lieferte keine Daten (Akamai 403? Netzwerk?): $dry"
-    warn "Der Cron versucht es alle 30 Min erneut – Log: pct exec ${VMID} -- tail ${LOG_FILE}"
+    msg_warn "Dry-Run lieferte keine Daten (Akamai 403? Netzwerk?): $dry"
+    msg_warn "Der Cron versucht es alle 30 Min erneut – Log: pct exec ${VMID} -- tail ${LOG_FILE}"
   fi
 
   pct set "${VMID}" --onboot 1 --tags lenovo-tracker >/dev/null
+
   echo
   echo -e "${GREEN}  ╔══════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${GREEN}  ║   Setup fertig – Tracker läuft                           ║${NC}"
+  echo -e "${GREEN}  ║   ✔ Setup fertig – Tracker läuft                        ║${NC}"
   echo -e "${GREEN}  ╚══════════════════════════════════════════════════════════╝${NC}"
   echo
   echo "   CT ${VMID} · Cron */30 · State: ${STATE_DIR}/state.json · Log: ${LOG_FILE}"
-  echo "   Config:  pct exec ${VMID} -- vi ${CONF_DIR}/config.toml"
+  echo "   Config:    pct exec ${VMID} -- vi ${CONF_DIR}/config.toml"
   echo "   Test-Mail: pct exec ${VMID} -- ${APP_DIR}/lenovo-tracker --config ${CONF_DIR}/config.toml --test-mail"
   echo "   Peak messen: bash $0 --peak ${VMID}"
-  echo "   Erste Baseline wird beim ersten Cron-Lauf still gesetzt (keine Mail)."
+  echo "   Die erste Baseline setzt der erste Cron-Lauf still (keine Mail)."
   echo
 }
 
@@ -326,7 +419,7 @@ cmd_peak() {
   local id="${2:-$VMID}"
   local CG="/sys/fs/cgroup/lxc/${id}"
   [[ -f "${CG}/memory.peak" ]] || die "Cgroup-Pfad ${CG}/memory.peak nicht gefunden"
-  warn "CT ${id} wird neu gestartet (nullt den Cgroup-Peak) – kurze Unterbrechung"
+  msg_warn "CT ${id} wird neu gestartet (nullt den Cgroup-Peak) – kurze Unterbrechung"
   pct stop "$id" && pct start "$id" && sleep 5
   echo "== Peak-RAM-Messung (3 Läufe, Produktionsconfig) =="
   local peak max=0
@@ -337,21 +430,19 @@ cmd_peak() {
     echo "  Lauf $i: Peak kumulativ = $((peak/1024)) KB"
   done
   echo "  MAX: $((max/1024)) KB = $((max/1024/1024)) MB"
-  echo "(Neustart des CT setzt den Peak wieder auf 0 – Werte gelten für die gemessenen Läufe)"
 }
 
 cmd_uninstall() {
   prereq >/dev/null
-  if [[ "$FORCE" != "1" ]]; then
-    warn "Löscht CT ${VMID} inkl. State/History und Host-Binaries."
-    read -rp "Wirklich? (ja/NO): " a
-    [[ "$a" == "ja" ]] || { echo "Abbruch."; return; }
+  if [[ "$FORCE" != "1" && -t 0 ]]; then
+    confirm "Löscht CT ${VMID} inkl. State/History und Host-Binaries. Wirklich?" "n" || { echo "Abbruch."; return; }
   fi
   pct stop "${VMID}" >/dev/null 2>&1 || true
-  pct destroy "${VMID}" --purge && ok "CT ${VMID} entfernt"
+  pct destroy "${VMID}" --purge && msg_ok "CT ${VMID} entfernt"
   rm -f /root/lenovo-tracker-rs /root/lenovo-tracker-rs2 /root/lt-new \
-        /root/curl-impersonate /root/curl-impersonate-check /root/lenovotracker-config.toml
-  ok "Host-Artefakte entfernt"
+        /root/curl-impersonate /root/curl-impersonate-check /root/lenovotracker-config.toml \
+        /root/.lenovo-tracker-src
+  msg_ok "Host-Artefakte entfernt"
 }
 
 cmd_help() {
@@ -363,9 +454,10 @@ Der Klassiker (auf dem Proxmox-Host):
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
 
 Mit Repo-Klon:
-  bash lenovo-tracker-setup.sh                 # komplettes Setup
+  bash lenovo-tracker-setup.sh                 # interaktives Menü
+  NONINTERACTIVE=1 bash lenovo-tracker-setup.sh  # ohne Prompts (Env/Defaults)
   SKIP_BUILD=1 bash lenovo-tracker-setup.sh    # vorhandenes Binary nutzen
-  FORCE=1 bash lenovo-tracker-setup.sh         # existierenden CT löschen+neu (State verloren!)
+  FORCE=1 bash lenovo-tracker-setup.sh         # existierenden CT löschen+neu
   VMID=110 BUILD_VMID=111 bash lenovo-tracker-setup.sh   # eigene IDs
 
 Unterkommandos (auch im One-Liner):
@@ -375,7 +467,7 @@ Unterkommandos (auch im One-Liner):
 
 Env-Defaults (überschreibbar): VMID=105 BUILD_VMID=104 RAM=32 SWAP=32 CPULIMIT=0.25
   DISK=local:0.05 NET0 MAIL_FROM MAIL_TO EXTRA_RECIPIENTS SMTP_HOST SMTP_PORT
-  COMMODITY_KEYS KEYWORDS CI_VERSION FORCE SKIP_BUILD REPO_REF
+  COMMODITY_KEYS KEYWORDS CI_VERSION FORCE SKIP_BUILD REPO_REF NONINTERACTIVE
 
 Lizenz: MIT – free to use (siehe LICENSE). Copyright (c) 2026 LMasterPiec3
 EOF
@@ -383,7 +475,7 @@ EOF
 
 # bash -c "$(curl …)" --probe legt das Argument in $0 (nicht $1) — beides akzeptieren:
 ARGS=()
-[[ "${0:-}" == --* ]] && ARGS+=("$0")
+if [[ "${0:-}" == --* ]]; then ARGS+=("$0"); fi
 ARGS+=("$@")
 MODE="${ARGS[0]:-setup}"
 
@@ -393,5 +485,5 @@ case "$MODE" in
   --peak)       cmd_peak "${ARGS[1]:-$VMID}" ;;
   --uninstall)  cmd_uninstall ;;
   --help|-h)    cmd_help ;;
-  *)            err "Unbekanntes Kommando: $MODE (siehe --help)"; exit 1 ;;
+  *)            msg_error "Unbekanntes Kommando: $MODE (siehe --help)"; exit 1 ;;
 esac
