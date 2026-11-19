@@ -153,11 +153,14 @@ name_keywords = ["B650", "AM5"]   # optional; leer/entfernt = alle Mainboards
 
 Bei jedem Alarm lädt der Tracker für die gemailten Teile (Top-20 je Liste) die
 „Technischen Daten" nach — ein Batch-POST gegen `api/v4/lbom/parts/get`
-(siehe [Lenovo-API.md](Lenovo-API.md), §10) — und zeigt sie unter dem Teil an:
+(siehe [Lenovo-API.md](Lenovo-API.md), §10) — bereitet sie lesbar auf
+(kompakte CPU-Codes wie `intelI79750H` → „Intel Core i7-9750H", GPU
+DIS/UMA → „diskret"/„integriert", RAM aus dem `dram`-Attribut oder aus dem
+Namen) und zeigt sie in fester Reihenfolge unter dem Teil an:
 
 ```
   +2  02DC237  AMD R7 2700U mit Vega10 WIN YT  (3 → 5)
-      DPK: WIN | CPU: AMDR72700U | GPU Type: UMA
+      CPU: AMD Ryzen 7 2700U | GPU: integriert | DPK: WIN
 ```
 
 Schlägt der Detail-Abruf fehl, geht die Mail trotzdem raus (nur ohne Specs).

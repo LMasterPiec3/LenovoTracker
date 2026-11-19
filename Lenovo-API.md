@@ -272,6 +272,13 @@ Content-Type: application/json
 - **`specsAttributes[]`** ist die strukturierte Variante (`displayTitle`/`value`/
   `transKey`); die deutschen Labels kommen aus dem Translations-Bundle
   (`"gpu type" → "GPU-Typ"`, `"specs" → "Technische Daten"`)
+- Attribut-Vokabular (Stichprobe 60 Boards, 2026-11-19): `dpk` (49×), `cpu` (47×),
+  `gpu type` (48×), `amt` (23×), **`dram` (18× — RAM, wenn vorhanden)**,
+  `gpu name` (20×), `wlan` (2×). CPU-Werte sind komprimiert (`intelI79750H`,
+  `AMDR76850H-PRO`) — der Tracker beautifiziert sie (→ „Intel Core i7-9750H“,
+  „AMD Ryzen 7 6850H PRO“); GPU Type `DIS`/`UMA` wird zu „diskret“/„integriert“;
+  RAM kommt aus dem `dram`-Attribut oder wird aus dem Namen abgeleitet
+  („8 GB“/„16G“-Tokens, mit VRAM-Ausschluss bei diskreten GPUs)
 - Bekannte Attribut-Schlüssel aus dem Frontend: `DPK`, `CPU`, `GPU_TYPE`,
   `GPU_NAME`, `DRAM`, `AMT`, `WLAN`, `HEATSINK`, `SIZE_INCH`, `RESOLUTION`,
   `SCREEN_TYPE`, `TOUCH`, `PANEL_TYPE`, `BRIGHTNESS`
@@ -279,6 +286,8 @@ Content-Type: application/json
   Clearance-Response); der Listenpreis steht in `value`, der bezahlte
   Einzelpreis (inkl. MwSt. abzgl. Rabatt) in `includingTaxAndDiscountValue`
 - `substitutes` enthält Ersatzteilverweise (`type: "p"`/`"s"` + Teilenummern)
+- Batch-Größe: 60 IDs je POST verifiziert (190 KB Response, `costMillis` ~300);
+  mehr nicht getestet — der Tracker nutzt max. 40
 
 ### Weitere im Frontend gefundene (hier ungenutzte) Endpoints
 

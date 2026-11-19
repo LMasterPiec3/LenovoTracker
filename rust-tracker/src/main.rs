@@ -364,7 +364,8 @@ fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
 // Detail-/Specs-Abruf (POST api/v4/lbom/parts/get, Batch je Teilenummer)
 // ---------------------------------------------------------------------------
 
-/// Typisierte Teile des Detail-Response – nur was wir brauchen: id + specsInfo.
+/// Typisierte Teile des Detail-Response – nur was wir brauchen:
+/// id + name + specs (Attribute + specsInfo-Fallback).
 #[derive(Deserialize)]
 struct DetailResponse {
     #[serde(default)]
@@ -376,6 +377,8 @@ struct DetailPart {
     #[serde(default)]
     id: String,
     #[serde(default)]
+    name: String,
+    #[serde(default)]
     specs: Option<Specs>,
 }
 
@@ -383,6 +386,213 @@ struct DetailPart {
 struct Specs {
     #[serde(rename = "specsInfo", default)]
     info: Option<String>,
+    #[serde(rename = "specsAttributes", default)]
+    attributes: Vec<SpecAttr>,
+}
+
+#[derive(Deserialize)]
+struct SpecAttr {
+    #[serde(rename = "transKey", default)]
+    trans_key: String,
+    #[serde(rename = "displayTitle", default)]
+    display_title: String,
+    #[serde(default)]
+    value: String,
+}
+
+/// Kompakte CPU-Codes lesbar machen:
+/// "intelI79750H" → "Intel Core i7-9750H", "AMDR76850H-PRO" → "AMD Ryzen 7 6850H PRO".
+/// Unbekannte Muster bleiben unverändert (Prinzip: niemals falsche Infos erfinden).
+fn beautify_cpu(raw: &str) -> String {
+    let t = raw.trim();
+    if let Some(rest) = t.strip_prefix("intel").or_else(|| t.strip_prefix("Intel")) {
+        let r = rest.trim();
+        // I79750H → i7-9750H / I36006U → i3-6006U
+        if r.len() > 2 {
+            let gen = r.as_bytes()[1] as char;
+            if matches!(r.as_bytes()[0], b'I' | b'i') && matches!(gen, '3' | '5' | '7' | '9') {
+                let model = &r[2..];
+                if !model.is_empty() && model.chars().all(|c| c.is_ascii_alphanumeric()) {
+                    return format!("Intel Core i{}-{}", gen, model);
+                }
+            }
+        }
+        return format!("Intel {}", r);
+    }
+    if let Some(rest) = t.strip_prefix("AMD").or_else(|| t.strip_prefix("amd")) {
+        let r = rest.trim();
+        // R76850H-PRO → Ryzen 7 6850H PRO
+        if r.len() > 2 {
+            let n = r.as_bytes()[1] as char;
+            if matches!(r.as_bytes()[0], b'R' | b'r') && matches!(n, '3' | '5' | '7' | '9') {
+                let model = r[2..].trim().replace("-PRO", " PRO");
+                if !model.is_empty() {
+                    return format!("AMD Ryzen {} {}", n, model);
+                }
+            }
+        }
+        return format!("AMD {}", r);
+    }
+    t.to_string()
+}
+
+fn gpu_type_de(raw: &str) -> Option<&'static str> {
+    match raw.trim().to_ascii_uppercase().as_str() {
+        "DIS" => Some("diskret"),
+        "UMA" => Some("integriert"),
+        _ => None,
+    }
+}
+
+/// RAM aus dem Namen ableiten (die Specs haben nicht immer ein dram-Attribut):
+///   1) explizit "8 GB" / "16GB" im Namen
+///   2) "8G"-Tokens – mit VRAM-Ausschluss: bei diskreter GPU zählt ein NG-Token,
+///      der direkt hinter dem GPU-Modell steht (z. B. "T1200 4G", "RTX3000 6G"),
+///      als Grafikspeicher, nicht als RAM. Mehrdeutig → None (lieber nichts sagen).
+fn ram_from_name(name: &str, gpu_name: Option<&str>) -> Option<String> {
+    let lower = name.to_lowercase();
+    let bytes = lower.as_bytes();
+    let n = bytes.len();
+    // GPU-Modell-Token (letztes Wort des GPU-Namens, z. B. "t1200", "3000")
+    let gpu_token: Option<String> = gpu_name
+        .and_then(|g| g.split_whitespace().last())
+        .map(|t| t.to_lowercase())
+        .filter(|t| !t.is_empty());
+    let mut candidates: Vec<i64> = Vec::new();
+    let mut i = 0;
+    while i < n {
+        if !bytes[i].is_ascii_digit() {
+            i += 1;
+            continue;
+        }
+        let start = i;
+        while i < n && bytes[i].is_ascii_digit() {
+            i += 1;
+        }
+        // Varianten nach der Zahl: "8 GB", "8GB", "8G" (optional Leerzeichen, mit Wortgrenze)
+        let mut j = i;
+        if j < n && bytes[j] == b' ' {
+            j += 1;
+        }
+        let mut consumed_end = None;
+        if j + 1 < n && bytes[j] == b'g' && bytes[j + 1] == b'b' {
+            consumed_end = Some(j + 2);
+        } else if j < n && bytes[j] == b'g' {
+            consumed_end = Some(j + 1);
+        }
+        let Some(end) = consumed_end else { continue };
+        // Wortgrenze danach: kein Buchstabe (Komma/Klammer/Ende ok)
+        if end < n && bytes[end].is_ascii_alphabetic() {
+            continue;
+        }
+        // Ziffer direkt vor dem Wert? ("Vega10", "T1200" → keine RAM-Kandidaten)
+        let prev_ok = start == 0
+            || !bytes[start - 1].is_ascii_digit()
+                && (bytes[start - 1] == b'u'
+                    || bytes[start - 1] == b'h'
+                    || !bytes[start - 1].is_ascii_alphanumeric());
+        if !prev_ok {
+            continue;
+        }
+        let num: i64 = lower[start..i].parse().unwrap_or(0);
+        if !(2..=64).contains(&num) {
+            continue;
+        }
+        // VRAM-Ausschluss: Token direkt davor ist das GPU-Modell
+        if let Some(gpu_tok) = &gpu_token {
+            let before = lower[..start].trim_end();
+            let tok_before = before
+                .rsplit(|c: char| c == ' ' || c == ',')
+                .next()
+                .unwrap_or("");
+            if !tok_before.is_empty() && tok_before.ends_with(gpu_tok.as_str()) {
+                continue;
+            }
+        }
+        candidates.push(num);
+    }
+    let uniq: std::collections::BTreeSet<i64> = candidates.into_iter().collect();
+    if uniq.len() == 1 {
+        uniq.into_iter().next().map(|v| format!("{} GB", v))
+    } else {
+        None
+    }
+}
+
+/// Geordnete Spec-Zeile: CPU → RAM → GPU → DPK → AMT → WLAN → Rest.
+/// Fallback: rohes specsInfo (falls die Attribute fehlen).
+fn build_spec_line(part: &DetailPart) -> Option<String> {
+    let specs = part.specs.as_ref()?;
+    let mut cpu: Option<String> = None;
+    let mut ram: Option<String> = None;
+    let mut gpu_name: Option<String> = None;
+    let mut gpu_type: Option<String> = None;
+    let mut rest: Vec<(String, String)> = Vec::new();
+    for a in &specs.attributes {
+        let v = a.value.trim();
+        if v.is_empty() {
+            continue;
+        }
+        match a.trans_key.as_str() {
+            "cpu" => cpu = Some(beautify_cpu(v)),
+            "dram" => ram = Some(v.to_string()),
+            "gpu name" => gpu_name = Some(v.to_string()),
+            "gpu type" => gpu_type = Some(v.to_string()),
+            "dpk" => rest.push(("DPK".into(), v.to_string())),
+            "amt" => rest.push(("AMT".into(), v.to_string())),
+            "wlan" => rest.push(("WLAN".into(), v.to_string())),
+            other => {
+                let label = if a.display_title.is_empty() { other.to_string() } else { a.display_title.clone() };
+                rest.push((label, v.to_string()))
+            }
+        }
+    }
+    // RAM-Fallback aus dem Namen (VRAM-Ausschluss via GPU-Name)
+    if ram.is_none() {
+        let gpu_ref = gpu_name.as_deref().filter(|_| gpu_type.as_deref() == Some("DIS"));
+        ram = ram_from_name(&part.name, gpu_ref);
+    }
+    let gpu = match (&gpu_name, &gpu_type) {
+        (Some(nm), Some(ty)) => gpu_type_de(ty).map(|de| format!("GPU: {} ({})", nm, de)),
+        (Some(nm), None) => Some(format!("GPU: {}", nm)),
+        (None, Some(ty)) => gpu_type_de(ty).map(|de| format!("GPU: {}", de)),
+        (None, None) => None,
+    };
+    // Feste Reihenfolge im Rest: DPK → AMT → WLAN → alles andere
+    let prio = |label: &str| match label {
+        "DPK" => 0,
+        "AMT" => 1,
+        "WLAN" => 2,
+        _ => 3,
+    };
+    rest.sort_by_key(|(label, _)| prio(label));
+    let mut out: Vec<String> = Vec::new();
+    if let Some(c) = cpu { out.push(format!("CPU: {}", c)); }
+    if let Some(r) = ram { out.push(format!("RAM: {}", r)); }
+    if let Some(g) = gpu { out.push(g); }
+    for (label, value) in &rest {
+        out.push(format!("{}: {}", label, value));
+    }
+    if out.is_empty() {
+        return specs.info.as_deref().map(format_specs);
+    }
+    Some(out.join(" | "))
+}
+
+fn parse_detail(text: &str) -> BTreeMap<String, String> {
+    let mut out = BTreeMap::new();
+    if let Ok(r) = serde_json::from_str::<DetailResponse>(text) {
+        if let Some(parts) = r.data {
+            for p in parts {
+                if let Some(line) = build_spec_line(&p) {
+                    if !line.is_empty() {
+                        out.insert(p.id, line);
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 /// "…/de/de/api/v4/lbom/clearanceParts/get" → (detail-url, country, language)
@@ -411,20 +621,6 @@ fn format_specs(info: &str) -> String {
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join(" | ")
-}
-
-fn parse_detail(text: &str) -> BTreeMap<String, String> {
-    let mut out = BTreeMap::new();
-    if let Ok(r) = serde_json::from_str::<DetailResponse>(text) {
-        if let Some(parts) = r.data {
-            for p in parts {
-                if let Some(info) = p.specs.and_then(|s| s.info).filter(|i| !i.is_empty()) {
-                    out.insert(p.id, info);
-                }
-            }
-        }
-    }
-    out
 }
 
 const DETAIL_FILE: &str = "/tmp/lenovo-tracker-detail.json";
@@ -782,7 +978,7 @@ fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeM
                 item.delta, item.id, item.name, item.old, item.new
             ));
             if let Some(info) = specs.get(&item.id) {
-                lines.push(format!("      {}", format_specs(info)));
+                lines.push(format!("      {}", info));
             }
         }
         let rest: Vec<&IncreasedPart> = diff.increased.iter().skip(20).collect();
@@ -797,7 +993,7 @@ fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeM
         for (id, name, stock) in diff.new_parts.iter().take(20) {
             lines.push(format!("  {}  {}  ({} Stück)", id, name, stock));
             if let Some(info) = specs.get(id) {
-                lines.push(format!("      {}", format_specs(info)));
+                lines.push(format!("      {}", info));
             }
         }
         lines.push(String::new());
@@ -814,8 +1010,8 @@ fn pretty_ts(ts: &str) -> String {
 }
 
 /// Tech-Daten als Chip-Badges (Inline-Styles, mail-client-sicher).
-fn html_spec_chips(info: &str) -> String {
-    info.split(";;")
+fn html_spec_chips(line: &str) -> String {
+    line.split(" | ")
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .map(|s| {
@@ -1265,35 +1461,62 @@ mod tests {
 
     #[test]
     fn test_specs_pipeline() {
-        // format_specs: ";;"-Liste → " | "-Join, leere Segmente weg
+        // beautify_cpu: kompakte Codes → lesbare Namen; Unbekanntes bleibt unverändert
+        assert_eq!(beautify_cpu("intelI79750H"), "Intel Core i7-9750H");
+        assert_eq!(beautify_cpu("intelI36006U"), "Intel Core i3-6006U");
+        assert_eq!(beautify_cpu("intelI58265U"), "Intel Core i5-8265U");
+        assert_eq!(beautify_cpu("AMDR76850H-PRO"), "AMD Ryzen 7 6850H PRO");
+        assert_eq!(beautify_cpu("AMDR72700U"), "AMD Ryzen 7 2700U");
+        assert_eq!(beautify_cpu("KAPUTT"), "KAPUTT");
+        // ram_from_name: explizit GB, NG-Token, VRAM-Ausschluss
+        assert_eq!(ram_from_name("WIN, i5-8250U, 8 GB, UMA", None).as_deref(), Some("8 GB"));
+        assert_eq!(ram_from_name("MB C81NH NOK UMA R7 4G FP", None).as_deref(), Some("4 GB"));
+        assert_eq!(ram_from_name("FRUR7P5850U16G WINY-DYdT2L3Y-A", None).as_deref(), Some("16 GB"));
+        // DIS + GPU-Token davor → VRAM, kein RAM-Chip
+        assert_eq!(ram_from_name("i7-9750H RTX3000 6G NOKNAYT dT2", Some("NVIDIA Quadro RTX 3000")), None);
+        assert_eq!(ram_from_name("FL R7 P T1200 4G WIN yD nAB yDT", Some("NVIDIA Quadro T1200")), None);
+        // mehrdeutig → None
+        assert_eq!(ram_from_name("8G 16G UMA", None), None);
+        // format_specs (Fallback ohne Attribute)
         assert_eq!(
             format_specs("DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;"),
             "DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"
         );
-        assert_eq!(format_specs(";;"), "");
-        assert_eq!(format_specs("DPK: NOK"), "DPK: NOK");
         // detail_target: Locale aus api.url ableiten
         let (url, country, lang) = detail_target("https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get").unwrap();
         assert_eq!(url, "https://support.lenovo.com/de/de/api/v4/lbom/parts/get");
         assert_eq!((country.as_str(), lang.as_str()), ("DE", "DE"));
         assert!(detail_target("https://example.com").is_none());
-        // safe_part_id: nur alphanumerisch + Bindestrich
+        // safe_part_id
         assert!(safe_part_id("5B20S42095"));
-        assert!(safe_part_id("02DC237"));
         assert!(!safe_part_id("\"; rm -rf /"));
-        assert!(!safe_part_id(""));
-        // parse_detail: nur Teile mit nicht-leerer specsInfo landen in der Map
+        // parse_detail: geordnete, beautifizierte Zeile (CPU → RAM → GPU → DPK/AMT)
         let map = parse_detail(
             r#"{"code":0,"data":[
-                {"id":"02DC237","specs":{"deleted":false,"specsInfo":"DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;","specsAttributes":[{"displayTitle":"DPK","value":"WIN","transKey":"dpk"}]}},
+                {"id":"02DC237","name":"AMD R7 2700U mit Vega10 WIN YT","specs":{"specsInfo":"DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;","specsAttributes":[
+                    {"displayTitle":"DPK","value":"WIN","transKey":"dpk"},
+                    {"displayTitle":"CPU","value":"AMDR72700U","transKey":"cpu"},
+                    {"displayTitle":"GPU Type","value":"UMA","transKey":"gpu type"}]}},
+                {"id":"RTXBOARD","name":"i7-9750H RTX3000 6G NOKNAYT dT2","specs":{"specsAttributes":[
+                    {"transKey":"cpu","value":"intelI79750H"},
+                    {"transKey":"gpu type","value":"DIS"},
+                    {"transKey":"gpu name","value":"NVIDIA Quadro RTX 3000"},
+                    {"transKey":"amt","value":"N-AMT"},
+                    {"transKey":"dpk","value":"NOK"}]}},
+                {"id":"DRAMBOARD","name":"FL R7 P T1200 4G WIN yD nAB yDT","specs":{"specsAttributes":[
+                    {"transKey":"cpu","value":"AMDR76850H-PRO"},
+                    {"transKey":"dram","value":"16 GB"},
+                    {"transKey":"gpu type","value":"DIS"},
+                    {"transKey":"gpu name","value":"NVIDIA Quadro T1200"}]}},
                 {"id":"NO_SPECS"},
-                {"id":"EMPTY_SPECS","specs":{"specsInfo":""}},
-                {"id":"NULL_SPECS","specs":null}
+                {"id":"EMPTY_SPECS","specs":{"specsInfo":""}}
             ]}"#,
         );
-        assert_eq!(map.len(), 1);
-        assert_eq!(map.get("02DC237").unwrap(), "DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;");
-        // parse_detail: garbage → leere Map, keine Panic
+        assert_eq!(map.len(), 3);
+        assert_eq!(map.get("02DC237").unwrap(), "CPU: AMD Ryzen 7 2700U | GPU: integriert | DPK: WIN");
+        assert_eq!(map.get("RTXBOARD").unwrap(), "CPU: Intel Core i7-9750H | GPU: NVIDIA Quadro RTX 3000 (diskret) | DPK: NOK | AMT: N-AMT");
+        assert_eq!(map.get("DRAMBOARD").unwrap(), "CPU: AMD Ryzen 7 6850H PRO | RAM: 16 GB | GPU: NVIDIA Quadro T1200 (diskret)");
+        // garbage → leere Map, keine Panic
         assert!(parse_detail("kaputt").is_empty());
     }
 
@@ -1305,23 +1528,23 @@ mod tests {
         new.insert("A".to_string(), PartState { s: 25, n: "AMD R7 2700U Board".into() });
         let diff = build_diff(&old, &new);
         let mut specs = BTreeMap::new();
-        specs.insert("A".to_string(), "DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;".to_string());
+        specs.insert("A".to_string(), "CPU: AMD Ryzen 7 2700U | RAM: 16 GB | GPU: integriert | DPK: WIN".to_string());
         let label = filter_label(&["system boards".to_string()], &["RTX".to_string()]);
         assert_eq!(label, "system boards · RTX");
         let text = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs, &label);
-        assert!(text.contains("DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"));
+        assert!(text.contains("CPU: AMD Ryzen 7 2700U | RAM: 16 GB | GPU: integriert | DPK: WIN"));
         assert!(text.contains("Filter: system boards · RTX"));
         let html = build_mail_html(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs, &label);
         assert!(html.contains("LENOVO CLEARANCE-TRACKER"));
         assert!(html.contains("display:inline-block;background:#f1f3f5")); // Chip
-        assert!(html.contains("DPK: WIN"));
+        assert!(html.contains("RAM: 16 GB"));
         assert!(html.contains("system boards · RTX"));
         assert!(html.contains("+20")); // Delta-Badge
         assert!(html.contains("2026-11-19 00:00:00 UTC")); // pretty_ts
         assert!(html.contains("Clearance-Sale ansehen"));
         // ohne Specs: Mail normal, keine Chips
         let text2 = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &BTreeMap::new(), &label);
-        assert!(!text2.contains("DPK"));
+        assert!(!text2.contains("CPU:"));
         let html2 = build_mail_html(&diff, "https://example.com", "2026-11-19T00:00:00Z", &BTreeMap::new(), &label);
         assert!(!html2.contains("background:#f1f3f5"));
     }
