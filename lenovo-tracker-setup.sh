@@ -355,7 +355,30 @@ cmd_uninstall() {
 }
 
 cmd_help() {
-  sed -n '2,48p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  # Statischer Text: im curl-One-Liner (bash -c) gibt es kein BASH_SOURCE
+  cat <<'EOF'
+Lenovo Clearance-Sale Mainboard-Tracker – Proxmox-Helper-Setup
+
+Der Klassiker (auf dem Proxmox-Host):
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
+
+Mit Repo-Klon:
+  bash lenovo-tracker-setup.sh                 # komplettes Setup
+  SKIP_BUILD=1 bash lenovo-tracker-setup.sh    # vorhandenes Binary nutzen
+  FORCE=1 bash lenovo-tracker-setup.sh         # existierenden CT löschen+neu (State verloren!)
+  VMID=110 BUILD_VMID=111 bash lenovo-tracker-setup.sh   # eigene IDs
+
+Unterkommandos (auch im One-Liner):
+  … --probe [VMID]     API-Parameter-Matrix live testen
+  … --peak [VMID]      Peak-RAM messen (CT-Restart, 3 Läufe)
+  … --uninstall        CT + Host-Artefakte entfernen
+
+Env-Defaults (überschreibbar): VMID=105 BUILD_VMID=104 RAM=32 SWAP=32 CPULIMIT=0.25
+  DISK=local:0.05 NET0 MAIL_FROM MAIL_TO EXTRA_RECIPIENTS SMTP_HOST SMTP_PORT
+  COMMODITY_KEYS KEYWORDS CI_VERSION FORCE SKIP_BUILD REPO_REF
+
+Lizenz: MIT – free to use (siehe LICENSE). Copyright (c) 2026 LMasterPiec3
+EOF
 }
 
 # bash -c "$(curl …)" --probe legt das Argument in $0 (nicht $1) — beides akzeptieren:
