@@ -130,8 +130,9 @@ rc-update add lenovo-tracker default && rc-service lenovo-tracker start
 
 - **33 MB Disk-Limit** (16,6 MB belegt — Alpine-Base + gestrippte Binaries, kein
   dhcpcd/logrotate/doas/alpine-conf/dcron; `pct resize 105 rootfs +16M` falls je nötig)
-- **96 MB RAM-Limit** (Peak ~64 MB: Rust-Binary + curl-impersonate-Kindprozess
-  zusammen; `oom_kill 0` getestet; 32 MB Swap als Überlauf-Puffer)
+- **48 MB RAM-Limit** (Peak ~32 MB: curl streamt den Body in eine Temp-Datei,
+  Rust parst mit `from_reader` streckend – der JSON-Body liegt nie komplett im
+  RAM; `oom_kill 0` getestet; 32 MB Swap als Überlauf-Puffer)
 - **Kein dcron-paket**: crond läuft als `::respawn:`-Eintrag in `/etc/inittab`
   (busybox crond im Vordergrund, init überwacht und startet bei Crash automatisch neu)
 - Resident: init + syslogd + crond ≈ **2 MB RAM**, CPU ~0,1 % im Jahresmittel

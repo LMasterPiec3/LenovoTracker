@@ -224,6 +224,8 @@ fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
         FetchError { message: format!("Abruf fehlgeschlagen: {}", e), status: None }
     }
 
+    const BODY_FILE: &str = "/tmp/lenovo-tracker-body.json";
+
     let output = std::process::Command::new(&cfg.api.curl_path)
         .arg("--impersonate")
         .arg(&cfg.api.impersonate_target)
@@ -231,8 +233,10 @@ fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
         .arg("-s")
         .arg("--max-time")
         .arg(cfg.api.timeout_seconds.to_string())
+        .arg("-o")
+        .arg(BODY_FILE)
         .arg("-w")
-        .arg("\n%{http_code}")
+        .arg("%{http_code}")
         .arg("-H")
         .arg("Accept: application/json, text/plain, */*")
         .arg("-H")
@@ -243,20 +247,8 @@ fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
         .output()
         .map_err(fe)?;
 
-    if !output.status.success() && output.stdout.is_empty() {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        return Err(FetchError {
-            message: format!("curl-impersonate fehlgeschlagen (rc={}): {}", output.status, stderr),
-            status: None,
-        });
-    }
-
-    let combined = String::from_utf8_lossy(&output.stdout).to_string();
-    // Letzte Zeile = HTTP-Status (via -w "\n%{http_code}")
-    let (body, status_str) = match combined.rfind('\n') {
-        Some(idx) => (combined[..idx].to_string(), combined[idx + 1..].trim().to_string()),
-        None => (combined.clone(), "0".to_string()),
-    };
+    // stdout enthält nur den HTTP-Status (Body ging in die Datei)
+    let status_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
     let status: u32 = status_str.parse().unwrap_or(0);
 
     if status == 403 {
@@ -266,17 +258,25 @@ fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
         });
     }
     if status == 0 || status >= 400 {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         return Err(FetchError {
-            message: format!("HTTP {} von der Lenovo-API", status),
+            message: format!("HTTP {} von der Lenovo-API {}", status, stderr),
             status: Some(status),
         });
     }
 
-    let payload: ApiResponse = serde_json::from_str(&body).map_err(|_| FetchError {
+    // Streaming-Parse aus der Datei – der Body landet nie komplett im RAM
+    let parse_result: Result<ApiResponse, _> = {
+        let file = fs::File::open(BODY_FILE).map_err(fe)?;
+        let reader = std::io::BufReader::new(file);
+        serde_json::from_reader(reader)
+    };
+    let _ = fs::remove_file(BODY_FILE); // Temp-Datei in jedem Fall aufräumen
+
+    let payload = parse_result.map_err(|_| FetchError {
         message: "Antwort ist kein gültiges JSON (vermutlich XML ohne Accept-Header oder HTML-Blockseite)".into(),
         status: Some(status),
     })?;
-    drop(body); // JSON-String freigeben, bevor Diff/Mail den Peak erhöhen
 
     if payload.code != 0 {
         return Err(FetchError { message: format!("API-Fehlercode: {}", payload.code), status: Some(status) });
