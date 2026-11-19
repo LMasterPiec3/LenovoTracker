@@ -276,6 +276,7 @@ fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
         message: "Antwort ist kein gültiges JSON (vermutlich XML ohne Accept-Header oder HTML-Blockseite)".into(),
         status: Some(status),
     })?;
+    drop(body); // JSON-String freigeben, bevor Diff/Mail den Peak erhöhen
 
     if payload.code != 0 {
         return Err(FetchError { message: format!("API-Fehlercode: {}", payload.code), status: Some(status) });
@@ -305,10 +306,13 @@ fn stock_of(part: &ApiPart) -> i64 {
 }
 
 fn filter_mainboards<'a>(parts: &'a [ApiPart], keys: &[String]) -> Vec<&'a ApiPart> {
-    let keys: Vec<String> = keys.iter().map(|k| k.trim().to_lowercase()).collect();
+    // Allocation-frei: case-insensitiver Vergleich statt pro Teil lowercase zu allokieren.
     parts
         .iter()
-        .filter(|p| keys.contains(&p.commodity_key.trim().to_lowercase()))
+        .filter(|p| {
+            keys.iter()
+                .any(|k| p.commodity_key.trim().eq_ignore_ascii_case(k))
+        })
         .collect()
 }
 
