@@ -143,14 +143,6 @@ ask() {  # ask VARNAME "Prompt" "Default"  (non-tty → Default)
   printf -v "$1" '%s' "$input"
 }
 
-confirm() {  # confirm "Frage" default(j|n)  → rc 0 = ja
-  local d="${2:-n}" a=""
-  if [[ ! -t 0 ]]; then [[ "$d" == "j" ]]; return; fi
-  read -rp "  ${C_INFO}→ ${1} [${d^^}]: ${NC}" a || a=""
-  a="${a:-$d}"
-  [[ "$a" =~ ^[JjYy] ]]
-}
-
 header_info() {
   clear
   echo -e "${GREEN}"
@@ -197,61 +189,114 @@ fetch_sources() {
   msg_ok "Quellen geladen (main.rs $(stat -c %s "$SRC_MAIN") B)"
 }
 
-# ------------------------------- Interaktive UI ------------------------------
-ui_config() {
-  local mode="1"
-  if [[ -t 0 && "$NONINTERACTIVE" != "1" ]]; then
-    echo "  ${C_HEAD}1)${NC} Standard-Setup    (empfohlene Defaults, nur bestätigen)"
-    echo "  ${C_HEAD}2)${NC} Erweitert         (alles einzeln abfragen)"
-    echo "  ${C_HEAD}0)${NC} Abbrechen"
-    ask MODECHOICE "Auswahl (Ziffer eingeben)" "1"
-    # Pfeiltasten/Escapes im Input abwaschen → nur Ziffern zählen
-    MODECHOICE="$(printf '%s' "$MODECHOICE" | tr -dc '0-9')"
-    [[ -z "$MODECHOICE" ]] && MODECHOICE="1"
-    mode="$MODECHOICE"
-    if [[ "$mode" == "0" ]]; then die "Abgebrochen."; fi
-    if [[ "$mode" == "2" ]]; then
-      ask VMID "CT-ID (Produktion)" "$VMID"
-      ask BUILD_VMID "CT-ID (temporärer Build)" "$BUILD_VMID"
-      ask CT_HOSTNAME "Hostname" "$CT_HOSTNAME"
-      ask RAM "RAM in MB" "$RAM"
-      ask SWAP "Swap in MB" "$SWAP"
-      ask CPULIMIT "CPU-Limit" "$CPULIMIT"
-      ask DISK "Rootfs" "$DISK"
-      ask BRIDGE "Bridge" "$BRIDGE"
-      ask BASE_IP "IP-Basis (CT bekommt x.x.x.\$VMID)" "$BASE_IP"
-      ask MAIL_FROM "Mail von" "$MAIL_FROM"
-      ask MAIL_TO "Mail an" "$MAIL_TO"
-      ask SMTP_HOST "SMTP-Host" "$SMTP_HOST"
-      ask SMTP_PORT "SMTP-Port" "$SMTP_PORT"
-      ask COMMODITY_KEYS "Commodity-Keys (Komma)" "$COMMODITY_KEYS"
-      ask KEYWORDS "Keyword-Filter (Komma, leer = alle)" "$KEYWORDS"
-      NET0="name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth"
-    fi
-    echo
-  fi
+# ------------------------------- Whiptail-TUI --------------------------------
+# Wie die Community-Scripts: Dialoge mit whiptail (blauer Fullscreen, Menü mit
+# Pfeiltasten/TAB, InputBoxen, YesNo). Fallback ohne whiptail/nicht-tty:
+# Defaults aus den Env-Variablen (NONINTERACTIVE-Verhalten).
+BACKTITLE="Lenovo-Tracker Setup · MIT (free to use)"
 
-  # Settings-Box
-  echo -e "  ${C_HEAD}┌───────────────────── Einstellungen ─────────────────────┐${NC}"
-  echo -e "  │ ${C_INFO}CT:${NC} ${BOLD}${VMID}${NC} (${CT_HOSTNAME})   ${C_INFO}Build-CT:${NC} ${BUILD_VMID}              "
-  echo -e "  │ ${C_INFO}RAM:${NC} ${RAM} MB + ${SWAP} MB Swap   ${C_INFO}CPU-Limit:${NC} ${CPULIMIT}   ${C_INFO}Disk:${NC} ${DISK}"
-  echo -e "  │ ${C_INFO}Netz:${NC} ${BRIDGE} · ${BASE_IP}.${VMID}/24"
-  echo -e "  │ ${C_INFO}Mail:${NC} ${MAIL_FROM} → ${MAIL_TO}"
-  echo -e "  │ ${C_INFO}SMTP:${NC} ${SMTP_HOST}:${SMTP_PORT}"
-  echo -e "  │ ${C_INFO}Filter:${NC} ${COMMODITY_KEYS}  ${C_INFO}Keywords:${NC} ${KEYWORDS:-alle}"
-  echo -e "  └─────────────────────────────────────────────────────────┘"
-  if [[ -t 0 && "$NONINTERACTIVE" != "1" ]]; then
-    confirm "Weiter mit dem Setup?" "j" || die "Abgebrochen."
-  fi
-  echo
+ui_available() {
+  command -v whiptail >/dev/null 2>&1 && [[ -t 0 || -t 1 ]] && [[ "$NONINTERACTIVE" != "1" ]]
+}
+
+wt_menu() {  # wt_menu <title> <text> item1 desc1 [item2 desc2 …] -> echo Auswahl
+  local title="$1" text="$2"; shift 2
+  whiptail --backtitle "$BACKTITLE" --title "$title" --menu "$text" 20 72 8 "$@" \
+    3>&1 1>&2 2>&3
+}
+
+wt_input() {  # wt_input <title> <prompt> <default> -> echo Wert (ESC/Cancel → leer)
+  whiptail --backtitle "$BACKTITLE" --title "$1" --inputbox "$2" 10 70 "$3" \
+    3>&1 1>&2 2>&3
+}
+
+wt_yesno() {  # wt_yesno <title> <text> -> rc 0=Ja 1=Nein
+  whiptail --backtitle "$BACKTITLE" --title "$1" --yesno "$2" 14 70
+}
+
+ui_advanced() {
+  local v
+  v="$(wt_input "CT-ID (Produktion)" "Welche CT-ID soll der Tracker bekommen?" "$VMID")" || exit 0
+  VMID="${v:-$VMID}"
+  v="$(wt_input "CT-ID (Build)" "Temporärer Build-Container:" "$BUILD_VMID")" || exit 0
+  BUILD_VMID="${v:-$BUILD_VMID}"
+  v="$(wt_input "Hostname" "Hostname des Tracker-CTs:" "$CT_HOSTNAME")" || exit 0
+  CT_HOSTNAME="${v:-$CT_HOSTNAME}"
+  v="$(wt_input "RAM" "RAM in MB (Peak gemessen ~20 MB):" "$RAM")" || exit 0
+  RAM="${v:-$RAM}"
+  v="$(wt_input "Swap" "Swap in MB (Überlauf-Puffer):" "$SWAP")" || exit 0
+  SWAP="${v:-$SWAP}"
+  v="$(wt_input "CPU-Limit" "cpulimit (0.25 = Viertel-Kern):" "$CPULIMIT")" || exit 0
+  CPULIMIT="${v:-$CPULIMIT}"
+  v="$(wt_input "Rootfs" "Disk-Größe:" "$DISK")" || exit 0
+  DISK="${v:-$DISK}"
+  v="$(wt_input "Bridge" "Proxmox-Bridge:" "$BRIDGE")" || exit 0
+  BRIDGE="${v:-$BRIDGE}"
+  v="$(wt_input "IP-Basis" "CT bekommt ${BASE_IP}.<VMID>:" "$BASE_IP")" || exit 0
+  BASE_IP="${v:-$BASE_IP}"
+  NET0="name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth"
+  v="$(wt_input "Mail von" "Absender-Adresse:" "$MAIL_FROM")" || exit 0
+  MAIL_FROM="${v:-$MAIL_FROM}"
+  v="$(wt_input "Mail an" "Empfänger-Adresse:" "$MAIL_TO")" || exit 0
+  MAIL_TO="${v:-$MAIL_TO}"
+  v="$(wt_input "SMTP-Host" "SMTP-Server (Plain-SMTP :25):" "$SMTP_HOST")" || exit 0
+  SMTP_HOST="${v:-$SMTP_HOST}"
+  v="$(wt_input "SMTP-Port" "SMTP-Port:" "$SMTP_PORT")" || exit 0
+  SMTP_PORT="${v:-$SMTP_PORT}"
+  v="$(wt_input "Commodity-Keys" "Komma-getrennt (lowercase):" "$COMMODITY_KEYS")" || exit 0
+  COMMODITY_KEYS="${v:-$COMMODITY_KEYS}"
+  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards\nBeispiel: RTX  oder  B650,AM5" "$KEYWORDS")" || exit 0
+  KEYWORDS="${v//$'\n'/}"
+}
+
+ui_summary_confirm() {
+  local text="CT: ${VMID} (${CT_HOSTNAME}) · Build-CT: ${BUILD_VMID}
+RAM: ${RAM} MB + ${SWAP} MB Swap · CPU-Limit: ${CPULIMIT} · Disk: ${DISK}
+Netz: ${BRIDGE} · ${BASE_IP}.${VMID}/24
+
+Mail: ${MAIL_FROM} → ${MAIL_TO}
+SMTP: ${SMTP_HOST}:${SMTP_PORT}
+
+Filter: ${COMMODITY_KEYS}
+Keywords: ${KEYWORDS:-alle}"
+  wt_yesno "Setup starten" "$text"
+}
+
+ui_ct_exists() {  # rc 0 = neu aufbauen
+  wt_yesno "CT ${VMID} existiert" "CT ${VMID} läuft bereits.\n\nLöschen und NEU aufbauen?\n(State/History gehen verloren)" \
+    || die "Abgebrochen – CT ${VMID} bleibt unangetastet."
 }
 
 # ------------------------------- Unterkommandos ------------------------------
 cmd_setup() {
   local tpl; tpl="$(prereq)"
-  header_info
+
+  if ui_available; then
+    local sel
+    sel="$(wt_menu "Lenovo-Tracker" "Choose an option:\nUse TAB or Arrow keys to navigate, ENTER to select." \
+      "default"  "Standard-Install (Defaults)" \
+      "advanced" "Advanced Install (alles abfragen)" \
+      "probe"    "API-Probe (Live-Test der Parameter-Matrix)" \
+      "peak"     "Peak-RAM-Messung (CT-Restart)" \
+      "uninstall" "Deinstallieren" \
+      "exit"     "Beenden")" || exit 0
+    case "$sel" in
+      probe)     cmd_probe "$VMID"; exit 0 ;;
+      peak)      cmd_peak "$VMID"; exit 0 ;;
+      uninstall) cmd_uninstall; exit 0 ;;
+      exit)      exit 0 ;;
+      advanced)  ui_advanced ;;
+    esac
+    ui_summary_confirm || die "Abgebrochen."
+    clear
+    header_info
+  else
+    # Fallback (kein whiptail / Automation): Defaults, keine Dialoge
+    header_info
+    msg_warn "Whiptail/TTY nicht verfügbar – fahre mit Env-Defaults fort (NONINTERACTIVE)."
+  fi
+
   fetch_sources
-  ui_config
 
   # ---------- 1) Binary bauen ----------
   if [[ "$SKIP_BUILD" == "1" && -f "$HOST_BIN" ]]; then
@@ -288,11 +333,12 @@ cmd_setup() {
       msg_warn "CT ${VMID} existiert – FORCE=1: stoppe + lösche"
       pct stop "${VMID}" >/dev/null 2>&1 || true
       pct destroy "${VMID}" --purge
-    elif confirm "CT ${VMID} existiert bereits – löschen und NEU aufbauen? (State/History geht verloren)" "n"; then
+    elif ui_available; then
+      ui_ct_exists
       pct stop "${VMID}" >/dev/null 2>&1 || true
       pct destroy "${VMID}" --purge
     else
-      die "Abgebrochen – CT ${VMID} bleibt unangetastet."
+      die "CT ${VMID} existiert bereits. FORCE=1 für Neuaufbau (State geht verloren!) oder VMID ändern."
     fi
   fi
   spin_run "CT ${VMID} erstellen" pct create "${VMID}" "$tpl" \
@@ -439,8 +485,12 @@ cmd_peak() {
 
 cmd_uninstall() {
   prereq >/dev/null
-  if [[ "$FORCE" != "1" && -t 0 ]]; then
-    confirm "Löscht CT ${VMID} inkl. State/History und Host-Binaries. Wirklich?" "n" || { echo "Abbruch."; return; }
+  if [[ "$FORCE" != "1" ]]; then
+    if ui_available; then
+      wt_yesno "Deinstallieren" "Löscht CT ${VMID} inkl. State/History\nund die Host-Binaries.\n\nWirklich deinstallieren?" || { echo "Abbruch."; return; }
+    else
+      die "Löschen braucht FORCE=1 im nicht-interaktiven Modus."
+    fi
   fi
   pct stop "${VMID}" >/dev/null 2>&1 || true
   pct destroy "${VMID}" --purge && msg_ok "CT ${VMID} entfernt"
