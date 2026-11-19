@@ -46,10 +46,10 @@ if code != 0:
     sys.exit(1)
 time.sleep(5)
 
-print("=== 2) Leichte Toolchain (kein cmake/go/clang mehr noetig) ===")
+print("=== 2) Leichte Toolchain (kein cmake/go/clang/openssl mehr noetig) ===")
 run(
     f"pct exec {VMID} -- sh -c 'apk update -q && apk add -q "
-    "rust cargo build-base pkgconf musl-dev openssl-dev openssl-libs-static ca-certificates "
+    "rust cargo build-base pkgconf musl-dev ca-certificates "
     "&& rustc --version'",
     timeout=900,
 )

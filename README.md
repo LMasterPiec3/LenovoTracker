@@ -128,16 +128,27 @@ rc-update add lenovo-tracker default && rc-service lenovo-tracker start
 
 ### Produktivstand (CT 105, Alpine, maximal kompakt)
 
-- **33 MB Disk-Limit** (16,6 MB belegt — Alpine-Base + gestrippte Binaries, kein
+- **33 MB Disk-Limit** (~17 MB belegt — Alpine-Base + gestrippte Binaries, kein
   dhcpcd/logrotate/doas/alpine-conf/dcron; `pct resize 105 rootfs +16M` falls je nötig)
-- **48 MB RAM-Limit** (Peak ~32 MB: curl streamt den Body in eine Temp-Datei,
-  Rust parst mit `from_reader` streckend – der JSON-Body liegt nie komplett im
-  RAM; `oom_kill 0` getestet; 32 MB Swap als Überlauf-Puffer)
+- **32 MB RAM-Limit** (Peak ~20 MB über 3 gemessene Läufe, Boot-Peak ~15 MB:
+  curl streamt den Body in eine Temp-Datei, Rust parst mit `from_reader` streckend
+  – der JSON-Body liegt nie komplett im RAM; State-I/O single-pass in typisierte
+  Structs bzw. `to_writer` direkt in die Datei; `oom_kill 0` getestet; 32 MB Swap
+  als Überlauf-Puffer)
+- **Rust-Binary 949 KB** (gestrippt): TLS-Stack (`lettre`/native-tls → OpenSSL)
+  und `time`-Crate entfernt, eigene RFC3339-Formatierung; Build im Alpine-CT 104
+  ohne cmake/go/clang/openssl-dev in **~24 s**
 - **Kein dcron-paket**: crond läuft als `::respawn:`-Eintrag in `/etc/inittab`
   (busybox crond im Vordergrund, init überwacht und startet bei Crash automatisch neu)
 - Resident: init + syslogd + crond ≈ **2 MB RAM**, CPU ~0,1 % im Jahresmittel
-- Mail: Direkt-SMTP an `mail.protonmail.ch:25` (Plain-SMTP; STARTTLS-Pfad in
-  `lettre` hängt bei Proton — bei Bedarf postfix nachrüsten)
+- Mail: Direkt-SMTP an `mail.protonmail.ch:25` (Plain-SMTP). TLS-Support wurde
+  aus dem Binary entfernt (`lettre` ohne TLS-Feature, kein OpenSSL mehr): der
+  STARTTLS-Pfad hing bei Proton ohnehin, `smtp_starttls` in der Config wird
+  ignoriert — bei Bedarf postfix nachrüsten
+- Peak-Messung: `python tools/peak_check.py <vmid>` — Host-Cgroup-Messung;
+  ein Reset von `memory.peak` *innerhalb* des CT scheitert still (Permission
+  denied), daher `pct stop/start` zum Nullen des Peaks oder Lifetime-Peak nach
+  Neustart ablesen
 
 ## Tests (Entwicklung)
 

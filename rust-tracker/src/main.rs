@@ -2,16 +2,15 @@
 //!
 //! Gleiche Logik wie die Python-Version: API abrufen (Chrome-TLS-Imitation),
 //! Mainboards filtern (`commodityKey == "system boards"`), Summe `stock`
-//! bilden, Diff gegen state.json, Mail bei Anstieg (SMTP/STARTTLS direkt,
-//! kein Mail-Daemon nötig). Wird per Cron alle 30 Minuten mit `--once`
-//! gestartet.
+//! bilden, Diff gegen state.json, Mail bei Anstieg (Plain-SMTP direkt, kein
+//! TLS-Stack im Binary, kein Mail-Daemon nötig). Wird per Cron alle 30 Minuten
+//! mit `--once` gestartet.
 
 use anyhow::{anyhow, bail, Context, Result};
 use lettre::Transport;
 use lettre::message::{Mailbox, MultiPart};
 use lettre::transport::smtp::SmtpTransport;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
@@ -27,10 +26,36 @@ const BACKOFFS: [u64; 3] = [5, 15, 45];
 // Logging
 // ---------------------------------------------------------------------------
 
+/// RFC3339 (UTC, Sekunden-Genauigkeit) ohne `time`-Crate: Hinnants
+/// civil_from_days, damit keine Abhängigkeit für eine Log-Zeile nötig ist.
+fn civil_from_days(days: i64) -> (i64, u32, u32) {
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    (yoe + era * 400 + if m <= 2 { 1 } else { 0 }, m as u32, d as u32)
+}
+
 fn now_iso() -> String {
-    use time::format_description::well_known::Rfc3339;
-    let now = time::OffsetDateTime::now_utc();
-    now.format(&Rfc3339).unwrap_or_else(|_| "1970-01-01T00:00:00Z".into())
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let (y, m, d) = civil_from_days((secs / 86_400) as i64);
+    let rem = secs % 86_400;
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+        y,
+        m,
+        d,
+        rem / 3600,
+        (rem % 3600) / 60,
+        rem % 60
+    )
 }
 
 macro_rules! log_info {
@@ -74,7 +99,9 @@ struct ApiCfg {
 
 #[derive(Deserialize, Default)]
 struct TrackerCfg {
+    // Wird nur für Config-Kompatibilität mitgelesen (cron steuert das Intervall).
     #[serde(default = "default_interval")]
+    #[allow(dead_code)]
     interval_minutes: u64,
     #[serde(default = "default_commodity_keys")]
     commodity_keys: Vec<String>,
@@ -94,8 +121,8 @@ struct MailCfg {
     smtp_host: String,
     #[serde(default = "default_smtp_port")]
     smtp_port: u16,
-    #[serde(default = "default_true")]
-    smtp_starttls: bool,
+    // HINWEIS: smtp_starttls wird bewusst ignoriert (unbekannte Felder sind
+    // serde egal) – der STARTTLS-Pfad von Proton hängt, TLS-Stack ist entfernt.
 }
 
 #[derive(Deserialize, Default)]
@@ -114,7 +141,6 @@ fn default_commodity_keys() -> Vec<String> { vec!["system boards".into()] }
 fn default_mode() -> String { "smtp".into() }
 fn default_subject_prefix() -> String { "[Lenovo Tracker]".into() }
 fn default_smtp_port() -> u16 { 25 }
-fn default_true() -> bool { true }
 fn default_state_dir() -> String { "/var/lib/lenovotracker".into() }
 
 fn load_config(path: &str) -> Result<Config> {
@@ -154,20 +180,56 @@ struct ApiPart {
 }
 
 /// Robust gegen fehlende/garbage/Text-Zahlen – wie die Python-Version.
-#[derive(Debug, Clone, Default)]
+/// Direkte Visitor-Impl statt Value-Zwischenschritt: keine Allocation pro Teil.
+#[derive(Debug, Clone, Copy, Default)]
 struct StockField(i64);
 
 impl<'de> Deserialize<'de> for StockField {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let v = Value::deserialize(d)?;
-        Ok(StockField(match v {
-            Value::Number(n) => {
-                let f = n.as_f64().unwrap_or(0.0);
-                (f as i64).max(0)
+        struct StockVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for StockVisitor {
+            type Value = i64;
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("Zahl oder zahlähnlicher Text")
             }
-            Value::String(s) => s.trim().parse::<i64>().unwrap_or(0).max(0),
-            _ => 0,
-        }))
+            fn visit_i64<E: serde::de::Error>(self, v: i64) -> std::result::Result<i64, E> {
+                Ok(v.max(0))
+            }
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> std::result::Result<i64, E> {
+                // u64 > i64::MAX: wie die alte f64-Saturierung → i64::MAX
+                Ok(i64::try_from(v).unwrap_or(i64::MAX).max(0))
+            }
+            fn visit_f64<E: serde::de::Error>(self, v: f64) -> std::result::Result<i64, E> {
+                Ok((v as i64).max(0)) // saturierender Cast, NaN → 0
+            }
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> std::result::Result<i64, E> {
+                Ok(v.trim().parse::<i64>().unwrap_or(0).max(0))
+            }
+            fn visit_bool<E: serde::de::Error>(self, _: bool) -> std::result::Result<i64, E> {
+                Ok(0)
+            }
+            fn visit_unit<E: serde::de::Error>(self) -> std::result::Result<i64, E> {
+                Ok(0)
+            }
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                mut seq: A,
+            ) -> std::result::Result<i64, A::Error> {
+                // Elemente konsumieren, sonst beschweren sich Deserializer
+                while seq.next_element::<serde::de::IgnoredAny>()?.is_some() {}
+                Ok(0)
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> std::result::Result<i64, A::Error> {
+                while map.next_entry::<serde::de::IgnoredAny, serde::de::IgnoredAny>()?.is_some() {}
+                Ok(0)
+            }
+        }
+
+        Ok(StockField(d.deserialize_any(StockVisitor)?))
     }
 }
 
@@ -381,20 +443,19 @@ fn build_diff(old_map: &BTreeMap<String, PartState>, new_map: &BTreeMap<String, 
 // State & Verlauf
 // ---------------------------------------------------------------------------
 
+/// Typisiertes State-File: ein einziger Parse-Pass – kein Value-Baum,
+/// kein Teilbaum-Clone mehr (bei ~3.100 Teilen einige MB Peak-RAM gespart).
+#[derive(Deserialize)]
+struct StateFileIn {
+    parts: BTreeMap<String, PartState>,
+}
+
 fn load_state(path: &Path) -> Option<BTreeMap<String, PartState>> {
     match fs::read_to_string(path) {
-        Ok(text) => match serde_json::from_str::<serde_json::Value>(&text) {
-            Ok(v) => {
-                match serde_json::from_value::<BTreeMap<String, PartState>>(v.get("parts").cloned().unwrap_or(Value::Null)) {
-                    Ok(map) => Some(map),
-                    Err(_) => {
-                        log_error!("state.json hat ein unerwartetes Format – Baseline wird neu gesetzt");
-                        None
-                    }
-                }
-            }
+        Ok(text) => match serde_json::from_str::<StateFileIn>(&text) {
+            Ok(sf) => Some(sf.parts),
             Err(e) => {
-                log_error!("state.json ist beschädigt ({}) – Baseline wird neu gesetzt", e);
+                log_error!("state.json ist beschädigt/unerwartetes Format ({}) – Baseline wird neu gesetzt", e);
                 None
             }
         },
@@ -406,20 +467,43 @@ fn load_state(path: &Path) -> Option<BTreeMap<String, PartState>> {
     }
 }
 
+/// Nur die vier State-Felder, direkt in die Datei serialisiert –
+/// kein `json!`-Value-Baum und kein JSON-String als Zwischenkopie im RAM.
+#[derive(Serialize)]
+struct StateFileOut<'a> {
+    last_check: &'a str,
+    total_stock: i64,
+    part_count: usize,
+    parts: &'a BTreeMap<String, PartState>,
+}
+
 fn save_state(state_path: &Path, ts: &str, total: i64, count: usize, part_map: &BTreeMap<String, PartState>) -> Result<()> {
     if let Some(parent) = state_path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let payload = serde_json::json!({
-        "last_check": ts,
-        "total_stock": total,
-        "part_count": count,
-        "parts": part_map,
-    });
     let tmp = PathBuf::from(format!("{}.tmp", state_path.display()));
-    fs::write(&tmp, serde_json::to_string(&payload)?)?;
+    {
+        let f = fs::File::create(&tmp)?;
+        let mut w = std::io::BufWriter::with_capacity(64 * 1024, f);
+        serde_json::to_writer(&mut w, &StateFileOut { last_check: ts, total_stock: total, part_count: count, parts: part_map })?;
+        w.flush()?;
+    }
     fs::rename(&tmp, state_path)?;
     Ok(())
+}
+
+/// save_state + append_history als Einheit – der Aufruf ist an drei Stellen
+/// identisch gekoppelt.
+fn persist(
+    state_path: &Path,
+    history_path: &Path,
+    ts: &str,
+    total: i64,
+    count: usize,
+    part_map: &BTreeMap<String, PartState>,
+) -> Result<()> {
+    save_state(state_path, ts, total, count, part_map)?;
+    append_history(history_path, ts, total, count)
 }
 
 fn append_history(history_path: &Path, ts: &str, total: i64, count: usize) -> Result<()> {
@@ -567,17 +651,12 @@ fn compose_mail(cfg: &Config, subject: &str, text: &str, html: &str) -> Result<l
 }
 
 fn deliver_mail(cfg: &Config, msg: &lettre::Message) -> Result<()> {
-    let mailer = if cfg.mail.smtp_starttls {
-        SmtpTransport::starttls_relay(&cfg.mail.smtp_host)
-            .with_context(|| format!("SMTP-Relay ungültig: {}", cfg.mail.smtp_host))?
-            .timeout(Some(Duration::from_secs(60)))
-            .build()
-    } else {
-        SmtpTransport::builder_dangerous(&cfg.mail.smtp_host)
-            .port(cfg.mail.smtp_port)
-            .timeout(Some(Duration::from_secs(60)))
-            .build()
-    };
+    // Plain-SMTP (Proton :25): kein TLS-Stack im Binary, der STARTTLS-Pfad
+    // hängt bei Proton ohnehin (siehe README "Produktivstand").
+    let mailer = SmtpTransport::builder_dangerous(&cfg.mail.smtp_host)
+        .port(cfg.mail.smtp_port)
+        .timeout(Some(Duration::from_secs(60)))
+        .build();
     mailer.send(msg).map(|_| ())?;
     Ok(())
 }
@@ -643,9 +722,7 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
     let old_map = load_state(&state_path);
 
     if old_map.is_none() {
-        if let Err(e) = save_state(&state_path, &ts, total, count, &new_map)
-            .and_then(|_| append_history(&history_path, &ts, total, count))
-        {
+        if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &new_map) {
             log_error!("State konnte nicht geschrieben werden: {}", e);
             return 2;
         }
@@ -672,9 +749,7 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
             log_error!("Mailversand fehlgeschlagen – Anstieg wird erneut gemeldet: {}", e);
             return 2;
         }
-        if let Err(e) = save_state(&state_path, &ts, total, count, &new_map)
-            .and_then(|_| append_history(&history_path, &ts, total, count))
-        {
+        if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &new_map) {
             log_error!("State konnte nicht geschrieben werden: {}", e);
             return 2;
         }
@@ -682,9 +757,7 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
         return 0;
     }
 
-    if let Err(e) = save_state(&state_path, &ts, total, count, &new_map)
-        .and_then(|_| append_history(&history_path, &ts, total, count))
-    {
+    if let Err(e) = persist(&state_path, &history_path, &ts, total, count, &new_map) {
         log_error!("State konnte nicht geschrieben werden: {}", e);
         return 2;
     }
@@ -817,8 +890,44 @@ mod tests {
         assert_eq!(sf(serde_json::json!(-5)), 0);
         assert_eq!(sf(serde_json::json!("kaputt")), 0);
         assert_eq!(sf(serde_json::json!(7.9)), 7);
+        assert_eq!(sf(serde_json::json!(true)), 0);
+        assert_eq!(sf(serde_json::json!([1])), 0);
+        // u64 > i64::MAX → saturiert wie die alte f64-Variante
+        assert_eq!(sf(serde_json::json!(18446744073709551615u64)), i64::MAX);
         // fehlendes Feld → Default
         let part: ApiPart = serde_json::from_value(serde_json::json!({"id": "X"})).unwrap();
         assert_eq!(part.stock.0, 0);
+    }
+
+    #[test]
+    fn test_civil_from_days() {
+        assert_eq!(civil_from_days(0), (1970, 1, 1));
+        assert_eq!(civil_from_days(1), (1970, 1, 2));
+        assert_eq!(civil_from_days(-1), (1969, 12, 31));
+        assert_eq!(civil_from_days(59), (1970, 3, 1)); // 1970 kein Schaltjahr
+        assert_eq!(civil_from_days(365), (1971, 1, 1));
+        // 2024 Schaltjahr: 31.12.2024 = 20088 Tage nach Epoch
+        assert_eq!(civil_from_days(20_088), (2024, 12, 31));
+        assert_eq!(civil_from_days(20_089), (2025, 1, 1));
+        // Datum aus der Planung: 2026-11-18 = 20775 Tage (verifiziert via datetime.date)
+        assert_eq!(civil_from_days(20_775), (2026, 11, 18));
+    }
+
+    #[test]
+    fn test_state_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("lenovotracker-test-{}", std::process::id()));
+        let path = dir.join("state.json");
+        let mut map = BTreeMap::new();
+        map.insert("5A10W86303".to_string(), PartState { s: 98, n: "Board A".into() });
+        map.insert("X".to_string(), PartState { s: 2, n: "Board \"B\" <ö>".to_string() });
+        save_state(&path, "2026-11-19T00:00:00Z", 100, 2, &map).expect("save");
+        let loaded = load_state(&path).expect("roundtrip");
+        assert_eq!(loaded, map);
+        // kaputte Datei → Baseline-Reset (None), keine Panic
+        std::fs::write(&path, "{\"parts\": 42}").unwrap();
+        assert!(load_state(&path).is_none());
+        std::fs::write(&path, "{\"last_check\": \"x\"}").unwrap(); // parts fehlt
+        assert!(load_state(&path).is_none());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
