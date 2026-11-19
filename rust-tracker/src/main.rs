@@ -1,10 +1,12 @@
 //! Lenovo Clearance-Sale Mainboard-Tracker (Rust-Variante, minimal RAM).
 //!
 //! Gleiche Logik wie die Python-Version: API abrufen (Chrome-TLS-Imitation),
-//! Mainboards filtern (`commodityKey == "system boards"`), Summe `stock`
-//! bilden, Diff gegen state.json, Mail bei Anstieg (Plain-SMTP direkt, kein
-//! TLS-Stack im Binary, kein Mail-Daemon nötig). Wird per Cron alle 30 Minuten
-//! mit `--once` gestartet.
+//! Mainboards filtern (`commodityKey == "system boards"`, optional
+//! `name_keywords`), Summe `stock` bilden, Diff gegen state.json, Mail bei
+//! Anstieg (Plain-SMTP direkt, kein TLS-Stack im Binary, kein Mail-Daemon
+//! nötig). Bei Mail werden die "Technischen Daten" der Top-Teile nachgeladen
+//! (Batch-POST `api/v4/lbom/parts/get`, siehe Lenovo-API.md). Wird per Cron
+//! alle 30 Minuten mit `--once` gestartet.
 
 use anyhow::{anyhow, bail, Context, Result};
 use lettre::Transport;
@@ -359,6 +361,138 @@ fn fetch_once(cfg: &Config) -> Result<Vec<ApiPart>, FetchError> {
 }
 
 // ---------------------------------------------------------------------------
+// Detail-/Specs-Abruf (POST api/v4/lbom/parts/get, Batch je Teilenummer)
+// ---------------------------------------------------------------------------
+
+/// Typisierte Teile des Detail-Response – nur was wir brauchen: id + specsInfo.
+#[derive(Deserialize)]
+struct DetailResponse {
+    #[serde(default)]
+    data: Option<Vec<DetailPart>>,
+}
+
+#[derive(Deserialize)]
+struct DetailPart {
+    #[serde(default)]
+    id: String,
+    #[serde(default)]
+    specs: Option<Specs>,
+}
+
+#[derive(Deserialize)]
+struct Specs {
+    #[serde(rename = "specsInfo", default)]
+    info: Option<String>,
+}
+
+/// "…/de/de/api/v4/lbom/clearanceParts/get" → (detail-url, country, language)
+fn detail_target(api_url: &str) -> Option<(String, String, String)> {
+    let idx = api_url.rfind("/api/v4/")?;
+    let base = &api_url[..idx];
+    let segs: Vec<&str> = base.split('/').filter(|s| !s.is_empty()).collect();
+    if segs.len() < 2 {
+        return None;
+    }
+    let language = segs[segs.len() - 1].to_uppercase();
+    let country = segs[segs.len() - 2].to_uppercase();
+    Some((format!("{}/api/v4/lbom/parts/get", base), country, language))
+}
+
+/// IDs kommen aus der eigenen API-Response – trotzdem nur streng validiert in
+/// den POST-Body (alphanumerisch + Bindestrich), damit da nichts injizierbar ist.
+fn safe_part_id(id: &str) -> bool {
+    !id.is_empty() && id.len() <= 24 && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+}
+
+/// specsInfo "DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;" → "DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"
+fn format_specs(info: &str) -> String {
+    info.split(";;")
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(" | ")
+}
+
+fn parse_detail(text: &str) -> BTreeMap<String, String> {
+    let mut out = BTreeMap::new();
+    if let Ok(r) = serde_json::from_str::<DetailResponse>(text) {
+        if let Some(parts) = r.data {
+            for p in parts {
+                if let Some(info) = p.specs.and_then(|s| s.info).filter(|i| !i.is_empty()) {
+                    out.insert(p.id, info);
+                }
+            }
+        }
+    }
+    out
+}
+
+const DETAIL_FILE: &str = "/tmp/lenovo-tracker-detail.json";
+
+/// Lädt die "Technischen Daten" (specsInfo) für eine Liste von Teilenummern.
+/// Ein Batch-POST; Fehler sind nicht fatal (Mail geht auch ohne Specs raus).
+fn fetch_specs(cfg: &Config, ids: &[String]) -> Result<BTreeMap<String, String>> {
+    if ids.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let (url, country, language) =
+        detail_target(&cfg.api.url).context("api.url passt nicht zum erwarteten Muster – kein Detail-Abruf möglich")?;
+    let valid: Vec<&String> = ids.iter().filter(|i| safe_part_id(i)).collect();
+    if valid.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let body = format!(
+        "{{\"country\":\"{}\",\"language\":\"{}\",\"ids\":[{}]}}",
+        country,
+        language,
+        valid.iter().map(|i| format!("\"{}\"", i)).collect::<Vec<_>>().join(",")
+    );
+
+    let mut last_err = None;
+    for attempt in 0..2 {
+        if attempt > 0 {
+            sleep(Duration::from_secs(3));
+        }
+        let output = std::process::Command::new(&cfg.api.curl_path)
+            .arg("--impersonate")
+            .arg(&cfg.api.impersonate_target)
+            .arg("--compressed")
+            .arg("-s")
+            .arg("--max-time")
+            .arg(cfg.api.timeout_seconds.to_string())
+            .arg("-X")
+            .arg("POST")
+            .arg("-H")
+            .arg("Accept: application/json")
+            .arg("-H")
+            .arg("Content-Type: application/json")
+            .arg("-H")
+            .arg(format!("Referer: {}", cfg.api.referer))
+            .arg("-d")
+            .arg(&body)
+            .arg("-o")
+            .arg(DETAIL_FILE)
+            .arg("-w")
+            .arg("%{http_code}")
+            .arg(&url)
+            .output()
+            .map_err(|e| anyhow!("Detail-Abruf fehlgeschlagen: {}", e))?;
+        let status: u32 = String::from_utf8_lossy(&output.stdout).trim().parse().unwrap_or(0);
+        if status != 200 {
+            last_err = Some(anyhow!("HTTP {} vom Detail-Endpunkt", status));
+            continue;
+        }
+        let text = fs::read_to_string(DETAIL_FILE)?;
+        let _ = fs::remove_file(DETAIL_FILE);
+        let map = parse_detail(&text);
+        log_info!("Tech-Daten geladen: {}/{} Teile", map.len(), valid.len());
+        return Ok(map);
+    }
+    let _ = fs::remove_file(DETAIL_FILE);
+    Err(last_err.unwrap_or_else(|| anyhow!("Detail-Abruf fehlgeschlagen")))
+}
+
+// ---------------------------------------------------------------------------
 // Filter, Summe, Diff
 // ---------------------------------------------------------------------------
 
@@ -621,7 +755,7 @@ fn build_subject(prefix: &str, diff: &Diff) -> String {
     )
 }
 
-fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str) -> String {
+fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeMap<String, String>) -> String {
     let mut lines = vec![
         "Mainboard-Bestand gestiegen!".to_string(),
         String::new(),
@@ -637,6 +771,9 @@ fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str) -> String {
                 "  +{}  {}  {}  ({} → {})",
                 item.delta, item.id, item.name, item.old, item.new
             ));
+            if let Some(info) = specs.get(&item.id) {
+                lines.push(format!("      {}", format_specs(info)));
+            }
         }
         let rest: Vec<&IncreasedPart> = diff.increased.iter().skip(20).collect();
         if !rest.is_empty() {
@@ -649,6 +786,9 @@ fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str) -> String {
         lines.push(format!("Neu im Sale: {} Teile", diff.new_parts.len()));
         for (id, name, stock) in diff.new_parts.iter().take(20) {
             lines.push(format!("  {}  {}  ({} Stück)", id, name, stock));
+            if let Some(info) = specs.get(id) {
+                lines.push(format!("      {}", format_specs(info)));
+            }
         }
         lines.push(String::new());
     }
@@ -657,7 +797,7 @@ fn build_mail_text(diff: &Diff, page_url: &str, checked_at: &str) -> String {
     lines.join("\n")
 }
 
-fn build_mail_html(diff: &Diff, page_url: &str, checked_at: &str) -> String {
+fn build_mail_html(diff: &Diff, page_url: &str, checked_at: &str, specs: &BTreeMap<String, String>) -> String {
     let mut parts = vec![
         "<html><body style='font-family:sans-serif'>".to_string(),
         "<h2>Mainboard-Bestand gestiegen!</h2>".to_string(),
@@ -673,9 +813,16 @@ fn build_mail_html(diff: &Diff, page_url: &str, checked_at: &str) -> String {
         parts.push("<table border='1' cellpadding='4' cellspacing='0'>".to_string());
         parts.push("<tr><th>Δ</th><th>Teilenummer</th><th>Bezeichnung</th><th>Bestand</th></tr>".to_string());
         for item in diff.increased.iter().take(20) {
+            let spec_html = match specs.get(&item.id) {
+                Some(info) => format!(
+                    "<br><span style='font-size:11px;color:#555'>{}</span>",
+                    esc(&format_specs(info))
+                ),
+                None => String::new(),
+            };
             parts.push(format!(
-                "<tr><td>+{}</td><td>{}</td><td>{}</td><td>{} → {}</td></tr>",
-                item.delta, esc(&item.id), esc(&item.name), item.old, item.new
+                "<tr><td>+{}</td><td>{}</td><td>{}{}</td><td>{} → {}</td></tr>",
+                item.delta, esc(&item.id), esc(&item.name), spec_html, item.old, item.new
             ));
         }
         parts.push("</table>".to_string());
@@ -685,9 +832,16 @@ fn build_mail_html(diff: &Diff, page_url: &str, checked_at: &str) -> String {
         parts.push("<table border='1' cellpadding='4' cellspacing='0'>".to_string());
         parts.push("<tr><th>Teilenummer</th><th>Bezeichnung</th><th>Bestand</th></tr>".to_string());
         for (id, name, stock) in diff.new_parts.iter().take(20) {
+            let spec_html = match specs.get(id) {
+                Some(info) => format!(
+                    "<br><span style='font-size:11px;color:#555'>{}</span>",
+                    esc(&format_specs(info))
+                ),
+                None => String::new(),
+            };
             parts.push(format!(
-                "<tr><td>{}</td><td>{}</td><td>{} Stück</td></tr>",
-                esc(id), esc(name), stock
+                "<tr><td>{}</td><td>{}{}</td><td>{} Stück</td></tr>",
+                esc(id), esc(name), spec_html, stock
             ));
         }
         parts.push("</table>".to_string());
@@ -798,9 +952,20 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
 
     let diff = build_diff(&old_map, &new_map);
     if diff.delta() > 0 {
+        // Tech-Daten nur für die gemailten Teile nachladen (Top-20 je Liste,
+        // ein Batch-POST) – Fehler sind nicht fatal, Mail geht auch ohne Specs raus.
+        let mut spec_ids: Vec<String> = diff.increased.iter().take(20).map(|i| i.id.clone()).collect();
+        spec_ids.extend(diff.new_parts.iter().take(20).map(|p| p.0.clone()));
+        let specs = match fetch_specs(cfg, &spec_ids) {
+            Ok(m) => m,
+            Err(e) => {
+                log_warn!("Tech-Daten nicht abrufbar – Mail ohne Specs: {}", e);
+                BTreeMap::new()
+            }
+        };
         let subject = build_subject(&cfg.mail.subject_prefix, &diff);
-        let text = build_mail_text(&diff, PAGE_URL, &ts);
-        let html = build_mail_html(&diff, PAGE_URL, &ts);
+        let text = build_mail_text(&diff, PAGE_URL, &ts, &specs);
+        let html = build_mail_html(&diff, PAGE_URL, &ts, &specs);
         let msg = match compose_mail(cfg, &subject, &text, &html) {
             Ok(m) => m,
             Err(e) => {
@@ -1025,6 +1190,59 @@ mod tests {
         assert_eq!(civil_from_days(20_089), (2025, 1, 1));
         // Datum aus der Planung: 2026-11-18 = 20775 Tage (verifiziert via datetime.date)
         assert_eq!(civil_from_days(20_775), (2026, 11, 18));
+    }
+
+    #[test]
+    fn test_specs_pipeline() {
+        // format_specs: ";;"-Liste → " | "-Join, leere Segmente weg
+        assert_eq!(
+            format_specs("DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;"),
+            "DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"
+        );
+        assert_eq!(format_specs(";;"), "");
+        assert_eq!(format_specs("DPK: NOK"), "DPK: NOK");
+        // detail_target: Locale aus api.url ableiten
+        let (url, country, lang) = detail_target("https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get").unwrap();
+        assert_eq!(url, "https://support.lenovo.com/de/de/api/v4/lbom/parts/get");
+        assert_eq!((country.as_str(), lang.as_str()), ("DE", "DE"));
+        assert!(detail_target("https://example.com").is_none());
+        // safe_part_id: nur alphanumerisch + Bindestrich
+        assert!(safe_part_id("5B20S42095"));
+        assert!(safe_part_id("02DC237"));
+        assert!(!safe_part_id("\"; rm -rf /"));
+        assert!(!safe_part_id(""));
+        // parse_detail: nur Teile mit nicht-leerer specsInfo landen in der Map
+        let map = parse_detail(
+            r#"{"code":0,"data":[
+                {"id":"02DC237","specs":{"deleted":false,"specsInfo":"DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;","specsAttributes":[{"displayTitle":"DPK","value":"WIN","transKey":"dpk"}]}},
+                {"id":"NO_SPECS"},
+                {"id":"EMPTY_SPECS","specs":{"specsInfo":""}},
+                {"id":"NULL_SPECS","specs":null}
+            ]}"#,
+        );
+        assert_eq!(map.len(), 1);
+        assert_eq!(map.get("02DC237").unwrap(), "DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;");
+        // parse_detail: garbage → leere Map, keine Panic
+        assert!(parse_detail("kaputt").is_empty());
+    }
+
+    #[test]
+    fn test_mail_contains_specs() {
+        let mut old = BTreeMap::new();
+        old.insert("A".to_string(), PartState { s: 5, n: "A".into() });
+        let mut new = BTreeMap::new();
+        new.insert("A".to_string(), PartState { s: 25, n: "AMD R7 2700U Board".into() });
+        let diff = build_diff(&old, &new);
+        let mut specs = BTreeMap::new();
+        specs.insert("A".to_string(), "DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;".to_string());
+        let text = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs);
+        assert!(text.contains("DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"));
+        let html = build_mail_html(&diff, "https://example.com", "2026-11-19T00:00:00Z", &specs);
+        assert!(html.contains("DPK: WIN | CPU: AMDR72700U | GPU Type: UMA"));
+        assert!(html.contains("font-size:11px"));
+        // ohne Specs: Mail normal
+        let text2 = build_mail_text(&diff, "https://example.com", "2026-11-19T00:00:00Z", &BTreeMap::new());
+        assert!(!text2.contains("DPK"));
     }
 
     #[test]

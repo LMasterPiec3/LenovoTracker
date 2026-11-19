@@ -149,6 +149,19 @@ name_keywords = ["B650", "AM5"]   # optional; leer/entfernt = alle Mainboards
   **automatisch still neu** – der State trägt einen Filter-Fingerprint, es
   gibt keine Garbage-Mail mit pseudo „Neu im Sale"-Teilen
 
+### Tech-Daten in der Mail
+
+Bei jedem Alarm lädt der Tracker für die gemailten Teile (Top-20 je Liste) die
+„Technischen Daten" nach — ein Batch-POST gegen `api/v4/lbom/parts/get`
+(siehe [Lenovo-API.md](Lenovo-API.md), §10) — und zeigt sie unter dem Teil an:
+
+```
+  +2  02DC237  AMD R7 2700U mit Vega10 WIN YT  (3 → 5)
+      DPK: WIN | CPU: AMDR72700U | GPU Type: UMA
+```
+
+Schlägt der Detail-Abruf fehl, geht die Mail trotzdem raus (nur ohne Specs).
+
 ### Produktivstand (CT 105, Alpine, maximal kompakt)
 
 - **33 MB Disk-Limit** (~17 MB belegt — Alpine-Base + gestrippte Binaries, kein

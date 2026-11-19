@@ -212,7 +212,83 @@ Beispiel (DE, 2026-11-19):
 - DE und GB haben dieselbe Teileliste, aber **getrennte Lagerbestände**
   (16.465 vs. 16.463)
 
-## 10. Relevanz für den Tracker (`rust-tracker`)
+## 10. Detail-Endpunkt: Technische Daten (`lbom/parts/get`)
+
+Die Clearance-Response enthält **keine** Tech-Daten — die Page enrichiert die
+Teile über einen zweiten Endpunkt (aus dem JS-Chunk `lite-parts-lookup` reverse-engineered):
+
+```
+POST https://support.lenovo.com/de/de/api/v4/lbom/parts/get
+Content-Type: application/json
+
+{"country":"DE","language":"DE","ids":["02DC237","5B21J77190"]}
+```
+
+- **POST statt GET**; `ids` ist ein Batch-Array (5 IDs getestet → 16,6 KB
+  Response ≈ 3,3 KB pro Teil; Obergrenze nicht erprobt)
+- Ohne Locale-Pfad im URL: `302` Redirect zu `/de/en/…` (Server ergänzt Locale)
+- Akamai davor wie in §2 (verifiziert nur mit curl-impersonate)
+
+### Response (gleicher Envelope, viel reichere Part-Objekte)
+
+```json
+{
+  "id": "02DC237",
+  "name": "AMD R7 2700U mit Vega10 WIN YT",
+  "basicName": "…", "bacCode": "1", "cruTier": "10", "notFru": false,
+  "parentId": "…", "motionless": false, "source": "Windchill.TPG.MM",
+  "imageNames": ["02DC237_A.jpg", "…"],
+  "imageUrls": ["https://download.lenovo.com/Images/Parts/02DC237/02DC237_A.jpg", "…"],
+  "imagesUpdated": "2022-02-19T05:09:47.725",
+  "commodityKey": "system boards",
+  "products": ["20KU"],
+  "substitutes": [{"type": "p", "id": "SBB0Q57267", …}, {"type": "s", "id": "02DC235", …}],
+  "bundles": [], "externalIds": …, "localizations": …, "supplierInfos": …,
+  "screen": …, "redemption": …,
+  "salability": {
+    "partSaleType": "Local_Promotion", "promotionId": "202608269377",
+    "clearance": true, "isCanSalability": true,
+    "stock": 3, "realStock": 3, "oversellStock": 0,
+    "value": 517.16, "formattedValue": "517,16€",
+    "tax": 0.19, "discount": 0.92,
+    "includingTaxAndDiscountValue": 46.77, "formattedIncludingTaxAndDiscountValue": "46,77€",
+    "currency": "EUR", "saleCount": null, "taxRate": { "materialType": "ZERS", "unspsCode": "43201513", "netWeight": "0.110", … }
+  },
+  "specs": {
+    "deleted": false, "type": null,
+    "specsInfo": "DPK: WIN;;CPU: AMDR72700U;;GPU Type: UMA;;",
+    "specsAttributes": [
+      {"displayTitle": "DPK", "value": "WIN", "transKey": "dpk", "suffix": null},
+      {"displayTitle": "CPU", "value": "AMDR72700U", "transKey": "cpu", "suffix": null},
+      {"displayTitle": "GPU Type", "value": "UMA", "transKey": "gpu type", "suffix": null}
+    ]
+  }
+}
+```
+
+- **`specs.specsInfo`** ist der fertige `;;`-getrennte Anzeige-String — genau das,
+  was die Page unter „Technische Daten" zeigt (Werte dort teils ohne Leerzeichen,
+  z. B. `AMDR72700U`)
+- **`specsAttributes[]`** ist die strukturierte Variante (`displayTitle`/`value`/
+  `transKey`); die deutschen Labels kommen aus dem Translations-Bundle
+  (`"gpu type" → "GPU-Typ"`, `"specs" → "Technische Daten"`)
+- Bekannte Attribut-Schlüssel aus dem Frontend: `DPK`, `CPU`, `GPU_TYPE`,
+  `GPU_NAME`, `DRAM`, `AMT`, `WLAN`, `HEATSINK`, `SIZE_INCH`, `RESOLUTION`,
+  `SCREEN_TYPE`, `TOUCH`, `PANEL_TYPE`, `BRIGHTNESS`
+- `salability.stock` spiegelt den Clearance-Bestand (hier 3 = wie in der
+  Clearance-Response); der Listenpreis steht in `value`, der bezahlte
+  Einzelpreis (inkl. MwSt. abzgl. Rabatt) in `includingTaxAndDiscountValue`
+- `substitutes` enthält Ersatzteilverweise (`type: "p"`/`"s"` + Teilenummern)
+
+### Weitere im Frontend gefundene (hier ungenutzte) Endpoints
+
+- `POST /{locale}/api/v4/lbom/parts/get3rdParty` — erwartet ebenfalls `ids`
+  (bei `id`-Feld: `code 103 "ids: must not be null"`)
+- `POST/GET /api/v4/upsell/parts/fuzzyGet`, `fuzzySortGet`,
+  `fuzzySortGet3rdParty`, `getMtmFromProductService`,
+  `getPartsLookupTitle`, `getPartsVideo`
+
+## 11. Relevanz für den Tracker (`rust-tracker`)
 
 - Abruf über `curl-impersonate`-Subprozess mit `--impersonate chrome124`
   (Akamai-Umgehung, §2), Body geht per `-o` in eine Temp-Datei und wird mit
@@ -229,20 +305,24 @@ Beispiel (DE, 2026-11-19):
   (kein Retry), HTTP ≥ 400 — siehe `fetch_once()` in `rust-tracker/src/main.rs`
 - Diff-Basis ist ausschließlich `id` + `stock` der gefilterten Teile; alle
   anderen Felder (Preise, `products`, `updateTime`) werden derzeit ignoriert
+- **Bei Mail:** die Top-20 je Diff-Liste (Anstiege + Neu im Sale) werden per
+  Batch-POST gegen `lbom/parts/get` angereichert und `specsInfo` in der Mail
+  unter dem Teil angezeigt (§10); fehlschlagender Enrichment ist nicht fatal
 
-## 11. Offene Punkte / nicht untersucht
+## 12. Offene Punkte / nicht untersucht
 
 - Währungsfeld existiert nicht — Währungssicherheit nur über Locale-Implikation
-- Verwandte Endpoints: die SPA-Chunks laden dynamisch; in `chunk-common` und
-  der Page-HTML war `clearanceParts` nicht referenziert. Der `supportapi.lenovo.com`-
-  Host taucht in der Page auf, ohne dass ein konkreter Pfad greifbar war.
-  Weitere Sibling-Endpoints wären via Browser-DevTools (Netzwerk-Tab bei
-  Nutzung der Teile-Lookup-Suche) auffindbar — bewusst nicht weiter
-  verfolgt, da der Tracker nur diesen einen Endpoint braucht
+- Verwandte Endpoints: der Detail-Endpunkt (`lbom/parts/get`) wurde aus dem
+  `lite-parts-lookup`-App-Chunk reverse-engineert (§10); die upsell-Endpoints
+  sind dort ebenfalls sichtbar, aber nicht näher untersucht. Der
+  `supportapi.lenovo.com`-Host taucht in der Page auf, ohne dass ein
+  konkreter Pfad greifbar war
 - Rate-Limit-Grenzen: nicht ausgereizt (absichtlich)
 - `saleCount`-Semantik: nur 0-Werte beobachtet
+- Batch-Obergrenze von `lbom/parts/get`-`ids` (5 getestet; der Tracker nutzt
+  max. 40 je POST)
 
-## 12. Methodik / Reproduktion
+## 13. Methodik / Reproduktion
 
 ```bash
 # Beispiel-Request (im Container 105):
