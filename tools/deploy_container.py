@@ -6,7 +6,7 @@ import sys
 
 import paramiko
 
-HOST = os.environ.get("PVE_SSH_HOST", "100.82.25.128")
+HOST = os.environ["PVE_SSH_HOST"]  # keine Default-IP im Repo
 PASSWORD = os.environ.get("PVE_SSH_PASS", "")
 
 FILES = "lenovo_tracker.py config.example.toml install.sh lenovo-tracker.service README.md"

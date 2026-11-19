@@ -10,7 +10,7 @@ import sys
 
 import paramiko
 
-HOST = os.environ.get("PVE_SSH_HOST", "100.82.25.128")
+HOST = os.environ["PVE_SSH_HOST"]  # keine Default-IP im Repo
 USER = os.environ.get("PVE_SSH_USER", "root")
 PASSWORD = os.environ.get("PVE_SSH_PASS", "")
 
