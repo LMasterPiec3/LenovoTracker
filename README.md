@@ -28,6 +28,9 @@ nutzt deshalb [`curl_cffi`](https://pypi.org/project/curl-cffi/) mit Chrome-TLS-
 (`impersonate="chrome"`) — verifiziert funktionierend (Stand 2026-11-18: 9.261 Teile,
 3.128 Mainboards, 16.489 Stück Bestand).
 
+Alle Reverse-Engineering-Details zur API (Envelope, Part-Schema, Bot-Schutz,
+Regionen, Parameter-Matrix) stehen in [Lenovo-API.md](Lenovo-API.md).
+
 ## LXC-Container erstellen (Proxmox-Host)
 
 ```bash
