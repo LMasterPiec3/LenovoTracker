@@ -126,6 +126,16 @@ rc-update add lenovo-tracker default && rc-service lenovo-tracker start
   `/var/log/lenovo-tracker.log` (Postfix loggt nach `/var/log/messages`)
 - Staat: `/var/lib/lenovotracker/state.json` + `history.csv` (identisch zu Debian)
 
+### Produktivstand (CT 105, Alpine, maximal kompakt)
+
+- **44 MB RAM-Limit** (Peak-Anon ~40 MB, Page-Cache recycelt der Kernel; `oom_kill 0`
+  über Testläufe; 32 MB Swap als Überlauf-Puffer) · 512 MB Disk (sparse, ~55 MB real)
+- **Kein dcron-paket**: crond läuft als `::respawn:`-Eintrag in `/etc/inittab`
+  (busybox crond im Vordergrund, init überwacht und startet bei Crash automatisch neu)
+- Resident: init + syslogd + crond ≈ **2 MB RAM**, CPU ~0,1 % im Jahresmittel
+- Mail: Direkt-SMTP an `mail.protonmail.ch:25` (Plain-SMTP; STARTTLS-Pfad in
+  `lettre` hängt bei Proton — bei Bedarf postfix nachrüsten)
+
 ## Tests (Entwicklung)
 
 ```bash
