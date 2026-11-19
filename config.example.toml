@@ -1,30 +1,29 @@
-# Lenovo Clearance-Sale Mainboard-Tracker
-# Kopie nach /etc/lenovotracker/config.toml und anpassen.
+# Lenovo Clearance-Sale Mainboard-Tracker (Rust-Version)
+# Wird von lenovo-tracker-setup.sh nach /etc/lenovotracker/config.toml
+# generiert — manuelle Kopie anpassen und neu installieren: pct push 105 …
+# Alle Felder inkl. Erklärung: siehe README.md
 
 [api]
 url = "https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get"
 referer = "https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
 timeout_seconds = 60
-retries = 3                # Retry-Backoff: 5s, 15s, 45s
+retries = 3                # Retry-Backoff: 5s, 15s, 45s (kein Retry bei HTTP 403)
+curl_path = "/opt/lenovo-tracker/curl-impersonate"
+impersonate_target = "chrome124"
 
 [tracker]
-interval_minutes = 30
+interval_minutes = 30      # dokumentarisch — cron steuert das Intervall
 commodity_keys = ["system boards"]   # Filter: Mainboards (lowercase, translationssicher)
+name_keywords = []         # optional: ["RTX"] oder ["B650", "AM5"] — Substring auf Name+Teilenummer
 
 [mail]
-mode = "sendmail"                    # "sendmail" (Default, wie Proxmox) | "smtp"
-sendmail_path = "/usr/sbin/sendmail"
+mode = "smtp"              # die Rust-Version unterstützt nur smtp (kein Mail-Daemon im CT)
 from = "Lenovo@aomme.de"
 to = ["Lenovo@aomme.de"]
-extra_recipients = []                # weitere Adressen, optionale Liste
+extra_recipients = []      # z. B. ["du@anderswo.de"]
 subject_prefix = "[Lenovo Tracker]"
-
-# Nur relevant bei mode = "smtp" (Plan B, falls der MTA-Pfad Probleme macht):
-smtp_host = ""
-smtp_port = 587
-smtp_user = ""
-smtp_password = ""
-smtp_starttls = true
+smtp_host = "mail.protonmail.ch"
+smtp_port = 25             # Plain-SMTP (TLS-Stack bewusst aus dem Binary entfernt)
 
 [paths]
-state_dir = "/var/lib/lenovotracker"  # state.json + history.csv
+state_dir = "/var/lib/lenovotracker"   # state.json + history.csv

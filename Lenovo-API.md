@@ -342,8 +342,8 @@ Content-Type: application/json
   'https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get'
 ```
 
-- Parameter-Matrix: `PVE_SSH_HOST=… PVE_SSH_PASS=… python tools/api_probe.py`
-  (probiert 10 Query-Varianten und zählt Teile/Boards im Body)
+- Parameter-Matrix: `bash lenovo-tracker-setup.sh --probe 105` (probiert die
+  Query-Varianten und zählt Teile/Boards im Body)
 - Schema-/Verteilungs-Analysen: Body per `pct pull` auf den Host, dort mit
   `python3` (json-Modul) ausgewertet; alle Zahlen dieses Dokuments sind
   Snapshots vom 2026-11-19
