@@ -13,7 +13,7 @@ Regionen, Parameter-Matrix): **[Lenovo-API.md](Lenovo-API.md)**.
 
 ```
 Proxmox-Host
-└── LXC „lenovo-tracker-rust" (Alpine, 32 MB RAM / 32 MB Swap / ~50 MB Disk)
+└── LXC „lenovo-tracker-rust" (Alpine, 32 MB RAM / 32 MB Swap / ~256 MB Disk)
     ├── /opt/lenovo-tracker/lenovo-tracker        # Rust-Binary (~1 MB, gestrippt)
     ├── /opt/lenovo-tracker/curl-impersonate      # Chrome-TLS-Imitation (Akamai-Umgehung)
     ├── /etc/lenovotracker/config.toml            # Konfiguration
@@ -52,21 +52,22 @@ bash lenovo-tracker-setup.sh
 ```
 
 Das Script richtet **alles** ein (Stil der Proxmox-Community-Helper-Scripts):
-Binary aus den GitHub Releases laden (GitHub Actions baut das musl-Binary bei
-jedem Push — **kein Build nötig**) → Produktions-CT (Alpine, minimal) →
+interaktives whiptail-Menü (wird bei Bedarf via `apt` nachinstalliert) →
+Binary aus den GitHub Releases laden → Produktions-CT (Alpine, minimal) →
 curl-impersonate → Config → Cron → Dry-Run-Verifikation.
 
 Binary-Quelle mit Fallback-Kette: **GitHub-Release-Download** → vorhandenes
 `/root/lenovo-tracker-rs` (`SKIP_BUILD=1`) → temporärer Build-CT (Fallback,
 `BUILD_METHOD=build` erzwingen). Der Build-CT wird nur noch gebraucht, wenn
-mal kein Release-Asset existiert.
+mal kein Release-Asset existiert; er baut dank `+crt-static` ein statisches
+musl-Binary (Build-/Pull-Fehler brechen das Setup ab).
 
 | Variable | Default | Bedeutung |
 |---|---|---|
 | `VMID` | `105` | Produktions-CT |
 | `BUILD_VMID` | `104` | temporärer Build-Container |
 | `RAM` / `SWAP` | `32` / `32` | MB (Peak gemessen ~20 MB) |
-| `DISK` | `local:0.05` | Rootfs-Größe |
+| `DISK` | `local:0.25` | Rootfs-Größe |
 | `NET0` | statisch `10.10.10.$VMID/24` an `vmbr1` | oder komplett überschreiben |
 | `MAIL_FROM` / `MAIL_TO` | `Lenovo@aomme.de` | Absender/Empfänger |
 | `SMTP_HOST` / `SMTP_PORT` | `mail.protonmail.ch` / `25` | Plain-SMTP |
@@ -75,18 +76,14 @@ mal kein Release-Asset existiert.
 | `FORCE=1` | – | existierenden CT löschen + neu aufbauen |
 | `SKIP_BUILD=1` | – | vorhandenes `/root/lenovo-tracker-rs` nutzen |
 
-Weitere Kommandos (funktionieren auch im One-Liner):
+Weitere Kommandos (auch im One-Liner; im Menü als Menüpunkte vorhanden):
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)" --probe 105
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)" --peak 105
-bash lenovo-tracker-setup.sh --uninstall    # bei Repo-Klon
-```
-
-```bash
-bash lenovo-tracker-setup.sh --probe 105    # API-Parameter-Matrix live testen
-bash lenovo-tracker-setup.sh --peak 105     # Peak-RAM messen (3 Läufe, CT-Restart)
-bash lenovo-tracker-setup.sh --uninstall    # CT + Host-Artefakte entfernen
+bash lenovo-tracker-setup.sh --status 105    # CT-Status, Cron, Log und State
+bash lenovo-tracker-setup.sh --test-mail 105 # Test-Mail senden
+bash lenovo-tracker-setup.sh --probe 105     # API-Parameter-Matrix live testen
+bash lenovo-tracker-setup.sh --peak 105      # Peak-RAM messen (3 Läufe, CT-Restart)
+bash lenovo-tracker-setup.sh --uninstall     # CT + Host-Artefakte entfernen
 ```
 
 ## Konfiguration (`/etc/lenovotracker/config.toml`)
@@ -145,12 +142,13 @@ Daten:
 
 ## Produktion (CT 105)
 
-- **32 MB RAM-Limit** (Peak ~20 MB, Boot-Peak ~15 MB; 32 MB Swap als Puffer)
-- **~41 MB Rootfs** (Alpine + gestrippte Binaries; nur ~10 MB frei — der Tracker
-  räumt seine Body-Temp-Datei selbst weg, Debug-Tools müssen `/tmp` sauber
-  hinterlassen, sonst curl `exit=23`/ENOSPC mitten im Transfer)
-- Binary ~1 MB: kein TLS-Stack (lettre ohne TLS-Feature → kein OpenSSL), keine
-  `time`-Crate (eigene RFC3339-Formatierung); Build ~25 s im Alpine-CT
+- **32 MB RAM-Limit** (Peak ~16–20 MB, Boot-Peak ~15 MB; 32 MB Swap als Puffer)
+- **~44 MB Rootfs belegt** (Alpine + 1,1 MB statisches Binary + 33 MB
+  curl-impersonate; 256-MB-Disk → ~170 MB frei für Logs/History; Debug-Tools
+  müssen `/tmp` sauber hinterlassen, sonst curl `exit=23`/ENOSPC im Transfer)
+- Binary ~1,1 MB, statisch gelinkt (musl `+crt-static`): kein TLS-Stack (lettre
+  ohne TLS-Feature → kein OpenSSL), keine `time`-Crate (eigene
+  RFC3339-Formatierung); Build ~25 s im Alpine-CT
 - Mail: Direkt-SMTP an `mail.protonmail.ch:25` (Plain; `smtp_starttls` wird
   ignoriert — der STARTTLS-Pfad hing bei Proton ohnehin)
 - crond ohne dcron-Paket: `::respawn`-Eintrag in `/etc/inittab`, init startet

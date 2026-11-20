@@ -2,7 +2,7 @@
 
 **Stand: 2026-11-19** — alle Angaben sind empirisch verifiziert (≈ 45 Requests
 an diesem Tag via `curl-impersonate` v2.3.2 aus CT 105/104, Auswertung mit
-`tools/api_probe.py` + Host-Python). Die API ist undokumentiert/privat —
+`python3` auf dem Host). Die API ist undokumentiert/privat —
 alles hier kann sich jederzeit ändern.
 
 ---

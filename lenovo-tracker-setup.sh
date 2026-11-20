@@ -73,7 +73,7 @@ CT_HOSTNAME="${CT_HOSTNAME:-lenovo-tracker-rust}"
 RAM="${RAM:-32}"
 SWAP="${SWAP:-32}"
 CPULIMIT="${CPULIMIT:-0.25}"
-DISK="${DISK:-local:0.05}"
+DISK="${DISK:-local:0.25}"
 BRIDGE="${BRIDGE:-vmbr1}"
 GATEWAY="${GATEWAY:-10.10.10.1}"
 BASE_IP="${BASE_IP:-10.10.10}"
@@ -112,10 +112,12 @@ template_path() {
 }
 
 toml_array() {
-  local in="${1// /}" out="" p
+  local in="$1" out="" p
   if [[ -z "$in" ]]; then echo "[]"; return; fi
   IFS=',' read -ra parts <<< "$in"
   for p in "${parts[@]}"; do
+    p="${p#"${p%%[![:space:]]*}"}"
+    p="${p%"${p##*[![:space:]]}"}"
     [[ -z "$p" ]] && continue
     out+=", \"${p}\""
   done
@@ -146,7 +148,7 @@ ask() {  # ask VARNAME "Prompt" "Default"  (non-tty → Default)
 }
 
 header_info() {
-  clear
+  [[ -n "${TERM:-}" ]] && clear
   echo -e "${GREEN}"
   cat <<'BANNER'
  _                          _____                    _
@@ -164,9 +166,37 @@ BANNER
 prereq() {
   [[ $EUID -eq 0 ]] || die "Bitte als root ausführen (pct braucht root)."
   command -v pct >/dev/null 2>&1 || die "pct nicht gefunden – das Script gehört auf einen Proxmox-VE-Host."
-  local tpl; tpl="$(template_path)"
-  [[ -n "$tpl" ]] || die "Kein Alpine-Template in /var/lib/vz/template/cache/ – erst laden (pveam)."
-  echo "$tpl"
+}
+
+# Setup-UI: whiptail bei Bedarf nachinstallieren (auf PVE-Hosts oft nicht vorhanden)
+ensure_ui() {
+  command -v whiptail >/dev/null 2>&1 && return 0
+  [[ "$NONINTERACTIVE" == "1" ]] && return 1
+  [[ -t 0 || -t 1 ]] || return 1
+  msg_info "whiptail fehlt – installiere Setup-UI"
+  { apt-get install -y -qq whiptail || { apt-get update -qq && apt-get install -y -qq whiptail; }; } \
+    >"$LAST_LOG" 2>&1 || true
+  if command -v whiptail >/dev/null 2>&1; then
+    msg_ok "whiptail installiert"
+    return 0
+  fi
+  msg_warn "whiptail nicht installierbar – Fallback ohne Dialoge"
+  return 1
+}
+
+# Alpine-Template automatisch laden, falls keins vorhanden ist
+TEMPLATE_TPL=""
+ensure_template() {
+  TEMPLATE_TPL="$(template_path)"
+  [[ -n "$TEMPLATE_TPL" ]] && return 0
+  msg_info "Kein Alpine-Template gefunden – lade via pveam"
+  pveam update >"$LAST_LOG" 2>&1 || true
+  local name
+  name="$(pveam available --section system 2>/dev/null | awk '/alpine-/ {print $2}' | sort -V | tail -1)"
+  [[ -n "$name" ]] || die "Kein Alpine-Template via pveam verfügbar – Repos/Internet prüfen."
+  spin_run "Alpine-Template ${name} laden" pveam download local "$name"
+  TEMPLATE_TPL="$(template_path)"
+  [[ -n "$TEMPLATE_TPL" ]] || die "Template-Download fehlgeschlagen."
 }
 
 # Quellen: lokales Repo bevorzugt, sonst von GitHub raw laden
@@ -182,10 +212,10 @@ fetch_sources() {
   local tmp="/root/.lenovo-tracker-src"
   msg_info "Quellen von GitHub laden (${REPO_RAW})"
   rm -rf "$tmp" && mkdir -p "$tmp"
-  ct_download "${REPO_RAW}/rust-tracker/Cargo.toml" "${tmp}/Cargo.toml" || die "Cargo.toml nicht ladbar von ${REPO_RAW}"
-  ct_download "${REPO_RAW}/rust-tracker/src/main.rs" "${tmp}/main.rs" || die "main.rs nicht ladbar von ${REPO_RAW}"
+  ct_download "${REPO_RAW}/rust-tracker/Cargo.toml" "${tmp}/Cargo.toml" || true
+  ct_download "${REPO_RAW}/rust-tracker/src/main.rs" "${tmp}/main.rs" || true
   [[ -s "${tmp}/Cargo.toml" && -s "${tmp}/main.rs" ]] \
-    || die "Quellen nicht ladbar von ${REPO_RAW} – Repo public? REPO_RAW/REPO_REF prüfen."
+    || die "Quellen nicht ladbar von ${REPO_RAW} – Repo privat? Dann Repo lokal klonen und Script aus dem Repo-Ordner starten."
   SRC_CARGO="${tmp}/Cargo.toml"
   SRC_MAIN="${tmp}/main.rs"
   msg_ok "Quellen geladen (main.rs $(stat -c %s "$SRC_MAIN") B)"
@@ -203,7 +233,7 @@ ui_available() {
 
 wt_menu() {  # wt_menu <title> <text> item1 desc1 [item2 desc2 …] -> echo Auswahl
   local title="$1" text="$2"; shift 2
-  whiptail --backtitle "$BACKTITLE" --title "$title" --menu "$text" 20 72 8 "$@" \
+  whiptail --backtitle "$BACKTITLE" --title "$title" --menu "$text" 20 74 10 "$@" \
     --ok-button "<Select>" --cancel-button "<Exit Script>" \
     3>&1 1>&2 2>&3
 }
@@ -287,27 +317,35 @@ build_in_ct() {  # Fallback: Binary im temporären Build-CT bauen
   pct exec "${BUILD_VMID}" -- mkdir -p /build/src
   pct push "${BUILD_VMID}" "$SRC_CARGO" /build/Cargo.toml
   pct push "${BUILD_VMID}" "$SRC_MAIN" /build/src/main.rs
-  spin_run "cargo build --release" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo build --release'
+  rm -f "$HOST_BIN"
   spin_run "cargo test --release (12 Tests)" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo test --release 2>&1 | grep "test result"'
-  pct pull "${BUILD_VMID}" /build/target/release/lenovo-tracker "$HOST_BIN"
+  spin_run "cargo rustc --release (statisch, musl)" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo rustc --release -- -C target-feature=+crt-static' \
+    || die "Statischer Build fehlgeschlagen (Log: ${LAST_LOG})"
+  pct pull "${BUILD_VMID}" /build/target/release/lenovo-tracker "$HOST_BIN" \
+    || die "Binary nicht aus dem Build-CT ladbar – Build fehlgeschlagen?"
   command -v strip >/dev/null 2>&1 && strip -s "$HOST_BIN" || true
-  pct destroy "${BUILD_VMID}" --purge >/dev/null
-  msg_ok "Binary gebaut: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B) – Build-CT entfernt"
+  pct destroy "${BUILD_VMID}" --purge >/dev/null || msg_warn "Build-CT ${BUILD_VMID} konnte nicht entfernt werden"
+  msg_ok "Binary gebaut: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B)"
 }
 
 cmd_setup() {
-  local tpl; tpl="$(prereq)"
+  prereq
+  ensure_ui || true
 
   if ui_available; then
     local sel
-    sel="$(wt_menu "Lenovo-Tracker" "Choose an option:\nUse TAB or Arrow keys to navigate, ENTER to select." \
-      "default"  "Standard-Install (Defaults)" \
-      "advanced" "Advanced Install (alles abfragen)" \
-      "probe"    "API-Probe (Live-Test der Parameter-Matrix)" \
-      "peak"     "Peak-RAM-Messung (CT-Restart)" \
+    sel="$(wt_menu "Lenovo-Tracker Setup" "Option wählen (Pfeiltasten/TAB, ENTER bestätigt):" \
+      "default"  "Standard-Installation (empfohlen)" \
+      "advanced" "Erweiterte Installation (alle Werte)" \
+      "status"   "Status & Log anzeigen" \
+      "testmail" "Test-Mail senden" \
+      "probe"    "API-Probe (Live-Test)" \
+      "peak"     "Peak-RAM messen (CT-Neustart)" \
       "uninstall" "Deinstallieren" \
       "exit"     "Beenden")" || exit 0
     case "$sel" in
+      status)    cmd_status "$VMID"; exit 0 ;;
+      testmail)  cmd_testmail "$VMID"; exit 0 ;;
       probe)     cmd_probe "$VMID"; exit 0 ;;
       peak)      cmd_peak "$VMID"; exit 0 ;;
       uninstall) cmd_uninstall; exit 0 ;;
@@ -322,6 +360,9 @@ cmd_setup() {
     header_info
     msg_warn "Whiptail/TTY nicht verfügbar – fahre mit Env-Defaults fort (NONINTERACTIVE)."
   fi
+
+  ensure_template
+  local tpl="$TEMPLATE_TPL"
 
   # ---------- 1) Binary besorgen (GitHub-Release → lokal → Build-CT-Fallback) ----------
   local bin_ok=0
@@ -438,6 +479,8 @@ EOF
   dry="$(pct exec "${VMID}" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --dry-run 2>&1 || true)"
   if echo "$dry" | grep -q "DRY-RUN"; then
     msg_ok "$dry"
+  elif echo "$dry" | grep -q "Error relocating"; then
+    die "Binary läuft im CT nicht (dynamisch gelinkt?) – Build mit crt-static prüfen."
   else
     msg_warn "Dry-Run lieferte keine Daten (Akamai 403? Netzwerk?): $dry"
     msg_warn "Der Cron versucht es alle 30 Min erneut – Log: pct exec ${VMID} -- tail ${LOG_FILE}"
@@ -459,7 +502,8 @@ EOF
 }
 
 cmd_probe() {
-  local id="${2:-$VMID}"
+  local id="${1:-$VMID}"
+  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht – Probe braucht den laufenden Tracker-CT."
   local CURLBIN="${APP_DIR}/curl-impersonate"
   local BASE="https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get"
   local REF="https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
@@ -485,7 +529,8 @@ cmd_probe() {
 }
 
 cmd_peak() {
-  local id="${2:-$VMID}"
+  local id="${1:-$VMID}"
+  pct status "$id" >/dev/null 2>&1 || die "CT ${id} existiert nicht."
   local CG="/sys/fs/cgroup/lxc/${id}"
   [[ -f "${CG}/memory.peak" ]] || die "Cgroup-Pfad ${CG}/memory.peak nicht gefunden"
   msg_warn "CT ${id} wird neu gestartet (nullt den Cgroup-Peak) – kurze Unterbrechung"
@@ -501,8 +546,33 @@ cmd_peak() {
   echo "  MAX: $((max/1024)) KB = $((max/1024/1024)) MB"
 }
 
+cmd_status() {
+  local id="${1:-$VMID}"
+  echo "== CT ${id} =="
+  if ! pct status "$id" >/dev/null 2>&1; then
+    msg_warn "CT ${id} existiert nicht (noch nicht installiert)."
+    return 0
+  fi
+  pct status "$id"
+  echo "== Cron (CT ${id}) =="
+  pct exec "$id" -- sh -c "grep lenovo-tracker /etc/crontabs/root 2>/dev/null || echo '(kein Cron-Eintrag)'"
+  echo "== Letzte Log-Zeilen =="
+  pct exec "$id" -- sh -c "tail -n 15 ${LOG_FILE} 2>/dev/null || echo '(kein Log)'"
+  echo "== State =="
+  pct exec "$id" -- sh -c "cat ${STATE_DIR}/state.json 2>/dev/null || echo '(kein State – Baseline noch nicht gesetzt)'"
+  echo
+  echo "Config: pct exec ${id} -- vi ${CONF_DIR}/config.toml"
+}
+
+cmd_testmail() {
+  local id="${1:-$VMID}"
+  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht."
+  msg_info "Sende Test-Mail (CT ${id})"
+  pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --test-mail
+}
+
 cmd_uninstall() {
-  prereq >/dev/null
+  prereq
   if [[ "$FORCE" != "1" ]]; then
     if ui_available; then
       wt_yesno "Deinstallieren" "Löscht CT ${VMID} inkl. State/History\nund die Host-Binaries.\n\nWirklich deinstallieren?" || { echo "Abbruch."; return; }
@@ -510,8 +580,12 @@ cmd_uninstall() {
       die "Löschen braucht FORCE=1 im nicht-interaktiven Modus."
     fi
   fi
-  pct stop "${VMID}" >/dev/null 2>&1 || true
-  pct destroy "${VMID}" --purge && msg_ok "CT ${VMID} entfernt"
+  if pct status "${VMID}" >/dev/null 2>&1; then
+    pct stop "${VMID}" >/dev/null 2>&1 || true
+    pct destroy "${VMID}" --purge && msg_ok "CT ${VMID} entfernt"
+  else
+    msg_warn "CT ${VMID} existiert nicht – nichts zu löschen"
+  fi
   rm -f /root/lenovo-tracker-rs /root/lenovo-tracker-rs2 /root/lt-new \
         /root/curl-impersonate /root/curl-impersonate-check /root/lenovotracker-config.toml \
         /root/.lenovo-tracker-src
@@ -534,12 +608,14 @@ Mit Repo-Klon:
   VMID=110 BUILD_VMID=111 bash lenovo-tracker-setup.sh   # eigene IDs
 
 Unterkommandos (auch im One-Liner):
+  … --status [VMID]    CT-Status, Cron, Log und State anzeigen
+  … --test-mail [VMID] Test-Mail senden
   … --probe [VMID]     API-Parameter-Matrix live testen
   … --peak [VMID]      Peak-RAM messen (CT-Restart, 3 Läufe)
   … --uninstall        CT + Host-Artefakte entfernen
 
 Env-Defaults (überschreibbar): VMID=105 BUILD_VMID=104 RAM=32 SWAP=32 CPULIMIT=0.25
-  DISK=local:0.05 NET0 MAIL_FROM MAIL_TO EXTRA_RECIPIENTS SMTP_HOST SMTP_PORT
+  DISK=local:0.25 NET0 MAIL_FROM MAIL_TO EXTRA_RECIPIENTS SMTP_HOST SMTP_PORT
   COMMODITY_KEYS KEYWORDS CI_VERSION FORCE SKIP_BUILD REPO_REF NONINTERACTIVE
 
 Lizenz: MIT – free to use (siehe LICENSE). Copyright (c) 2026 LMasterPiec3
@@ -554,6 +630,8 @@ MODE="${ARGS[0]:-setup}"
 
 case "$MODE" in
   setup)        cmd_setup ;;
+  --status)     cmd_status "${ARGS[1]:-$VMID}" ;;
+  --test-mail)  cmd_testmail "${ARGS[1]:-$VMID}" ;;
   --probe)      cmd_probe "${ARGS[1]:-$VMID}" ;;
   --peak)       cmd_peak "${ARGS[1]:-$VMID}" ;;
   --uninstall)  cmd_uninstall ;;
