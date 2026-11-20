@@ -1,8 +1,7 @@
 # Lenovo Clearance-Sale Mainboard-Tracker (Rust)
 
 Überwacht die öffentliche [Lenovo Clearance-Sale-Seite](https://support.lenovo.com/de/de/parts-lookup/clearance-sale)
-und sendet eine E-Mail (von/an **Lenovo@aomme.de**, weitere Empfänger via
-`extra_recipients`), sobald die Gesamtsumme des verfügbaren Mainboard-Bestands
+und sendet eine E-Mail sobald die Gesamtsumme des verfügbaren Mainboard-Bestands
 (Commodity „system boards") **steigt** — inkl. „Technischen Daten" der
 betroffenen Teile.
 
