@@ -37,10 +37,16 @@ public sein, Quellen werden automatisch von GitHub raw nachgeladen):
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
 ```
 
-Mit Parametern (Environment-Variablen funktionieren wie gehabt):
+Es gibt **keine Standardwerte**: Das interaktive Menü fragt alle Felder leer
+ab (Pflichtfelder werden validiert). Ohne TTY (`NONINTERACTIVE=1`) müssen alle
+Pflichtwerte als Environment-Variablen gesetzt sein:
 
 ```bash
-VMID=110 KEYWORDS="RTX" MAIL_TO="du@example.de" \
+VMID=110 BUILD_VMID=111 CT_HOSTNAME=lenovo-tracker RAM=32 SWAP=32 \
+CPULIMIT=0.25 DISK=local:0.25 BRIDGE=vmbr1 GATEWAY=10.10.10.1 BASE_IP=10.10.10 \
+MAIL_FROM="du@example.de" MAIL_TO="du@example.de" \
+SMTP_HOST="mail.example.de" SMTP_PORT=25 COMMODITY_KEYS="system boards" \
+KEYWORDS="RTX" \
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
 ```
 
@@ -62,19 +68,23 @@ Binary-Quelle mit Fallback-Kette: **GitHub-Release-Download** → vorhandenes
 mal kein Release-Asset existiert; er baut dank `+crt-static` ein statisches
 musl-Binary (Build-/Pull-Fehler brechen das Setup ab).
 
-| Variable | Default | Bedeutung |
+| Variable | Pflicht | Bedeutung |
 |---|---|---|
-| `VMID` | `105` | Produktions-CT |
-| `BUILD_VMID` | `104` | temporärer Build-Container |
-| `RAM` / `SWAP` | `32` / `32` | MB (Peak gemessen ~20 MB) |
-| `DISK` | `local:0.25` | Rootfs-Größe |
-| `NET0` | statisch `10.10.10.$VMID/24` an `vmbr1` | oder komplett überschreiben |
-| `MAIL_FROM` / `MAIL_TO` | `Lenovo@aomme.de` | Absender/Empfänger |
-| `SMTP_HOST` / `SMTP_PORT` | `mail.protonmail.ch` / `25` | Plain-SMTP |
-| `KEYWORDS` | leer | Keyword-Filter, z. B. `KEYWORDS="RTX"` |
-| `COMMODITY_KEYS` | `system boards` | Commodity-Filter |
-| `FORCE=1` | – | existierenden CT löschen + neu aufbauen |
-| `SKIP_BUILD=1` | – | vorhandenes `/root/lenovo-tracker-rs` nutzen |
+| `VMID` | ja | Produktions-CT |
+| `BUILD_VMID` | ja | temporärer Build-Container |
+| `CT_HOSTNAME` | ja | Hostname des Tracker-CTs |
+| `RAM` / `SWAP` | ja | MB (Peak gemessen ~16–20 MB) |
+| `CPULIMIT` | ja | z. B. `0.25` (Viertel-Kern) |
+| `DISK` | ja | Rootfs-Größe, z. B. `local:0.25` |
+| `BRIDGE` / `GATEWAY` / `BASE_IP` | ja | Netz (CT-IP = `<BASE_IP>.<VMID>`) |
+| `NET0` | nein | komplette Netzkonfiguration statt `BRIDGE`/`GATEWAY`/`BASE_IP` |
+| `MAIL_FROM` / `MAIL_TO` | ja | Absender/Empfänger (komma-getrennt) |
+| `SMTP_HOST` / `SMTP_PORT` | ja | Plain-SMTP |
+| `COMMODITY_KEYS` | ja | Commodity-Filter (z. B. `system boards`) |
+| `KEYWORDS` | nein | Keyword-Filter, z. B. `KEYWORDS="RTX"` |
+| `EXTRA_RECIPIENTS` | nein | weitere Empfänger (komma-getrennt) |
+| `FORCE=1` | nein | existierenden CT löschen + neu aufbauen |
+| `SKIP_BUILD=1` | nein | vorhandenes `/root/lenovo-tracker-rs` nutzen |
 
 Weitere Kommandos (auch im One-Liner; im Menü als Menüpunkte vorhanden):
 

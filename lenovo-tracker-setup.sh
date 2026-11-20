@@ -21,8 +21,9 @@
 #    … --uninstall       CT + Host-Artefakte entfernen
 #    … --help            Usage
 #
-#  Automatisierung: NONINTERACTIVE=1 (keine Prompts, nur Env/Defaults)
-#  Env-Overrides: VMID BUILD_VMID RAM SWAP CPULIMIT DISK NET0 MAIL_FROM …
+#  Automatisierung: NONINTERACTIVE=1 (keine Prompts – alle Pflichtwerte per Env)
+#  Pflichtwerte: VMID BUILD_VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE
+#                GATEWAY BASE_IP MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
 #
 #  Lizenz: MIT – free to use (siehe LICENSE im Repo).
 #  Copyright (c) 2026 LMasterPiec3
@@ -66,18 +67,29 @@ spin_run() {
   return $rc
 }
 
-# --------------------------------- Defaults ---------------------------------
-VMID="${VMID:-105}"
-BUILD_VMID="${BUILD_VMID:-104}"
-CT_HOSTNAME="${CT_HOSTNAME:-lenovo-tracker-rust}"
-RAM="${RAM:-32}"
-SWAP="${SWAP:-32}"
-CPULIMIT="${CPULIMIT:-0.25}"
-DISK="${DISK:-local:0.25}"
-BRIDGE="${BRIDGE:-vmbr1}"
-GATEWAY="${GATEWAY:-10.10.10.1}"
-BASE_IP="${BASE_IP:-10.10.10}"
-NET0="${NET0:-name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth}"
+# ---------------------- Konfiguration (keine Defaults) -----------------------
+# Alle Setup-Werte werden interaktiv abgefragt oder müssen per Env gesetzt
+# werden – es gibt keine vorgegebenen Standardwerte.
+VMID="${VMID:-}"
+BUILD_VMID="${BUILD_VMID:-}"
+CT_HOSTNAME="${CT_HOSTNAME:-}"
+RAM="${RAM:-}"
+SWAP="${SWAP:-}"
+CPULIMIT="${CPULIMIT:-}"
+DISK="${DISK:-}"
+BRIDGE="${BRIDGE:-}"
+GATEWAY="${GATEWAY:-}"
+BASE_IP="${BASE_IP:-}"
+NET0="${NET0:-}"
+MAIL_FROM="${MAIL_FROM:-}"
+MAIL_TO="${MAIL_TO:-}"
+EXTRA_RECIPIENTS="${EXTRA_RECIPIENTS:-}"
+SMTP_HOST="${SMTP_HOST:-}"
+SMTP_PORT="${SMTP_PORT:-}"
+COMMODITY_KEYS="${COMMODITY_KEYS:-}"
+KEYWORDS="${KEYWORDS:-}"
+
+# Technische Konstanten (keine Setup-Werte)
 BUILD_RAM="${BUILD_RAM:-3072}"
 BUILD_DISK="${BUILD_DISK:-local:4}"
 CI_VERSION="${CI_VERSION:-v2.3.2}"
@@ -91,14 +103,7 @@ HOST_BIN="/root/lenovo-tracker-rs"
 RELEASE_URL="https://github.com/LMasterPiec3/LenovoTracker/releases/latest/download/lenovo-tracker"
 
 REPO_RAW="${REPO_RAW:-https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/${REPO_REF:-main}}"
-MAIL_FROM="${MAIL_FROM:-Lenovo@aomme.de}"
-MAIL_TO="${MAIL_TO:-Lenovo@aomme.de}"
-EXTRA_RECIPIENTS="${EXTRA_RECIPIENTS:-}"
 SUBJECT_PREFIX="${SUBJECT_PREFIX:-[Lenovo Tracker]}"
-SMTP_HOST="${SMTP_HOST:-mail.protonmail.ch}"
-SMTP_PORT="${SMTP_PORT:-25}"
-COMMODITY_KEYS="${COMMODITY_KEYS:-system boards}"
-KEYWORDS="${KEYWORDS:-}"
 FORCE="${FORCE:-0}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 BUILD_METHOD="${BUILD_METHOD:-release}"   # release (GitHub-Download) | build (Build-CT erzwingen)
@@ -136,15 +141,6 @@ wait_ct() {
 ct_download() {
   local url="$1" out="$2"
   if command -v curl >/dev/null 2>&1; then curl -sSfL -o "$out" "$url"; else wget -qO "$out" "$url"; fi
-}
-
-ask() {  # ask VARNAME "Prompt" "Default"  (non-tty → Default)
-  local input=""
-  if [[ -t 0 ]]; then
-    read -rp "  ${C_INFO}→ ${2} [${3}]: ${NC}" input || input=""
-  fi
-  input="${input:-$3}"
-  printf -v "$1" '%s' "$input"
 }
 
 header_info() {
@@ -223,8 +219,8 @@ fetch_sources() {
 
 # ------------------------------- Whiptail-TUI --------------------------------
 # Wie die Community-Scripts: Dialoge mit whiptail (blauer Fullscreen, Menü mit
-# Pfeiltasten/TAB, InputBoxen, YesNo). Fallback ohne whiptail/nicht-tty:
-# Defaults aus den Env-Variablen (NONINTERACTIVE-Verhalten).
+# Pfeiltasten/TAB, InputBoxen, YesNo). Es gibt keine Standardwerte: alle
+# Setup-Felder werden leer abgefragt und müssen ausgefüllt werden.
 BACKTITLE="Lenovo-Tracker Setup · MIT (free to use)"
 
 ui_available() {
@@ -238,7 +234,7 @@ wt_menu() {  # wt_menu <title> <text> item1 desc1 [item2 desc2 …] -> echo Ausw
     3>&1 1>&2 2>&3
 }
 
-wt_input() {  # wt_input <title> <prompt> <default> -> echo Wert (ESC/Cancel → leer)
+wt_input() {  # wt_input <title> <prompt> <default> -> echo Wert (ESC/Cancel → rc 1)
   whiptail --backtitle "$BACKTITLE" --title "$1" --inputbox "$2" 10 70 "$3" \
     3>&1 1>&2 2>&3
 }
@@ -247,39 +243,79 @@ wt_yesno() {  # wt_yesno <title> <text> -> rc 0=Ja 1=Nein
   whiptail --backtitle "$BACKTITLE" --title "$1" --yesno "$2" 14 70
 }
 
-ui_advanced() {
+# Pflichtfeld-Dialog: schreibt den Wert in die Variable $1.
+# kind: text | num | dec – leere/ungültige Eingaben werden erneut abgefragt.
+wt_fill() {
+  local var="$1" title="$2" prompt="$3" kind="${4:-text}" v
+  while true; do
+    v="$(wt_input "$title" "$prompt" "")" || return 1
+    [[ -n "$v" ]] || continue
+    case "$kind" in
+      num) [[ "$v" =~ ^[0-9]+$ ]] || continue ;;
+      dec) [[ "$v" =~ ^[0-9]+([.][0-9]+)?$ ]] || continue ;;
+    esac
+    printf -v "$var" '%s' "$v"
+    return 0
+  done
+}
+
+# Fragt alle Setup-Werte leer ab (keine Vorbelegung)
+ui_configure() {
   local v
-  v="$(wt_input "CT-ID (Produktion)" "Welche CT-ID soll der Tracker bekommen?" "$VMID")" || exit 0
-  VMID="${v:-$VMID}"
-  v="$(wt_input "CT-ID (Build)" "Temporärer Build-Container:" "$BUILD_VMID")" || exit 0
-  BUILD_VMID="${v:-$BUILD_VMID}"
-  v="$(wt_input "Hostname" "Hostname des Tracker-CTs:" "$CT_HOSTNAME")" || exit 0
-  CT_HOSTNAME="${v:-$CT_HOSTNAME}"
-  v="$(wt_input "RAM" "RAM in MB (Peak gemessen ~20 MB):" "$RAM")" || exit 0
-  RAM="${v:-$RAM}"
-  v="$(wt_input "Swap" "Swap in MB (Überlauf-Puffer):" "$SWAP")" || exit 0
-  SWAP="${v:-$SWAP}"
-  v="$(wt_input "CPU-Limit" "cpulimit (0.25 = Viertel-Kern):" "$CPULIMIT")" || exit 0
-  CPULIMIT="${v:-$CPULIMIT}"
-  v="$(wt_input "Rootfs" "Disk-Größe:" "$DISK")" || exit 0
-  DISK="${v:-$DISK}"
-  v="$(wt_input "Bridge" "Proxmox-Bridge:" "$BRIDGE")" || exit 0
-  BRIDGE="${v:-$BRIDGE}"
-  v="$(wt_input "IP-Basis" "CT bekommt ${BASE_IP}.<VMID>:" "$BASE_IP")" || exit 0
-  BASE_IP="${v:-$BASE_IP}"
-  NET0="name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth"
-  v="$(wt_input "Mail von" "Absender-Adresse:" "$MAIL_FROM")" || exit 0
-  MAIL_FROM="${v:-$MAIL_FROM}"
-  v="$(wt_input "Mail an" "Empfänger-Adresse:" "$MAIL_TO")" || exit 0
-  MAIL_TO="${v:-$MAIL_TO}"
-  v="$(wt_input "SMTP-Host" "SMTP-Server (Plain-SMTP :25):" "$SMTP_HOST")" || exit 0
-  SMTP_HOST="${v:-$SMTP_HOST}"
-  v="$(wt_input "SMTP-Port" "SMTP-Port:" "$SMTP_PORT")" || exit 0
-  SMTP_PORT="${v:-$SMTP_PORT}"
-  v="$(wt_input "Commodity-Keys" "Komma-getrennt (lowercase):" "$COMMODITY_KEYS")" || exit 0
-  COMMODITY_KEYS="${v:-$COMMODITY_KEYS}"
-  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards\nBeispiel: RTX  oder  B650,AM5" "$KEYWORDS")" || exit 0
+  while true; do
+    wt_fill VMID "CT-ID (Produktion)" "CT-ID des Tracker-CTs (numerisch):" num || exit 0
+    wt_fill BUILD_VMID "CT-ID (Build)" "Temporärer Build-Container (numerisch):" num || exit 0
+    [[ "$VMID" != "$BUILD_VMID" ]] && break
+    wt_yesno "CT-IDs gleich" "Produktions- und Build-CT-ID dürfen nicht identisch sein.\n\nErneut eingeben?" || exit 0
+  done
+  wt_fill CT_HOSTNAME "Hostname" "Hostname des Tracker-CTs:" || exit 0
+  wt_fill RAM "RAM" "RAM in MB:" num || exit 0
+  wt_fill SWAP "Swap" "Swap in MB:" num || exit 0
+  wt_fill CPULIMIT "CPU-Limit" "CPU-Limit, z. B. 0.25 (Viertel-Kern):" dec || exit 0
+  wt_fill DISK "Rootfs" "Disk-Größe, z. B. local:0.25:" || exit 0
+  wt_fill BRIDGE "Bridge" "Proxmox-Bridge:" || exit 0
+  wt_fill GATEWAY "Gateway" "Gateway-IP:" || exit 0
+  wt_fill BASE_IP "IP-Basis" "IP-Basis (CT erhält <Basis>.<CT-ID>):" || exit 0
+  wt_fill MAIL_FROM "Mail von" "Absender-Adresse:" || exit 0
+  wt_fill MAIL_TO "Mail an" "Empfänger-Adresse(n), komma-getrennt:" || exit 0
+  wt_fill SMTP_HOST "SMTP-Host" "SMTP-Server:" || exit 0
+  wt_fill SMTP_PORT "SMTP-Port" "SMTP-Port:" num || exit 0
+  wt_fill COMMODITY_KEYS "Commodity-Keys" "Komma-getrennt, lowercase (z. B. system boards):" || exit 0
+  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "")" || exit 0
   KEYWORDS="${v//$'\n'/}"
+}
+
+# CT-ID für Status/Test-Mail/Probe/Peak/Uninstall erfragen, falls nicht gesetzt
+ui_vmid() {
+  [[ -n "$VMID" ]] && return 0
+  local v
+  v="$(wt_input "CT-ID" "CT-ID des Tracker-CTs (numerisch):" "")" || exit 0
+  [[ -n "$v" ]] || die "CT-ID erforderlich."
+  VMID="$v"
+}
+
+# Pflichtwerte prüfen – keine Defaults: Env oder UI muss alles gesetzt haben.
+require_config() {
+  local missing=() v
+  for v in VMID BUILD_VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP \
+           MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS; do
+    [[ -n "${!v:-}" ]] || missing+=("$v")
+  done
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    die "Keine Standardwerte – interaktiv ausführen oder per Env setzen. Fehlend: ${missing[*]}"
+  fi
+  [[ "$VMID" =~ ^[0-9]+$ ]] || die "VMID muss numerisch sein."
+  [[ "$BUILD_VMID" =~ ^[0-9]+$ ]] || die "BUILD_VMID muss numerisch sein."
+  [[ "$VMID" != "$BUILD_VMID" ]] || die "VMID und BUILD_VMID dürfen nicht identisch sein."
+  [[ "$RAM" =~ ^[0-9]+$ ]] || die "RAM muss numerisch sein."
+  [[ "$SWAP" =~ ^[0-9]+$ ]] || die "SWAP muss numerisch sein."
+  [[ "$CPULIMIT" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "CPULIMIT muss numerisch sein (z. B. 0.25)."
+  [[ "$SMTP_PORT" =~ ^[0-9]+$ ]] || die "SMTP_PORT muss numerisch sein."
+}
+
+prepare_net() {
+  [[ -n "$NET0" ]] && return 0
+  NET0="name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth"
 }
 
 ui_summary_confirm() {
@@ -335,8 +371,7 @@ cmd_setup() {
   if ui_available; then
     local sel
     sel="$(wt_menu "Lenovo-Tracker Setup" "Option wählen (Pfeiltasten/TAB, ENTER bestätigt):" \
-      "default"  "Standard-Installation (empfohlen)" \
-      "advanced" "Erweiterte Installation (alle Werte)" \
+      "install"  "Installation (alle Werte abfragen)" \
       "status"   "Status & Log anzeigen" \
       "testmail" "Test-Mail senden" \
       "probe"    "API-Probe (Live-Test)" \
@@ -344,23 +379,25 @@ cmd_setup() {
       "uninstall" "Deinstallieren" \
       "exit"     "Beenden")" || exit 0
     case "$sel" in
-      status)    cmd_status "$VMID"; exit 0 ;;
-      testmail)  cmd_testmail "$VMID"; exit 0 ;;
-      probe)     cmd_probe "$VMID"; exit 0 ;;
-      peak)      cmd_peak "$VMID"; exit 0 ;;
-      uninstall) cmd_uninstall; exit 0 ;;
+      status)    ui_vmid; cmd_status "$VMID"; exit 0 ;;
+      testmail)  ui_vmid; cmd_testmail "$VMID"; exit 0 ;;
+      probe)     ui_vmid; cmd_probe "$VMID"; exit 0 ;;
+      peak)      ui_vmid; cmd_peak "$VMID"; exit 0 ;;
+      uninstall) ui_vmid; cmd_uninstall; exit 0 ;;
       exit)      exit 0 ;;
-      advanced)  ui_advanced ;;
+      install)   ui_configure ;;
     esac
     ui_summary_confirm || die "Abgebrochen."
     clear
     header_info
   else
-    # Fallback (kein whiptail / Automation): Defaults, keine Dialoge
+    # Kein whiptail/TTY: Werte ausschließlich aus Env-Variablen
     header_info
-    msg_warn "Whiptail/TTY nicht verfügbar – fahre mit Env-Defaults fort (NONINTERACTIVE)."
+    msg_warn "Whiptail/TTY nicht verfügbar – NONINTERACTIVE: alle Werte müssen als Env-Variablen gesetzt sein."
   fi
 
+  require_config
+  prepare_net
   ensure_template
   local tpl="$TEMPLATE_TPL"
 
@@ -503,6 +540,7 @@ EOF
 
 cmd_probe() {
   local id="${1:-$VMID}"
+  [[ -n "$id" ]] || die "CT-ID angeben: --probe <VMID>"
   pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht – Probe braucht den laufenden Tracker-CT."
   local CURLBIN="${APP_DIR}/curl-impersonate"
   local BASE="https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get"
@@ -530,6 +568,7 @@ cmd_probe() {
 
 cmd_peak() {
   local id="${1:-$VMID}"
+  [[ -n "$id" ]] || die "CT-ID angeben: --peak <VMID>"
   pct status "$id" >/dev/null 2>&1 || die "CT ${id} existiert nicht."
   local CG="/sys/fs/cgroup/lxc/${id}"
   [[ -f "${CG}/memory.peak" ]] || die "Cgroup-Pfad ${CG}/memory.peak nicht gefunden"
@@ -548,6 +587,7 @@ cmd_peak() {
 
 cmd_status() {
   local id="${1:-$VMID}"
+  [[ -n "$id" ]] || die "CT-ID angeben: --status <VMID>"
   echo "== CT ${id} =="
   if ! pct status "$id" >/dev/null 2>&1; then
     msg_warn "CT ${id} existiert nicht (noch nicht installiert)."
@@ -566,6 +606,7 @@ cmd_status() {
 
 cmd_testmail() {
   local id="${1:-$VMID}"
+  [[ -n "$id" ]] || die "CT-ID angeben: --test-mail <VMID>"
   pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht."
   msg_info "Sende Test-Mail (CT ${id})"
   pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --test-mail
@@ -573,6 +614,7 @@ cmd_testmail() {
 
 cmd_uninstall() {
   prereq
+  [[ -n "${VMID:-}" ]] || die "CT-ID (VMID) erforderlich."
   if [[ "$FORCE" != "1" ]]; then
     if ui_available; then
       wt_yesno "Deinstallieren" "Löscht CT ${VMID} inkl. State/History\nund die Host-Binaries.\n\nWirklich deinstallieren?" || { echo "Abbruch."; return; }
@@ -601,11 +643,10 @@ Der Klassiker (auf dem Proxmox-Host):
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
 
 Mit Repo-Klon:
-  bash lenovo-tracker-setup.sh                 # interaktives Menü
-  NONINTERACTIVE=1 bash lenovo-tracker-setup.sh  # ohne Prompts (Env/Defaults)
-  SKIP_BUILD=1 bash lenovo-tracker-setup.sh    # vorhandenes Binary nutzen
-  FORCE=1 bash lenovo-tracker-setup.sh         # existierenden CT löschen+neu
-  VMID=110 BUILD_VMID=111 bash lenovo-tracker-setup.sh   # eigene IDs
+  bash lenovo-tracker-setup.sh                    # interaktives Menü (alle Werte)
+  NONINTERACTIVE=1 bash lenovo-tracker-setup.sh   # ohne Dialoge – alle Pflichtwerte per Env
+  SKIP_BUILD=1 bash lenovo-tracker-setup.sh       # vorhandenes Binary nutzen
+  FORCE=1 bash lenovo-tracker-setup.sh            # existierenden CT löschen+neu
 
 Unterkommandos (auch im One-Liner):
   … --status [VMID]    CT-Status, Cron, Log und State anzeigen
@@ -614,9 +655,10 @@ Unterkommandos (auch im One-Liner):
   … --peak [VMID]      Peak-RAM messen (CT-Restart, 3 Läufe)
   … --uninstall        CT + Host-Artefakte entfernen
 
-Env-Defaults (überschreibbar): VMID=105 BUILD_VMID=104 RAM=32 SWAP=32 CPULIMIT=0.25
-  DISK=local:0.25 NET0 MAIL_FROM MAIL_TO EXTRA_RECIPIENTS SMTP_HOST SMTP_PORT
-  COMMODITY_KEYS KEYWORDS CI_VERSION FORCE SKIP_BUILD REPO_REF NONINTERACTIVE
+Pflichtwerte (keine Defaults – interaktiv abgefragt oder per Env setzen):
+  VMID BUILD_VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP
+  MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
+Optional: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
 
 Lizenz: MIT – free to use (siehe LICENSE). Copyright (c) 2026 LMasterPiec3
 EOF
