@@ -318,6 +318,119 @@ prepare_net() {
   NET0="name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth"
 }
 
+# --------------------- Bestehende Installation erkennen ----------------------
+DETECTED_VMID=""
+detect_installed_ct() {
+  local id
+  DETECTED_VMID=""
+  for id in $(pct list 2>/dev/null | awk 'NR>1 {print $1}'); do
+    if pct config "$id" 2>/dev/null | grep -q '^tags:.*lenovo-tracker'; then
+      DETECTED_VMID="$id"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# ------------------------- Config-Editor (bestehend) -------------------------
+toml_value() {  # toml_value <file> <section> <key> -> Rohwert
+  awk -v s="[$2]" -v k="$3" '
+    /^[[:space:]]*\[/ { sec=$0; gsub(/[[:space:]]/,"",sec) }
+    sec==s {
+      line=$0
+      sub(/^[[:space:]]*/,"",line)
+      if (line ~ "^" k "[[:space:]]*=") {
+        sub("^" k "[[:space:]]*=[[:space:]]*","",line)
+        print line; exit
+      }
+    }
+  ' "$1"
+}
+
+toml_array_items() {  # ["a", "b"] -> a,b
+  grep -o '"[^"]*"' <<< "$1" | tr -d '"' | tr '\n' ',' | sed 's/,$//' || true
+}
+
+toml_set() {  # toml_set <file> <section> <key> <value>
+  local file="$1" section="$2" key="$3" val="$4"
+  awk -v s="[$section]" -v k="$key" -v v="$val" '
+    /^[[:space:]]*\[/ { sec=$0; gsub(/[[:space:]]/,"",sec) }
+    sec==s {
+      line=$0
+      sub(/^[[:space:]]*/,"",line)
+      if (line ~ "^" k "[[:space:]]*=") {
+        print k " = " v
+        found=1
+        next
+      }
+    }
+    { print }
+    END { if (!found) exit 3 }
+  ' "$file" > "$file.tmp" || { rm -f "$file.tmp"; return 1; }
+  mv "$file.tmp" "$file"
+}
+
+cmd_edit_config() {
+  local id="${1:-${DETECTED_VMID:-$VMID}}"
+  [[ -n "$id" ]] || die "CT-ID angeben: --edit-config <VMID>"
+  ui_available || die "Config-Editor braucht whiptail/TTY."
+  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht – bitte starten."
+
+  local cfg="/root/lenovotracker-config-edit.toml"
+  pct exec "$id" -- cat "${CONF_DIR}/config.toml" > "$cfg" 2>/dev/null
+  [[ -s "$cfg" ]] || die "Config in CT ${id} nicht lesbar."
+
+  local commodity keywords mail_from mail_to mail_extra smtp_host smtp_port v
+  commodity="$(toml_array_items "$(toml_value "$cfg" tracker commodity_keys)")"
+  keywords="$(toml_array_items "$(toml_value "$cfg" tracker name_keywords)")"
+  mail_from="$(toml_value "$cfg" mail from | sed 's/^"//; s/"$//')"
+  mail_to="$(toml_array_items "$(toml_value "$cfg" mail to)")"
+  mail_extra="$(toml_array_items "$(toml_value "$cfg" mail extra_recipients)")"
+  smtp_host="$(toml_value "$cfg" mail smtp_host | sed 's/^"//; s/"$//')"
+  smtp_port="$(toml_value "$cfg" mail smtp_port)"
+
+  v="$(wt_input "Commodity-Keys" "Komma-getrennt, lowercase:" "$commodity")" || exit 0
+  [[ -n "$v" ]] || die "Commodity-Keys dürfen nicht leer sein."
+  commodity="$v"
+  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "$keywords")" || exit 0
+  keywords="$v"
+  v="$(wt_input "Mail von" "Absender-Adresse:" "$mail_from")" || exit 0
+  [[ -n "$v" ]] || die "Mail von darf nicht leer sein."
+  mail_from="$v"
+  v="$(wt_input "Mail an" "Empfänger, komma-getrennt:" "$mail_to")" || exit 0
+  [[ -n "$v" ]] || die "Mail an darf nicht leer sein."
+  mail_to="$v"
+  v="$(wt_input "Weitere Empfänger" "Komma-getrennt, leer = keine:" "$mail_extra")" || exit 0
+  mail_extra="$v"
+  v="$(wt_input "SMTP-Host" "SMTP-Server:" "$smtp_host")" || exit 0
+  [[ -n "$v" ]] || die "SMTP-Host darf nicht leer sein."
+  smtp_host="$v"
+  v="$(wt_input "SMTP-Port" "SMTP-Port:" "$smtp_port")" || exit 0
+  [[ "$v" =~ ^[0-9]+$ ]] || die "SMTP-Port muss numerisch sein."
+  smtp_port="$v"
+
+  toml_set "$cfg" tracker commodity_keys "$(toml_array "$commodity")" || die "commodity_keys nicht gefunden."
+  toml_set "$cfg" tracker name_keywords "$(toml_array "$keywords")" || die "name_keywords nicht gefunden."
+  toml_set "$cfg" mail from "\"${mail_from}\"" || die "from nicht gefunden."
+  toml_set "$cfg" mail to "$(toml_array "$mail_to")" || die "to nicht gefunden."
+  toml_set "$cfg" mail extra_recipients "$(toml_array "$mail_extra")" || die "extra_recipients nicht gefunden."
+  toml_set "$cfg" mail smtp_host "\"${smtp_host}\"" || die "smtp_host nicht gefunden."
+  toml_set "$cfg" mail smtp_port "$smtp_port" || die "smtp_port nicht gefunden."
+
+  pct exec "$id" -- cp "${CONF_DIR}/config.toml" "${CONF_DIR}/config.toml.bak" 2>/dev/null || true
+  pct push "$id" "$cfg" "${CONF_DIR}/config.toml" || die "Config-Push fehlgeschlagen."
+  rm -f "$cfg"
+  msg_ok "Config gespeichert (Backup: ${CONF_DIR}/config.toml.bak)"
+
+  local dry
+  dry="$(pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --dry-run 2>&1 || true)"
+  if echo "$dry" | grep -q "DRY-RUN"; then
+    msg_ok "$dry"
+  else
+    msg_warn "Dry-Run: $dry"
+  fi
+}
+
 ui_summary_confirm() {
   local text="CT: ${VMID} (${CT_HOSTNAME}) · Build-CT: ${BUILD_VMID}
 RAM: ${RAM} MB + ${SWAP} MB Swap · CPU-Limit: ${CPULIMIT} · Disk: ${DISK}
@@ -332,8 +445,16 @@ Keywords: ${KEYWORDS:-alle}"
 }
 
 ui_ct_exists() {  # rc 0 = neu aufbauen
-  wt_yesno "CT ${VMID} existiert" "CT ${VMID} läuft bereits.\n\nLöschen und NEU aufbauen?\n(State/History gehen verloren)" \
-    || die "Abgebrochen – CT ${VMID} bleibt unangetastet."
+  local sel
+  sel="$(wt_menu "CT ${VMID} existiert" "Was möchtest du tun?" \
+    "edit"    "Config bearbeiten (State bleibt erhalten)" \
+    "rebuild" "Neu aufbauen (State/History gehen verloren)" \
+    "cancel"  "Abbrechen")" || exit 0
+  case "$sel" in
+    edit)    cmd_edit_config "$VMID"; exit 0 ;;
+    rebuild) return 0 ;;
+    cancel)  die "Abgebrochen – CT ${VMID} bleibt unangetastet." ;;
+  esac
 }
 
 # ------------------------------- Unterkommandos ------------------------------
@@ -367,18 +488,26 @@ build_in_ct() {  # Fallback: Binary im temporären Build-CT bauen
 cmd_setup() {
   prereq
   ensure_ui || true
+  detect_installed_ct || true
+  [[ -n "$VMID" ]] || VMID="${DETECTED_VMID:-}"
 
   if ui_available; then
-    local sel
-    sel="$(wt_menu "Lenovo-Tracker Setup" "Option wählen (Pfeiltasten/TAB, ENTER bestätigt):" \
-      "install"  "Installation (alle Werte abfragen)" \
-      "status"   "Status & Log anzeigen" \
-      "testmail" "Test-Mail senden" \
-      "probe"    "API-Probe (Live-Test)" \
-      "peak"     "Peak-RAM messen (CT-Neustart)" \
-      "uninstall" "Deinstallieren" \
-      "exit"     "Beenden")" || exit 0
+    local sel menu_text="Option wählen (Pfeiltasten/TAB, ENTER bestätigt):"
+    local menu=()
+    if [[ -n "$DETECTED_VMID" ]]; then
+      menu_text+="\n\nErkannte Installation: CT ${DETECTED_VMID}"
+      menu+=("config" "Config bearbeiten (CT ${DETECTED_VMID})")
+    fi
+    menu+=("install"  "Installation (alle Werte abfragen)" \
+           "status"   "Status & Log anzeigen" \
+           "testmail" "Test-Mail senden" \
+           "probe"    "API-Probe (Live-Test)" \
+           "peak"     "Peak-RAM messen (CT-Neustart)" \
+           "uninstall" "Deinstallieren" \
+           "exit"     "Beenden")
+    sel="$(wt_menu "Lenovo-Tracker Setup" "$menu_text" "${menu[@]}")" || exit 0
     case "$sel" in
+      config)    ui_vmid; cmd_edit_config "$VMID"; exit 0 ;;
       status)    ui_vmid; cmd_status "$VMID"; exit 0 ;;
       testmail)  ui_vmid; cmd_testmail "$VMID"; exit 0 ;;
       probe)     ui_vmid; cmd_probe "$VMID"; exit 0 ;;
@@ -649,6 +778,7 @@ Mit Repo-Klon:
   FORCE=1 bash lenovo-tracker-setup.sh            # existierenden CT löschen+neu
 
 Unterkommandos (auch im One-Liner):
+  … --edit-config [VMID] bestehende Config bearbeiten
   … --status [VMID]    CT-Status, Cron, Log und State anzeigen
   … --test-mail [VMID] Test-Mail senden
   … --probe [VMID]     API-Parameter-Matrix live testen
@@ -672,6 +802,7 @@ MODE="${ARGS[0]:-setup}"
 
 case "$MODE" in
   setup)        cmd_setup ;;
+  --edit-config) cmd_edit_config "${ARGS[1]:-$VMID}" ;;
   --status)     cmd_status "${ARGS[1]:-$VMID}" ;;
   --test-mail)  cmd_testmail "${ARGS[1]:-$VMID}" ;;
   --probe)      cmd_probe "${ARGS[1]:-$VMID}" ;;

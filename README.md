@@ -88,12 +88,18 @@ musl-Binary (Build-/Pull-Fehler brechen das Setup ab).
 Weitere Kommandos (auch im One-Liner; im Menü als Menüpunkte vorhanden):
 
 ```bash
-bash lenovo-tracker-setup.sh --status 105    # CT-Status, Cron, Log und State
-bash lenovo-tracker-setup.sh --test-mail 105 # Test-Mail senden
-bash lenovo-tracker-setup.sh --probe 105     # API-Parameter-Matrix live testen
-bash lenovo-tracker-setup.sh --peak 105      # Peak-RAM messen (3 Läufe, CT-Restart)
-bash lenovo-tracker-setup.sh --uninstall     # CT + Host-Artefakte entfernen
+bash lenovo-tracker-setup.sh --edit-config 105 # bestehende Config bearbeiten
+bash lenovo-tracker-setup.sh --status 105     # CT-Status, Cron, Log und State
+bash lenovo-tracker-setup.sh --test-mail 105  # Test-Mail senden
+bash lenovo-tracker-setup.sh --probe 105      # API-Parameter-Matrix live testen
+bash lenovo-tracker-setup.sh --peak 105       # Peak-RAM messen (3 Läufe, CT-Restart)
+bash lenovo-tracker-setup.sh --uninstall      # CT + Host-Artefakte entfernen
 ```
+
+Existiert bereits eine Installation (CT mit Tag `lenovo-tracker`), erkennt das
+Menü sie automatisch und bietet **„Config bearbeiten“** an: Mail, SMTP und
+Filter werden vorbelegt abgefragt, die übrige Config bleibt unangetastet
+(Backup: `config.toml.bak`), danach läuft ein Dry-Run als Prüfung.
 
 ## Konfiguration (`/etc/lenovotracker/config.toml`)
 
