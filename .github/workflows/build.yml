@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Parallele Pushes sollen nicht um das "latest"-Release konkurrieren
+concurrency:
+  group: release-latest
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,9 +26,22 @@ jobs:
       - name: Install musl tools
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
-      - name: Build (x86_64-unknown-linux-musl, pure-Rust deps → rust-lld)
+      - name: Unit-Tests
         working-directory: rust-tracker
-        run: cargo build --release --target x86_64-unknown-linux-musl
+        run: cargo test --release
+
+      - name: Build (x86_64-unknown-linux-musl, statisch)
+        working-directory: rust-tracker
+        run: cargo rustc --release --target x86_64-unknown-linux-musl -- -C target-feature=+crt-static
+
+      - name: Statik prüfen
+        run: |
+          BIN=rust-tracker/target/x86_64-unknown-linux-musl/release/lenovo-tracker
+          file "$BIN"
+          if file "$BIN" | grep -q "dynamically linked"; then
+            echo "::error::Binary ist dynamisch gelinkt – Release abgebrochen."
+            exit 1
+          fi
 
       - name: Strip
         run: strip rust-tracker/target/x86_64-unknown-linux-musl/release/lenovo-tracker
@@ -36,5 +54,5 @@ jobs:
           files: rust-tracker/target/x86_64-unknown-linux-musl/release/lenovo-tracker
           make_latest: true
           body: |
-            Automatischer musl-Build von `main` (Alpine-kompatibel).
+            Automatischer statischer musl-Build von `main` (Alpine-kompatibel).
             Download: `lenovo-tracker` — wird von lenovo-tracker-setup.sh automatisch genutzt.
