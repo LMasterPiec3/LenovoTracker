@@ -174,6 +174,23 @@ prereq() {
   command -v pct >/dev/null 2>&1 || die "pct nicht gefunden – das Script gehört auf einen Proxmox-VE-Host."
 }
 
+require_ctid() {  # require_ctid <id> <unterkommando>
+  [[ -n "${1:-}" ]] || die "CT-ID angeben: --${2} <VMID>"
+}
+
+require_running_ct() {  # require_running_ct <id> <hinweis>
+  pct status "$1" 2>/dev/null | grep -q running || die "CT ${1} läuft nicht – ${2}"
+}
+
+unquote() {  # umschließende Anführungszeichen entfernen (toml_value-Ergebnisse)
+  sed 's/^"//; s/"$//'
+}
+
+push_ct_config() {  # push_ct_config <id> <lokale-config> — mit .bak-Backup im CT
+  pct exec "$1" -- cp "${CONF_DIR}/config.toml" "${CONF_DIR}/config.toml.bak" 2>/dev/null || true
+  pct push "$1" "$2" "${CONF_DIR}/config.toml" || die "Config-Push fehlgeschlagen."
+}
+
 # Setup-UI: whiptail bei Bedarf nachinstallieren (auf PVE-Hosts oft nicht vorhanden)
 ensure_ui() {
   command -v whiptail >/dev/null 2>&1 && return 0
@@ -768,9 +785,9 @@ toml_insert_after() {  # toml_insert_after <file> <section> <afterkey> <key> <va
 
 cmd_edit_config() {
   local id="${1:-${DETECTED_VMID:-$VMID}}"
-  [[ -n "$id" ]] || die "CT-ID angeben: --edit-config <VMID>"
+  require_ctid "$id" "edit-config"
   ui_available || die "Config-Editor braucht whiptail/TTY."
-  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht – bitte starten."
+  require_running_ct "$id" "bitte starten."
 
   local cfg="/root/lenovotracker-config-edit.toml"
   pct exec "$id" -- cat "${CONF_DIR}/config.toml" > "$cfg" 2>/dev/null
@@ -779,10 +796,10 @@ cmd_edit_config() {
   local commodity keywords mail_from mail_to mail_extra smtp_host smtp_port v
   commodity="$(toml_array_items "$(toml_value "$cfg" tracker commodity_keys)")"
   keywords="$(toml_array_items "$(toml_value "$cfg" tracker name_keywords)")"
-  mail_from="$(toml_value "$cfg" mail from | sed 's/^"//; s/"$//')"
+  mail_from="$(toml_value "$cfg" mail from | unquote)"
   mail_to="$(toml_array_items "$(toml_value "$cfg" mail to)")"
   mail_extra="$(toml_array_items "$(toml_value "$cfg" mail extra_recipients)")"
-  smtp_host="$(toml_value "$cfg" mail smtp_host | sed 's/^"//; s/"$//')"
+  smtp_host="$(toml_value "$cfg" mail smtp_host | unquote)"
   smtp_port="$(toml_value "$cfg" mail smtp_port)"
 
   v="$(wt_input "Commodity-Keys" "Komma-getrennt, lowercase:" "$commodity")" || exit 0
@@ -801,8 +818,8 @@ cmd_edit_config() {
   v="$(wt_input "SMTP-Host" "SMTP-Server:" "$smtp_host")" || exit 0
   [[ -n "$v" ]] || die "SMTP-Host darf nicht leer sein."
   smtp_host="$v"
-  smtp_user="$(toml_value "$cfg" mail smtp_user | sed 's/^"//; s/"$//')"
-  smtp_pass="$(toml_value "$cfg" mail smtp_pass | sed 's/^"//; s/"$//')"
+  smtp_user="$(toml_value "$cfg" mail smtp_user | unquote)"
+  smtp_pass="$(toml_value "$cfg" mail smtp_pass | unquote)"
   v="$(wt_input "SMTP-Login" "SMTP-Benutzer (leer = kein Login/Plain-SMTP):" "$smtp_user")" || exit 0
   smtp_user="$v"
   v="$(wt_input "SMTP-Passwort" "SMTP- / App-Passwort (leer = kein Login):" "$smtp_pass")" || exit 0
@@ -824,8 +841,7 @@ cmd_edit_config() {
   toml_set "$cfg" mail smtp_pass "\"${smtp_pass}\"" \
     || toml_insert_after "$cfg" mail smtp_port "smtp_pass" "\"${smtp_pass}\"" || die "smtp_pass nicht setzbar."
 
-  pct exec "$id" -- cp "${CONF_DIR}/config.toml" "${CONF_DIR}/config.toml.bak" 2>/dev/null || true
-  pct push "$id" "$cfg" "${CONF_DIR}/config.toml" || die "Config-Push fehlgeschlagen."
+  push_ct_config "$id" "$cfg"
   rm -f "$cfg"
   msg_ok "Config gespeichert (Backup: ${CONF_DIR}/config.toml.bak)"
 
@@ -1093,8 +1109,8 @@ EOF
 
 cmd_probe() {
   local id="${1:-$VMID}"
-  [[ -n "$id" ]] || die "CT-ID angeben: --probe <VMID>"
-  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht – Probe braucht den laufenden Tracker-CT."
+  require_ctid "$id" "probe"
+  require_running_ct "$id" "Probe braucht den laufenden Tracker-CT."
   local CURLBIN="${APP_DIR}/curl-impersonate"
   local BASE="https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get"
   local REF="https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
@@ -1121,7 +1137,7 @@ cmd_probe() {
 
 cmd_peak() {
   local id="${1:-$VMID}"
-  [[ -n "$id" ]] || die "CT-ID angeben: --peak <VMID>"
+  require_ctid "$id" "peak"
   pct status "$id" >/dev/null 2>&1 || die "CT ${id} existiert nicht."
   local CG="/sys/fs/cgroup/lxc/${id}"
   [[ -f "${CG}/memory.peak" ]] || die "Cgroup-Pfad ${CG}/memory.peak nicht gefunden"
@@ -1140,7 +1156,7 @@ cmd_peak() {
 
 cmd_status() {
   local id="${1:-$VMID}"
-  [[ -n "$id" ]] || die "CT-ID angeben: --status <VMID>"
+  require_ctid "$id" "status"
   echo "== CT ${id} =="
   if ! pct status "$id" >/dev/null 2>&1; then
     msg_warn "CT ${id} existiert nicht (noch nicht installiert)."
@@ -1164,17 +1180,17 @@ cmd_status() {
 cmd_smtp_auth() {
   local id="${1:-$VMID}" cfg smtp_host smtp_port smtp_user smtp_pass v
   prereq
-  [[ -n "$id" ]] || die "CT-ID angeben: --smtp-auth <VMID>"
-  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht."
+  require_ctid "$id" "smtp-auth"
+  require_running_ct "$id" "bitte starten."
   ui_available || die "SMTP-Login-Setup braucht einen Dialog (TTY) – oder NONINTERACTIVE-Setup mit SMTP_USER/SMTP_PASS per Env."
   cfg="/root/lenovotracker-smtp.toml"
   pct pull "$id" "${CONF_DIR}/config.toml" "$cfg" || die "Config aus CT ${id} nicht ladbar."
   [[ -s "$cfg" ]] || die "Config in CT ${id} nicht lesbar."
 
-  smtp_host="$(toml_value "$cfg" mail smtp_host | sed 's/^"//; s/"$//')"
+  smtp_host="$(toml_value "$cfg" mail smtp_host | unquote)"
   smtp_port="$(toml_value "$cfg" mail smtp_port)"
-  smtp_user="$(toml_value "$cfg" mail smtp_user | sed 's/^"//; s/"$//')"
-  smtp_pass="$(toml_value "$cfg" mail smtp_pass | sed 's/^"//; s/"$//')"
+  smtp_user="$(toml_value "$cfg" mail smtp_user | unquote)"
+  smtp_pass="$(toml_value "$cfg" mail smtp_pass | unquote)"
 
   v="$(wt_input "SMTP-Benutzer" "SMTP-Benutzer (optional; Proton: deine Adresse – leer = plain):" "$smtp_user")" || exit 0
   smtp_user="$v"
@@ -1205,8 +1221,7 @@ cmd_smtp_auth() {
   toml_set "$cfg" mail smtp_pass "\"${smtp_pass}\"" \
     || toml_insert_after "$cfg" mail smtp_port "smtp_pass" "\"${smtp_pass}\"" || die "smtp_pass nicht setzbar."
 
-  pct exec "$id" -- cp "${CONF_DIR}/config.toml" "${CONF_DIR}/config.toml.bak" 2>/dev/null || true
-  pct push "$id" "$cfg" "${CONF_DIR}/config.toml" || die "Config-Push fehlgeschlagen."
+  push_ct_config "$id" "$cfg"
   rm -f "$cfg"
   if [[ -n "$smtp_user" ]]; then
     msg_ok "SMTP-Login gesetzt: ${smtp_user} über ${smtp_host}:${smtp_port} (STARTTLS)"
@@ -1218,8 +1233,8 @@ cmd_smtp_auth() {
 
 cmd_testmail() {
   local id="${1:-$VMID}"
-  [[ -n "$id" ]] || die "CT-ID angeben: --test-mail <VMID>"
-  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht."
+  require_ctid "$id" "test-mail"
+  require_running_ct "$id" "bitte starten."
   msg_info "Sende Test-Mail (CT ${id})"
   if pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --test-mail; then
     return 0
