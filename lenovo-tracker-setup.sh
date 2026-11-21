@@ -5,12 +5,11 @@
 #  Im Stil der Proxmox-Community-Helper-Scripts: interaktives Menü, Spinner,
 #  Settings-Box – läuft auf dem PVE-Host und richtet alles ein:
 #
-#    1. Quellen laden (lokales Repo bevorzugt, sonst GitHub raw)
-#    2. Build-CT (temporär) – Rust-Toolchain, Binary, 12 Unit-Tests
-#    3. Produktions-CT (Alpine, minimal)
-#    4. Binary + curl-impersonate (Chrome-TLS-Imitation)
-#    5. Config /etc/lenovotracker/config.toml
-#    6. Cron (*/30, init-überwacht) + Dry-Run-Verifikation
+#    1. Binary aus den GitHub Releases laden (kein Build-CT nötig)
+#    2. Produktions-CT (Alpine, minimal)
+#    3. Binary + curl-impersonate (Chrome-TLS-Imitation)
+#    4. Config /etc/lenovotracker/config.toml
+#    5. Cron (*/30, init-überwacht) + Dry-Run-Verifikation
 #
 #  Der Klassiker (auf dem Proxmox-Host):
 #    bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
@@ -21,10 +20,12 @@
 #    … --uninstall       CT + Host-Artefakte entfernen
 #    … --help            Usage
 #
-#  Automatisierung: NONINTERACTIVE=1 (keine Prompts – alle Pflichtwerte per Env)
-#  Pflichtwerte: VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE
-#                GATEWAY BASE_IP MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
-#                (BUILD_VMID nur bei BUILD_METHOD=build – Standard ist Release-Download)
+#  Automatisierung: NONINTERACTIVE=1 (keine Prompts – Pflichtwerte per Env, Rest bekommt Defaults)
+#  Pflichtwerte: VMID MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
+#  Defaults (per Env überschreibbar, im Dialog editierbar):
+#    CT_HOSTNAME=LenovoTracker RAM=32 SWAP=32 CPULIMIT=0.25 DISK=local:0.25
+#    BRIDGE=vmbr0 (sonst automatisch erkannt), GATEWAY/BASE_IP automatisch vom Host
+#    (BUILD_VMID nur bei BUILD_METHOD=build – Standard ist Release-Download)
 #
 #  Lizenz: MIT – free to use (siehe LICENSE im Repo).
 #  Copyright (c) 2026 LMasterPiec3
@@ -245,11 +246,12 @@ wt_yesno() {  # wt_yesno <title> <text> -> rc 0=Ja 1=Nein
 }
 
 # Pflichtfeld-Dialog: schreibt den Wert in die Variable $1.
+# Vorbelegt mit dem aktuellen Variablenstand (ENV oder Default) – editierbar.
 # kind: text | num | dec – leere/ungültige Eingaben werden erneut abgefragt.
 wt_fill() {
   local var="$1" title="$2" prompt="$3" kind="${4:-text}" v
   while true; do
-    v="$(wt_input "$title" "$prompt" "")" || return 1
+    v="$(wt_input "$title" "$prompt" "${!var:-}")" || return 1
     [[ -n "$v" ]] || continue
     case "$kind" in
       num) [[ "$v" =~ ^[0-9]+$ ]] || continue ;;
@@ -285,7 +287,7 @@ ui_configure() {
   wt_fill SMTP_HOST "SMTP-Host" "SMTP-Server:" || exit 0
   wt_fill SMTP_PORT "SMTP-Port" "SMTP-Port:" num || exit 0
   wt_fill COMMODITY_KEYS "Commodity-Keys" "Komma-getrennt, lowercase (z. B. system boards):" || exit 0
-  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "")" || exit 0
+  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "${KEYWORDS:-}")" || exit 0
   KEYWORDS="${v//$'\n'/}"
 }
 
@@ -298,8 +300,37 @@ ui_vmid() {
   VMID="$v"
 }
 
-# Pflichtwerte prüfen – keine Defaults: Env oder UI muss alles gesetzt haben.
+# Pflichtwerte prüfen – ENV/User-Eingabe gewinnt, leere Felder ohne Default sind Pflicht.
 # BUILD_VMID nur erforderlich, wenn BUILD_METHOD=build (Standard ist Release-Download).
+# Standardwerte – reiner Prefill: ENV überschreibt, der User kann im Dialog alles ändern.
+apply_defaults() {
+  CT_HOSTNAME="${CT_HOSTNAME:-LenovoTracker}"
+  RAM="${RAM:-32}"
+  SWAP="${SWAP:-32}"
+  CPULIMIT="${CPULIMIT:-0.25}"
+  DISK="${DISK:-local:0.25}"
+  BRIDGE="${BRIDGE:-${DETECTED_BRIDGE:-vmbr0}}"
+  GATEWAY="${GATEWAY:-${DETECTED_GATEWAY:-}}"
+  BASE_IP="${BASE_IP:-${DETECTED_BASE_IP:-}}"
+}
+
+# Netz-Defaults vom PVE-Host erkennen (Default-Route → Bridge/Gateway, Host-IP → IP-Basis)
+DETECTED_BRIDGE=""; DETECTED_GATEWAY=""; DETECTED_BASE_IP=""
+detect_net_defaults() {
+  command -v ip >/dev/null 2>&1 || return 0
+  local route dev ip_cidr
+  route="$(ip -4 route show default 2>/dev/null | head -1)"
+  dev="$(awk '{for(i=1;i<=NF;i++) if($i=="dev") {print $(i+1); exit}}' <<<"$route")"
+  DETECTED_GATEWAY="$(awk '{for(i=1;i<=NF;i++) if($i=="via") {print $(i+2); exit}}' <<<"$route")"
+  [[ -n "$dev" ]] || return 0
+  DETECTED_BRIDGE="$dev"
+  ip_cidr="$(ip -4 addr show dev "$dev" scope global 2>/dev/null \
+    | awk '{for(i=1;i<=NF;i++) if($i=="inet") {print $2; exit}}')"
+  [[ -n "$ip_cidr" ]] || return 0
+  DETECTED_BASE_IP="${ip_cidr%/*}"   # Subnetz-Maske ab
+  DETECTED_BASE_IP="${DETECTED_BASE_IP%.*}"   # letztes Oktett ab → Netzpräfix
+}
+
 require_config() {
   local missing=() v
   local need=(VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP \
@@ -501,6 +532,8 @@ cmd_setup() {
   ensure_ui || true
   detect_installed_ct || true
   [[ -n "$VMID" ]] || VMID="${DETECTED_VMID:-}"
+  detect_net_defaults
+  apply_defaults   # Prefill für die Dialoge – ENV-Setzungen bleiben erhalten
 
   if ui_available; then
     local sel menu_text="Option wählen (Pfeiltasten/TAB, ENTER bestätigt):"
@@ -801,9 +834,13 @@ Unterkommandos (auch im One-Liner):
   … --uninstall        CT + Host-Artefakte entfernen
 
 Pflichtwerte (keine Defaults – interaktiv abgefragt oder per Env setzen):
-  VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP
-  MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
-Optional: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
+  VMID MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
+
+Defaults (voreingestellt – per Env überschreibbar, im Dialog editierbar):
+  CT_HOSTNAME=LenovoTracker  RAM=32  SWAP=32  CPULIMIT=0.25  DISK=local:0.25
+  BRIDGE=vmbr0 (bzw. automatisch erkannt)  GATEWAY/BASE_IP automatisch erkannt
+
+Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
   BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen
   (Standard: Binary wird aus den GitHub-Releases geladen, kein Build-CT)
 

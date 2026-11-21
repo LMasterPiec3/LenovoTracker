@@ -36,14 +36,15 @@ public sein, Quellen werden automatisch von GitHub raw nachgeladen):
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
 ```
 
-Es gibt **keine Standardwerte**: Das interaktive Menü fragt alle Felder leer
-ab (Pflichtfelder werden validiert). Ohne TTY (`NONINTERACTIVE=1`) müssen alle
-Pflichtwerte als Environment-Variablen gesetzt sein:
+Im interaktiven Menü sind **alle technischen Felder mit sinnvollen Defaults
+voreingestellt** (Hostname, RAM, Swap, CPU-Limit, Disk, Bridge, Gateway,
+IP-Basis) und bleiben editierbar. Bridge, Gateway und IP-Basis werden dabei
+automatisch vom PVE-Host erkannt (Default-Route + Host-IP). Nur die
+persönlichen Pflichtwerte (CT-ID, Mail, SMTP, Commodity-Keys) fragt das Setup
+leer ab. Per Env gesetzte Werte überschreiben die Defaults.
 
 ```bash
-VMID=110 CT_HOSTNAME=lenovo-tracker RAM=32 SWAP=32 \
-CPULIMIT=0.25 DISK=local:0.25 BRIDGE=vmbr1 GATEWAY=10.10.10.1 BASE_IP=10.10.10 \
-MAIL_FROM="du@example.de" MAIL_TO="du@example.de" \
+VMID=110 MAIL_FROM="du@example.de" MAIL_TO="du@example.de" \
 SMTP_HOST="mail.example.de" SMTP_PORT=25 COMMODITY_KEYS="system boards" \
 KEYWORDS="RTX" \
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
@@ -71,11 +72,13 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 |---|---|---|
 | `VMID` | ja | Produktions-CT |
 | `BUILD_VMID` | nur bei `BUILD_METHOD=build` | temporärer Build-Container |
-| `CT_HOSTNAME` | ja | Hostname des Tracker-CTs |
-| `RAM` / `SWAP` | ja | MB (Peak gemessen ~16–20 MB) |
-| `CPULIMIT` | ja | z. B. `0.25` (Viertel-Kern) |
-| `DISK` | ja | Rootfs-Größe, z. B. `local:0.25` |
-| `BRIDGE` / `GATEWAY` / `BASE_IP` | ja | Netz (CT-IP = `<BASE_IP>.<VMID>`) |
+| `CT_HOSTNAME` | nein (Default `LenovoTracker`) | Hostname des Tracker-CTs |
+| `RAM` | nein (Default `32`) | MB (Peak gemessen ~16–20 MB) |
+| `SWAP` | nein (Default `32`) | MB |
+| `CPULIMIT` | nein (Default `0.25`) | Viertel-Kern |
+| `DISK` | nein (Default `local:0.25`) | Rootfs-Größe |
+| `BRIDGE` | nein (Default automatisch erkannt, sonst `vmbr0`) | Proxmox-Bridge |
+| `GATEWAY` / `BASE_IP` | nein (automatisch vom Host erkannt) | Netz (CT-IP = `<BASE_IP>.<VMID>`) |
 | `NET0` | nein | komplette Netzkonfiguration statt `BRIDGE`/`GATEWAY`/`BASE_IP` |
 | `MAIL_FROM` / `MAIL_TO` | ja | Absender/Empfänger (komma-getrennt) |
 | `SMTP_HOST` / `SMTP_PORT` | ja | Plain-SMTP |
