@@ -22,8 +22,9 @@
 #    … --help            Usage
 #
 #  Automatisierung: NONINTERACTIVE=1 (keine Prompts – alle Pflichtwerte per Env)
-#  Pflichtwerte: VMID BUILD_VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE
+#  Pflichtwerte: VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE
 #                GATEWAY BASE_IP MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
+#                (BUILD_VMID nur bei BUILD_METHOD=build – Standard ist Release-Download)
 #
 #  Lizenz: MIT – free to use (siehe LICENSE im Repo).
 #  Copyright (c) 2026 LMasterPiec3
@@ -262,12 +263,15 @@ wt_fill() {
 # Fragt alle Setup-Werte leer ab (keine Vorbelegung)
 ui_configure() {
   local v
-  while true; do
-    wt_fill VMID "CT-ID (Produktion)" "CT-ID des Tracker-CTs (numerisch):" num || exit 0
-    wt_fill BUILD_VMID "CT-ID (Build)" "Temporärer Build-Container (numerisch):" num || exit 0
-    [[ "$VMID" != "$BUILD_VMID" ]] && break
-    wt_yesno "CT-IDs gleich" "Produktions- und Build-CT-ID dürfen nicht identisch sein.\n\nErneut eingeben?" || exit 0
-  done
+  wt_fill VMID "CT-ID (Produktion)" "CT-ID des Tracker-CTs (numerisch):" num || exit 0
+  if [[ "$BUILD_METHOD" == "build" ]]; then
+    # Nur bei explizitem BUILD_METHOD=build – Standard ist der GitHub-Release-Download
+    while true; do
+      wt_fill BUILD_VMID "CT-ID (Build)" "Temporärer Build-Container (numerisch):" num || exit 0
+      [[ "$VMID" != "$BUILD_VMID" ]] && break
+      wt_yesno "CT-IDs gleich" "Produktions- und Build-CT-ID dürfen nicht identisch sein.\n\nErneut eingeben?" || exit 0
+    done
+  fi
   wt_fill CT_HOSTNAME "Hostname" "Hostname des Tracker-CTs:" || exit 0
   wt_fill RAM "RAM" "RAM in MB:" num || exit 0
   wt_fill SWAP "Swap" "Swap in MB:" num || exit 0
@@ -295,18 +299,23 @@ ui_vmid() {
 }
 
 # Pflichtwerte prüfen – keine Defaults: Env oder UI muss alles gesetzt haben.
+# BUILD_VMID nur erforderlich, wenn BUILD_METHOD=build (Standard ist Release-Download).
 require_config() {
   local missing=() v
-  for v in VMID BUILD_VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP \
-           MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS; do
+  local need=(VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP \
+              MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS)
+  [[ "$BUILD_METHOD" == "build" ]] && need+=(BUILD_VMID)
+  for v in "${need[@]}"; do
     [[ -n "${!v:-}" ]] || missing+=("$v")
   done
   if [[ ${#missing[@]} -gt 0 ]]; then
     die "Keine Standardwerte – interaktiv ausführen oder per Env setzen. Fehlend: ${missing[*]}"
   fi
   [[ "$VMID" =~ ^[0-9]+$ ]] || die "VMID muss numerisch sein."
-  [[ "$BUILD_VMID" =~ ^[0-9]+$ ]] || die "BUILD_VMID muss numerisch sein."
-  [[ "$VMID" != "$BUILD_VMID" ]] || die "VMID und BUILD_VMID dürfen nicht identisch sein."
+  if [[ "$BUILD_METHOD" == "build" ]]; then
+    [[ "$BUILD_VMID" =~ ^[0-9]+$ ]] || die "BUILD_VMID muss numerisch sein."
+    [[ "$VMID" != "$BUILD_VMID" ]] || die "VMID und BUILD_VMID dürfen nicht identisch sein."
+  fi
   [[ "$RAM" =~ ^[0-9]+$ ]] || die "RAM muss numerisch sein."
   [[ "$SWAP" =~ ^[0-9]+$ ]] || die "SWAP muss numerisch sein."
   [[ "$CPULIMIT" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "CPULIMIT muss numerisch sein (z. B. 0.25)."
@@ -432,7 +441,9 @@ cmd_edit_config() {
 }
 
 ui_summary_confirm() {
-  local text="CT: ${VMID} (${CT_HOSTNAME}) · Build-CT: ${BUILD_VMID}
+  local bininfo="Binary: GitHub Release (Download, kein Build-CT)"
+  [[ "$BUILD_METHOD" == "build" ]] && bininfo="Binary: Build-CT ${BUILD_VMID} (Fallback-Build)"
+  local text="CT: ${VMID} (${CT_HOSTNAME}) · ${bininfo}
 RAM: ${RAM} MB + ${SWAP} MB Swap · CPU-Limit: ${CPULIMIT} · Disk: ${DISK}
 Netz: ${BRIDGE} · ${BASE_IP}.${VMID}/24
 
@@ -530,7 +541,7 @@ cmd_setup() {
   ensure_template
   local tpl="$TEMPLATE_TPL"
 
-  # ---------- 1) Binary besorgen (GitHub-Release → lokal → Build-CT-Fallback) ----------
+  # ---------- 1) Binary besorgen (GitHub-Release → vorhandenes Binary → Opt-in Build-CT) ----------
   local bin_ok=0
   if [[ "$BUILD_METHOD" != "build" ]]; then
     msg_info "1/6  Binary von GitHub Releases laden (kein Build-CT nötig)"
@@ -539,7 +550,7 @@ cmd_setup() {
       msg_ok "Binary aus Releases: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B)"
       bin_ok=1
     else
-      msg_warn "Release-Download fehlgeschlagen (kein Release-Asset yet?) – Build-CT-Fallback"
+      msg_warn "Release-Download fehlgeschlagen"
       rm -f "${HOST_BIN}.tmp"
     fi
   fi
@@ -547,8 +558,12 @@ cmd_setup() {
     msg_ok "SKIP_BUILD=1 – nutze vorhandenes Binary ${HOST_BIN}"
     bin_ok=1
   fi
-  if [[ $bin_ok -eq 0 ]]; then
+  if [[ $bin_ok -eq 0 && "$BUILD_METHOD" == "build" ]]; then
     build_in_ct "$tpl"
+    bin_ok=1
+  fi
+  if [[ $bin_ok -eq 0 ]]; then
+    die "Kein Binary verfügbar (Release-Download fehlgeschlagen). Später erneut versuchen – oder BUILD_METHOD=build BUILD_VMID=<id> setzen, um explizit einen temporären Build-CT zu nutzen."
   fi
 
   # ---------- 2) Produktions-CT ----------
@@ -786,9 +801,11 @@ Unterkommandos (auch im One-Liner):
   … --uninstall        CT + Host-Artefakte entfernen
 
 Pflichtwerte (keine Defaults – interaktiv abgefragt oder per Env setzen):
-  VMID BUILD_VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP
+  VMID CT_HOSTNAME RAM SWAP CPULIMIT DISK BRIDGE GATEWAY BASE_IP
   MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
 Optional: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
+  BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen
+  (Standard: Binary wird aus den GitHub-Releases geladen, kein Build-CT)
 
 Lizenz: MIT – free to use (siehe LICENSE). Copyright (c) 2026 LMasterPiec3
 EOF

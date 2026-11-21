@@ -41,7 +41,7 @@ ab (Pflichtfelder werden validiert). Ohne TTY (`NONINTERACTIVE=1`) müssen alle
 Pflichtwerte als Environment-Variablen gesetzt sein:
 
 ```bash
-VMID=110 BUILD_VMID=111 CT_HOSTNAME=lenovo-tracker RAM=32 SWAP=32 \
+VMID=110 CT_HOSTNAME=lenovo-tracker RAM=32 SWAP=32 \
 CPULIMIT=0.25 DISK=local:0.25 BRIDGE=vmbr1 GATEWAY=10.10.10.1 BASE_IP=10.10.10 \
 MAIL_FROM="du@example.de" MAIL_TO="du@example.de" \
 SMTP_HOST="mail.example.de" SMTP_PORT=25 COMMODITY_KEYS="system boards" \
@@ -61,16 +61,16 @@ interaktives whiptail-Menü (wird bei Bedarf via `apt` nachinstalliert) →
 Binary aus den GitHub Releases laden → Produktions-CT (Alpine, minimal) →
 curl-impersonate → Config → Cron → Dry-Run-Verifikation.
 
-Binary-Quelle mit Fallback-Kette: **GitHub-Release-Download** → vorhandenes
-`/root/lenovo-tracker-rs` (`SKIP_BUILD=1`) → temporärer Build-CT (Fallback,
-`BUILD_METHOD=build` erzwingen). Der Build-CT wird nur noch gebraucht, wenn
-mal kein Release-Asset existiert; er baut dank `+crt-static` ein statisches
-musl-Binary (Build-/Pull-Fehler brechen das Setup ab).
+Binary-Quelle: **GitHub-Release-Download (Standard – kein zweiter LXC, kein
+Build-CT)** → vorhandenes `/root/lenovo-tracker-rs` (`SKIP_BUILD=1`) →
+temporärer Build-CT nur als Opt-in-Notfall (`BUILD_METHOD=build
+BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
+`+crt-static` ein statisches musl-Binary.
 
 | Variable | Pflicht | Bedeutung |
 |---|---|---|
 | `VMID` | ja | Produktions-CT |
-| `BUILD_VMID` | ja | temporärer Build-Container |
+| `BUILD_VMID` | nur bei `BUILD_METHOD=build` | temporärer Build-Container |
 | `CT_HOSTNAME` | ja | Hostname des Tracker-CTs |
 | `RAM` / `SWAP` | ja | MB (Peak gemessen ~16–20 MB) |
 | `CPULIMIT` | ja | z. B. `0.25` (Viertel-Kern) |
