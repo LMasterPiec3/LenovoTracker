@@ -279,7 +279,7 @@ ui_configure() {
   wt_fill SWAP "Swap" "Swap in MB:" num || exit 0
   wt_fill CPULIMIT "CPU-Limit" "CPU-Limit, z. B. 0.25 (Viertel-Kern):" dec || exit 0
   wt_fill DISK "Rootfs" "Disk-Größe, z. B. local:0.25:" || exit 0
-  wt_fill BRIDGE "Bridge" "Proxmox-Bridge:" || exit 0
+  ui_pick_bridge || exit 0
   wt_fill GATEWAY "Gateway" "Gateway-IP:" || exit 0
   wt_fill BASE_IP "IP-Basis" "IP-Basis (CT erhält <Basis>.<CT-ID>):" || exit 0
   wt_fill MAIL_FROM "Mail von" "Absender-Adresse:" || exit 0
@@ -321,7 +321,7 @@ detect_net_defaults() {
   local route dev ip_cidr
   route="$(ip -4 route show default 2>/dev/null | head -1)"
   dev="$(awk '{for(i=1;i<=NF;i++) if($i=="dev") {print $(i+1); exit}}' <<<"$route")"
-  DETECTED_GATEWAY="$(awk '{for(i=1;i<=NF;i++) if($i=="via") {print $(i+2); exit}}' <<<"$route")"
+  DETECTED_GATEWAY="$(awk '{for(i=1;i<=NF;i++) if($i=="via") {print $(i+1); exit}}' <<<"$route")"
   [[ -n "$dev" ]] || return 0
   DETECTED_BRIDGE="$dev"
   ip_cidr="$(ip -4 addr show dev "$dev" scope global 2>/dev/null \
@@ -329,6 +329,62 @@ detect_net_defaults() {
   [[ -n "$ip_cidr" ]] || return 0
   DETECTED_BASE_IP="${ip_cidr%/*}"   # Subnetz-Maske ab
   DETECTED_BASE_IP="${DETECTED_BASE_IP%.*}"   # letztes Oktett ab → Netzpräfix
+}
+
+# ---------- Bridge-Helfer (per-Bridge Gateway/IP-Basis, Auswahl-Menü) ----------
+list_bridges() {
+  local out
+  out="$(ip -o link show type bridge 2>/dev/null | awk -F': ' '{print $2}')"
+  [[ -n "$out" ]] || out="$(ip -o link 2>/dev/null | awk -F': ' '$2 ~ /^vmbr/ {print $2}')"
+  [[ -n "$out" ]] && printf '%s\n' "$out" | sort
+}
+
+bridge_gateway() {  # Gateway-IP, die über <bridge1> geroutet wird (leer = keine)
+  ip -4 route show default dev "$1" 2>/dev/null \
+    | awk '{for(i=1;i<=NF;i++) if($i=="via") {print $(i+1); exit}}'
+}
+
+bridge_base_ip() {  # Netzpräfix der Host-IP auf <bridge1>, z. B. 192.168.1 aus 192.168.1.5/24
+  local ip_cidr
+  ip_cidr="$(ip -4 addr show dev "$1" scope global 2>/dev/null \
+    | awk '{for(i=1;i<=NF;i++) if($i=="inet") {print $2; exit}}')"
+  [[ -n "$ip_cidr" ]] || return 0
+  local ip="${ip_cidr%/*}"
+  echo "${ip%.*}"
+}
+
+# Bridge-Auswahl: Menü aller Host-Bridges (mit je-Bridge Gateway/IP-Basis im
+# Beschreibungstext, Default-Route markiert) oder freie Eingabe. Nach der Wahl
+# passen sich GATEWAY/BASE_IP der gewählten Bridge an (nur wenn dort erkannt).
+ui_pick_bridge() {
+  local bridges sel b gw base desc
+  bridges="$(list_bridges)"
+  if [[ -z "$bridges" ]] || ! ui_available; then
+    wt_fill BRIDGE "Bridge" "Proxmox-Bridge (z. B. vmbr0):" || return 1
+  else
+    local items=()
+    while IFS= read -r b; do
+      [[ -n "$b" ]] || continue
+      gw="$(bridge_gateway "$b")"; base="$(bridge_base_ip "$b")"
+      desc="Gateway ${gw:-—} · IP-Basis ${base:-—}"
+      [[ "$b" == "${DETECTED_BRIDGE:-}" ]] && desc+=" · Default-Route"
+      items+=("$b" "$desc")
+    done <<< "$bridges"
+    items+=("custom" "Bridge manuell eingeben")
+    sel="$(wt_menu "Bridge wählen" \
+      "Bridge für das CT – Gateway/IP-Basis passen sich der Auswahl an:" \
+      "${items[@]}")" || return 1
+    if [[ "$sel" == "custom" ]]; then
+      wt_fill BRIDGE "Bridge" "Proxmox-Bridge (z. B. vmbr0):" || return 1
+    else
+      BRIDGE="$sel"
+    fi
+  fi
+  # Gateway/IP-Basis konsequent aus der gewählten Bridge ableiten – passt je nach
+  # vmbr; wenn dort nichts erkennbar ist, fragen die Folgefelder leer ab.
+  GATEWAY="$(bridge_gateway "$BRIDGE")"
+  BASE_IP="$(bridge_base_ip "$BRIDGE")"
+  return 0
 }
 
 require_config() {
@@ -838,7 +894,8 @@ Pflichtwerte (keine Defaults – interaktiv abgefragt oder per Env setzen):
 
 Defaults (voreingestellt – per Env überschreibbar, im Dialog editierbar):
   CT_HOSTNAME=LenovoTracker  RAM=32  SWAP=32  CPULIMIT=0.25  DISK=local:0.25
-  BRIDGE=vmbr0 (bzw. automatisch erkannt)  GATEWAY/BASE_IP automatisch erkannt
+  BRIDGE: Auswahl-Menü aller Host-Bridges – Gateway/IP-Basis passen sich je
+  nach gewählter Bridge automatisch an (Default-Route wird markiert)
 
 Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
   BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen
