@@ -85,8 +85,8 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 | `GATEWAY` / `BASE_IP` | nein (automatisch vom Host erkannt; Gateway ohne Bridge-Route: Vorschlag `<IP-Basis>.1`) | Netz (CT-IP = `<BASE_IP>.<VMID>`) |
 | `NET0` | nein | komplette Netzkonfiguration statt `BRIDGE`/`GATEWAY`/`BASE_IP` |
 | `MAIL_FROM` / `MAIL_TO` | ja | Absender/Empfänger (komma-getrennt) |
-| `SMTP_HOST` / `SMTP_PORT` | nein (automatisch ermittelt: Postfix-Relayhost des Hosts, sonst MX/A der Absender-Domain; Port sonst `25`) | Plain-SMTP |
-| `SMTP_USER` / `SMTP_PASS` | nein (leer = Plain-SMTP ohne Login) | SMTP-Login – gesetzt: authentifizierte Submission über STARTTLS (Port `587` automatisch); Provider signiert DKIM/SPF → kein "failed authentication"-Banner. Proton: `smtp.protonmail.ch:587` + App-Passwort |
+| `SMTP_HOST` / `SMTP_PORT` | nein (automatisch ermittelt: Postfix-Relayhost des Hosts, sonst MX/A der Absender-Domain; Port sonst `25`) | Mailserver |
+| `SMTP_USER` / `SMTP_PASS` | **nein – optional** (leer = Plain-SMTP ohne Login) | Provider-Login für authentifizierte Submission über STARTTLS (Port `587` automatisch) – funktioniert mit **jedem** Provider; dieser signiert DKIM/SPF, sodass Empfänger-Server keine "failed authentication"-Banner zeigen. Beispiele: Proton (`smtp.protonmail.ch:587` + SMTP-Token), Gmail (`smtp.gmail.com:587` + App-Passwort) |
 | `COMMODITY_KEYS` | nein (Default `system boards`) | Commodity-Filter – im Setup als Mehrfachauswahl-Checkliste (Leertaste an/aus) über alle bekannten Warengruppen |
 | `KEYWORDS` | nein | Keyword-Filter, z. B. `KEYWORDS="RTX"` |
 | `EXTRA_RECIPIENTS` | nein | weitere Empfänger (komma-getrennt) |
@@ -96,12 +96,13 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 Weitere Kommandos (nur per One-Liner/CLI, nicht im Menü):
 
 ```bash
-bash lenovo-tracker-setup.sh --edit-config 105 # bestehende Config bearbeiten
-bash lenovo-tracker-setup.sh --status 105     # CT-Status, Cron, Log und State
-bash lenovo-tracker-setup.sh --test-mail 105  # Test-Mail senden
-bash lenovo-tracker-setup.sh --probe 105      # API-Parameter-Matrix live testen
-bash lenovo-tracker-setup.sh --peak 105       # Peak-RAM messen (3 Läufe, CT-Restart)
-bash lenovo-tracker-setup.sh --uninstall      # CT + Host-Artefakte entfernen
+bash lenovo-tracker-setup.sh --edit-config 101 # bestehende Config bearbeiten
+bash lenovo-tracker-setup.sh --smtp-auth 101   # SMTP-Login (optional) + Test-Mail
+bash lenovo-tracker-setup.sh --status 101      # CT-Status, Cron, Log und State
+bash lenovo-tracker-setup.sh --test-mail 101   # Test-Mail senden
+bash lenovo-tracker-setup.sh --probe 101       # API-Parameter-Matrix live testen
+bash lenovo-tracker-setup.sh --peak 101        # Peak-RAM messen (3 Läufe, CT-Restart)
+bash lenovo-tracker-setup.sh --uninstall       # CT + Host-Artefakte entfernen
 ```
 
 Existiert bereits eine Installation (CT mit Tag `lenovo-tracker`), erkennt das
@@ -163,19 +164,36 @@ Daten:
 - `/var/lib/lenovotracker/state.json` — letzter Bestand (je Teil) + Filter-Fingerprint
 - `/var/lib/lenovotracker/history.csv` — Verlauf (`timestamp,total_stock,part_count`)
 
-## Produktion (CT 105)
+## Produktion (Referenz-Setup, Alpine-CT)
 
 - **32 MB RAM-Limit** (Peak ~16–20 MB, Boot-Peak ~15 MB; 32 MB Swap als Puffer)
 - **~44 MB Rootfs belegt** (Alpine + 1,1 MB statisches Binary + 33 MB
   curl-impersonate; 256-MB-Disk → ~170 MB frei für Logs/History; Debug-Tools
   müssen `/tmp` sauber hinterlassen, sonst curl `exit=23`/ENOSPC im Transfer)
-- Binary ~1,1 MB, statisch gelinkt (musl `+crt-static`): kein TLS-Stack (lettre
-  ohne TLS-Feature → kein OpenSSL), keine `time`-Crate (eigene
-  RFC3339-Formatierung); Build ~25 s im Alpine-CT
-- Mail: Direkt-SMTP an `mail.protonmail.ch:25` (Plain; `smtp_starttls` wird
-  ignoriert — der STARTTLS-Pfad hing bei Proton ohnehin)
+- Binary ~2,1 MB, statisch gelinkt (musl `+crt-static`, TLS via pure-Rust
+  rustls – kein OpenSSL); keine `time`-Crate (eigene RFC3339-Formatierung)
+- Mail: SMTP per lettre – **optional mit Login** (STARTTLS-Submission, Port
+  587): der Provider signiert DKIM/SPF, keine Auth-Banner beim Empfänger.
+  Ohne Login läuft es plain (Host-IP muss dann im SPF der Absender-Domain
+  stehen, sonst Auth-Warnungen)
 - crond ohne dcron-Paket: `::respawn`-Eintrag in `/etc/inittab`, init startet
   bei Crash automatisch neu
+
+### SMTP-Login einrichten (optional, alle Provider)
+
+Der einrichtigste Weg ist der Menüpunkt **„SMTP-Login einrichten"**
+(`bash lenovo-tracker-setup.sh --smtp-auth <VMID>`): fragt Benutzer + Token,
+trägt beides mit Backup in die Config und sendet sofort eine Test-Mail.
+
+| Provider | Host | Port | Passwort |
+|---|---|---|---|
+| Proton | `smtp.protonmail.ch` | 587 (STARTTLS) | SMTP-Token ([Anleitung](https://proton.me/support/smtp-submission): Settings → All settings → IMAP/SMTP → SMTP tokens; alle bezahlten Tarife mit eigener Domain) |
+| Gmail | `smtp.gmail.com` | 587 (STARTTLS) | App-Passwort (2FA aktiviert; [Google-Konto](https://myaccount.google.com/apppasswords)) |
+| Andere | Submission-Host des Providers | fast immer 587 | normaler SMTP-Login oder Token |
+
+Ohne Login bleibt der Versand plain über den ermittelten Mailserver –
+funktional identisch, nur kann der Empfänger die Mail dann als
+nicht-authentifiziert markieren.
 
 ## Entwicklung
 

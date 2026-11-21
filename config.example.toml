@@ -18,12 +18,20 @@ name_keywords = []         # optional: ["RTX"] oder ["B650", "AM5"] — Substrin
 
 [mail]
 mode = "smtp"              # die Rust-Version unterstützt nur smtp (kein Mail-Daemon im CT)
-from = "Lenovo@aomme.de"
-to = ["Lenovo@aomme.de"]
+from = "du@example.de"     # Absender – sollte zur Domain des SMTP-Logins passen
+to = ["du@example.de"]
 extra_recipients = []      # z. B. ["du@anderswo.de"]
 subject_prefix = "[Lenovo Tracker]"
-smtp_host = "mail.protonmail.ch"
-smtp_port = 25             # Plain-SMTP (TLS-Stack bewusst aus dem Binary entfernt)
+# SMTP-Login ist OPTIONAL: leer = Plain-SMTP (SPF prüft die Host-IP; Empfänger-
+# Server können die Mail dann als "failed authentication" markieren). Mit Login
+# läuft der Versand authentifiziert über STARTTLS (Provider signiert DKIM/SPF):
+#   Proton:  smtp.protonmail.ch:587 + SMTP-Token (Settings → IMAP/SMTP → SMTP tokens)
+#   Gmail:   smtp.gmail.com:587 + App-Passwort (2FA aktiviert)
+#   Andere:  Submission-Host/Port des Providers (fast immer :587)
+smtp_host = "smtp.example.de"
+smtp_port = 587
+smtp_user = ""             # leer = kein Login (Plain-SMTP)
+smtp_pass = ""             # Token/App-Passwort – NIE das normale Mail-Passwort
 
 [paths]
 state_dir = "/var/lib/lenovotracker"   # state.json + history.csv

@@ -3,10 +3,11 @@
 //! Gleiche Logik wie die Python-Version: API abrufen (Chrome-TLS-Imitation),
 //! Mainboards filtern (`commodityKey == "system boards"`, optional
 //! `name_keywords`), Summe `stock` bilden, Diff gegen state.json, Mail bei
-//! Anstieg (Plain-SMTP direkt, kein TLS-Stack im Binary, kein Mail-Daemon
-//! nötig). Bei Mail werden die "Technischen Daten" der Top-Teile nachgeladen
-//! (Batch-POST `api/v4/lbom/parts/get`, siehe Lenovo-API.md). Wird per Cron
-//! alle 30 Minuten mit `--once` gestartet.
+//! Anstieg (SMTP via lettre: ohne Login Plain-SMTP, mit smtp_user/smtp_pass
+//! authentifizierte Submission über STARTTLS – kein Mail-Daemon nötig). Bei
+//! Mail werden die "Technischen Daten" der Top-Teile nachgeladen (Batch-POST
+//! `api/v4/lbom/parts/get`, siehe Lenovo-API.md). Wird per Cron alle 30
+//! Minuten mit `--once` gestartet.
 
 use anyhow::{anyhow, bail, Context, Result};
 use lettre::Transport;

@@ -18,7 +18,7 @@
 #    … --probe [VMID]    API-Parameter-Matrix live testen
 #    … --peak [VMID]     Peak-RAM messen (CT-Restart)
 #    … --uninstall       CT + Host-Artefakte entfernen
-#    … --smtp-auth [VMID] SMTP-Login/Token einrichten (Auth-Mail statt Banner)
+#    … --smtp-auth [VMID] SMTP-Login/Token (optional, alle Provider) + Test-Mail
 #    … --help            Usage
 #
 #  Automatisierung: NONINTERACTIVE=1 (keine Prompts – Pflichtwerte per Env, Rest bekommt Defaults)
@@ -455,9 +455,12 @@ ui_configure() {
   done
 
   # --- Seite 3: Mail & SMTP -------------------------------------------------
+  # Login OPTIONAL: gesetzt = authentifizierte Submission über STARTTLS (für
+  # alle Provider, z. B. Proton SMTP-Token, Gmail App-Passwort) – DKIM/SPF
+  # durch den Provider, kein "failed authentication"-Banner. Leer = plain.
   while true; do
     out="$(ui_form "3 · Mail & SMTP" \
-      "Absender, Empfänger und Mailserver (automatisch ermittelte Vorschläge):" 5 \
+      "Absender, Empfänger, Mailserver (Vorschläge ermittelt) – Login optional:" 5 \
       "Mail von|${MAIL_FROM:-}" \
       "Mail an|${MAIL_TO:-}" \
       "SMTP-Host|${SMTP_HOST:-}" \
@@ -911,7 +914,7 @@ cmd_setup() {
     fi
     menu+=("install"  "Installation (alle Werte abfragen)" \
            "status"   "Status & Log anzeigen" \
-           "smtpauth" "SMTP-Login einrichten (Auth statt Banner)" \
+           "smtpauth" "SMTP-Login einrichten (optional, alle Provider)" \
            "exit"     "Beenden")
     sel="$(wt_menu "Lenovo-Tracker Setup" "$menu_text" "${menu[@]}")" || exit 0
     case "$sel" in
@@ -1173,10 +1176,10 @@ cmd_smtp_auth() {
   smtp_user="$(toml_value "$cfg" mail smtp_user | sed 's/^"//; s/"$//')"
   smtp_pass="$(toml_value "$cfg" mail smtp_pass | sed 's/^"//; s/"$//')"
 
-  v="$(wt_input "SMTP-Benutzer" "SMTP-Benutzer (Proton: deine Adresse, z. B. du@example.de; leer = plain):" "$smtp_user")" || exit 0
+  v="$(wt_input "SMTP-Benutzer" "SMTP-Benutzer (optional; Proton: deine Adresse – leer = plain):" "$smtp_user")" || exit 0
   smtp_user="$v"
   v="$(whiptail --backtitle "$BACKTITLE" --title "SMTP-Token" --passwordbox \
-    "SMTP-Passwort / Token (Proton: Settings → IMAP/SMTP → SMTP tokens – wird nur einmal angezeigt):" \
+    "SMTP-Passwort / Token (optional; Proton: SMTP-Token · Gmail: App-Passwort · Provider-abhängig):" \
     12 70 "$smtp_pass" 3>&1 1>&2 2>&3)" || exit 0
   smtp_pass="$v"
 
@@ -1267,7 +1270,7 @@ Unterkommandos (auch im One-Liner):
   … --edit-config [VMID] bestehende Config bearbeiten
   … --status [VMID]    CT-Status, Cron, Log und State anzeigen
   … --test-mail [VMID] Test-Mail senden
-  … --smtp-auth [VMID] SMTP-Login/Token einrichten (STARTTLS-Submission) + Test-Mail
+  … --smtp-auth [VMID] SMTP-Login/Token einrichten (optional, alle Provider) + Test-Mail
   … --probe [VMID]     API-Parameter-Matrix live testen
   … --peak [VMID]      Peak-RAM messen (CT-Restart, 3 Läufe)
   … --uninstall        CT + Host-Artefakte entfernen
