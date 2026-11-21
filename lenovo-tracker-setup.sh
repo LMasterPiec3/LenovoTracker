@@ -940,6 +940,16 @@ EOF
   echo "   Peak messen: bash $0 --peak ${VMID}"
   echo "   Die erste Baseline setzt der erste Cron-Lauf still (keine Mail)."
   echo
+
+  # Test-Mail direkt anbieten – fängt falsche Empfänger/SMTP sofort ab
+  if [[ "$NONINTERACTIVE" != "1" ]] && ui_available && wt_yesno "Test-Mail" \
+    "Jetzt eine Test-Mail senden, um from/to/SMTP zu prüfen?"; then
+    if cmd_testmail "$VMID"; then
+      msg_ok "Mailzustellung geprüft."
+    else
+      msg_warn "Setup bleibt abgeschlossen – Mail erst bei korrigierter Config."
+    fi
+  fi
 }
 
 cmd_probe() {
@@ -1013,7 +1023,13 @@ cmd_testmail() {
   [[ -n "$id" ]] || die "CT-ID angeben: --test-mail <VMID>"
   pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht."
   msg_info "Sende Test-Mail (CT ${id})"
-  pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --test-mail
+  if pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --test-mail; then
+    return 0
+  fi
+  msg_warn "Test-Mail fehlgeschlagen – Config korrigieren und erneut senden:"
+  msg_warn "  pct exec ${id} -- vi ${CONF_DIR}/config.toml   (from/to/smtp_host prüfen)"
+  msg_warn "  pct exec ${id} -- ${APP_DIR}/lenovo-tracker --config ${CONF_DIR}/config.toml --test-mail"
+  return 1
 }
 
 cmd_uninstall() {
