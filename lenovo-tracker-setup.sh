@@ -26,6 +26,8 @@
 #    CT_HOSTNAME=LenovoTracker RAM=32 SWAP=32 CPULIMIT=0.25 DISK=local:0.25
 #    BRIDGE=vmbr0 (sonst automatisch erkannt), GATEWAY/BASE_IP automatisch vom Host
 #    (Gateway ohne Route an der Bridge: Vorschlag <IP-Basis>.1 – editierbar)
+#    SMTP_HOST automatisch ermittelt (Postfix-Relayhost, sonst MX der Domain),
+#    SMTP_PORT aus dem Relayhost, sonst 25 – beides nur Vorschläge, editierbar
 #    (BUILD_VMID nur bei BUILD_METHOD=build – Standard ist Release-Download)
 #
 #  Lizenz: MIT – free to use (siehe LICENSE im Repo).
@@ -313,6 +315,8 @@ apply_defaults() {
   BRIDGE="${BRIDGE:-${DETECTED_BRIDGE:-vmbr0}}"
   BASE_IP="${BASE_IP:-${DETECTED_BASE_IP:-}}"
   GATEWAY="${GATEWAY:-${DETECTED_GATEWAY:-${BASE_IP:+${BASE_IP}.1}}}"
+  SMTP_HOST="${SMTP_HOST:-${DETECTED_SMTP_HOST:-}}"
+  SMTP_PORT="${SMTP_PORT:-${DETECTED_SMTP_PORT:-25}}"   # Plain-SMTP-Default
 }
 
 # Netz-Defaults vom PVE-Host erkennen (Default-Route → Bridge/Gateway, Host-IP → IP-Basis)
@@ -330,6 +334,43 @@ detect_net_defaults() {
   [[ -n "$ip_cidr" ]] || return 0
   DETECTED_BASE_IP="${ip_cidr%/*}"   # Subnetz-Maske ab
   DETECTED_BASE_IP="${DETECTED_BASE_IP%.*}"   # letztes Oktett ab → Netzpräfix
+}
+
+# SMTP-Host automatisch ermitteln (nur Vorschlag – ENV/editierbar gewinnt):
+# 1) Postfix-Relayhost des PVE-Hosts (postconf bzw. main.cf),
+# 2) sonst MX-Record der eigenen Domain (hostname -f → Domain → MX).
+DETECTED_SMTP_HOST=""; DETECTED_SMTP_PORT=""
+detect_smtp() {
+  [[ -n "${SMTP_HOST:-}" ]] && return 0
+  local relay host port
+  if command -v postconf >/dev/null 2>&1; then
+    relay="$(postconf -h relayhost 2>/dev/null | head -1 | tr -d '[:space:]')"
+  elif [[ -r /etc/postfix/main.cf ]]; then
+    relay="$(awk -F= '$1 ~ /^[[:space:]]*relayhost[[:space:]]*$/ {print $2; exit}' \
+      /etc/postfix/main.cf | tr -d '[:space:]')"
+  fi
+  if [[ -n "$relay" ]]; then
+    host="$relay"; port=""
+    if [[ "$relay" =~ ^\[([^\]]+)\](:([0-9]+))?$ ]]; then        # [mail.tld]:587 | [1.2.3.4]
+      host="${BASH_REMATCH[1]}"; port="${BASH_REMATCH[3]:-}"
+    elif [[ "$relay" =~ ^([^:]+):([0-9]+)$ ]]; then              # mail.tld:587
+      host="${BASH_REMATCH[1]}"; port="${BASH_REMATCH[2]}"
+    fi
+    DETECTED_SMTP_HOST="$host"; DETECTED_SMTP_PORT="$port"
+    return 0
+  fi
+  local fqdn dom mx=""
+  fqdn="$(hostname -f 2>/dev/null | head -1)"
+  dom="${fqdn#*.}"
+  if [[ -n "$dom" && "$dom" != "$fqdn" && "$dom" == *.* ]]; then
+    if command -v host >/dev/null 2>&1; then
+      mx="$(host -t mx "$dom" 2>/dev/null | awk '{print $NF; exit}')"
+    elif command -v nslookup >/dev/null 2>&1; then
+      mx="$(nslookup -type=mx "$dom" 2>/dev/null | awk '/mail exchanger/ {print $NF; exit}')"
+    fi
+    mx="${mx%.}"
+    [[ -n "$mx" ]] && DETECTED_SMTP_HOST="$mx"
+  fi
 }
 
 # ---------- Bridge-Helfer (per-Bridge Gateway/IP-Basis, Auswahl-Menü) ----------
@@ -593,6 +634,7 @@ cmd_setup() {
   detect_installed_ct || true
   [[ -n "$VMID" ]] || VMID="${DETECTED_VMID:-}"
   detect_net_defaults
+  detect_smtp
   apply_defaults   # Prefill für die Dialoge – ENV-Setzungen bleiben erhalten
 
   if ui_available; then
@@ -901,6 +943,8 @@ Defaults (voreingestellt – per Env überschreibbar, im Dialog editierbar):
   BRIDGE: Auswahl-Menü aller Host-Bridges – Gateway/IP-Basis passen sich je
   nach gewählter Bridge automatisch an (Default-Route wird markiert);
   ohne Route an der Bridge gilt der Vorschlag <IP-Basis>.1
+  SMTP_HOST: automatisch ermittelt (Postfix-Relayhost des Hosts, sonst MX
+  der eigenen Domain)  SMTP_PORT: aus dem Relayhost, sonst 25
 
 Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
   BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen
