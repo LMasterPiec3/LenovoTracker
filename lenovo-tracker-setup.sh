@@ -21,9 +21,11 @@
 #    … --help            Usage
 #
 #  Automatisierung: NONINTERACTIVE=1 (keine Prompts – Pflichtwerte per Env, Rest bekommt Defaults)
-#  Pflichtwerte: VMID MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
+#  Pflichtwerte: MAIL_FROM MAIL_TO  (VMID/COMMODITY_KEYS bekommen sinnvolle Vorlagen,
+#                 SMTP_BRIDGE/NETZ/TECHNIK-Defaults siehe unten)
 #  Defaults (per Env überschreibbar, im Dialog editierbar):
-#    CT_HOSTNAME=LenovoTracker RAM=32 SWAP=32 CPULIMIT=0.25 DISK=local:0.25
+#    VMID=erste freie ID ab 100 (pct+qm) · CT_HOSTNAME=LenovoTracker
+#    RAM=32 SWAP=32 CPULIMIT=0.25 DISK=local:0.25 COMMODITY_KEYS=system boards
 #    BRIDGE=vmbr0 (sonst automatisch erkannt), GATEWAY/BASE_IP automatisch vom Host
 #    (Gateway ohne Route an der Bridge: Vorschlag <IP-Basis>.1 – editierbar)
 #    SMTP_HOST automatisch ermittelt (Postfix-Relayhost, sonst MX/A der
@@ -266,6 +268,77 @@ wt_fill() {
   done
 }
 
+# Erste freie CT/VM-ID ab 100 (pct + qm gelten als belegt), optional ausschließen
+next_free_ctid() {
+  local excl="${1:-}" id used
+  used="$( { pct list 2>/dev/null; qm list 2>/dev/null; } | awk 'NR>1 {print $1}' | sort -n | uniq)"
+  for ((id = 100; id <= 9999; id++)); do
+    [[ "$id" == "$excl" ]] && continue
+    grep -qx "$id" <<< "$used" || { echo "$id"; return 0; }
+  done
+  return 1
+}
+
+# Bekannte Warengruppen (Lenovo-API, Stand 2026-11) für die Mehrfachauswahl
+KNOWN_COMMODITIES=(
+  "system boards"           "Mainboards – Tracker-Standard"
+  "cover with keyboard"     "Cover mit Tastatur"
+  "keyboard internal"       "Interne Tastaturen"
+  "keyboards external"      "Externe Tastaturen"
+  "heat sink"               "Kühlkörper"
+  "fans"                    "Lüfter"
+  "lcd assembly"            "LCD-Einheit"
+  "processors"              "Prozessoren"
+  "wireless lan adapter"    "WLAN-Adapter"
+  "wireless wan adapter"    "WWAN-Adapter"
+  "optical drives"          "Optische Laufwerke"
+  "ac adapter"              "Netzteile (extern)"
+  "hard drives"             "Festplatten"
+  "pointing device"         "Zeigegeräte"
+  "docking stations"        "Dockingstations"
+  "lcd panel"               "LCD-Panels"
+  "drive external hdd"      "Externe HDDs"
+  "cables internal"         "Interne Kabel"
+  "power supplies internal" "Interne Netzteile"
+  "whole unit exchange"     "Komplettaustausch"
+)
+
+# Commodity-Keys als Mehrfachauswahl (Checkliste wie community-scripts):
+# Leertaste wählt an/aus, ENTER bestätigt. ENV/bestehende Keys sind vorgewählt,
+# ohne Auswahl gilt der Tracker-Standard "system boards". Ohne TTY/whiptail
+# fällt es auf die Freitext-Eingabe zurück.
+ui_commodity_keys() {
+  if ! ui_available; then
+    wt_fill COMMODITY_KEYS "Commodity-Keys" "Komma-getrennt, lowercase (z. B. system boards):" || return 1
+    return 0
+  fi
+  local -a sel=""
+  IFS=',' read -ra sel <<< "${COMMODITY_KEYS:-system boards}"
+  local -a items=()
+  local key desc state k i
+  for ((i = 0; i < ${#KNOWN_COMMODITIES[@]}; i += 2)); do
+    key="${KNOWN_COMMODITIES[i]}"
+    desc="${KNOWN_COMMODITIES[i + 1]}"
+    state="OFF"
+    for k in "${sel[@]}"; do
+      k="${k#"${k%%[![:space:]]*}"}"; k="${k%"${k##*[![:space:]]}"}"
+      [[ "$k" == "$key" ]] && state="ON"
+    done
+    items+=("$key" "$desc" "$state")
+  done
+  local raw
+  raw="$(whiptail --backtitle "$BACKTITLE" --title "Commodity-Keys" --checklist \
+    "Was soll getrackt werden? (Leertaste = an/aus, ENTER = bestätigen):" \
+    22 74 14 "${items[@]}" 3>&1 1>&2 2>&3)" || return 1
+  eval "set -- $raw"
+  local out=""
+  for k in "$@"; do
+    [[ -z "$out" ]] && out="$k" || out="$out,$k"
+  done
+  COMMODITY_KEYS="${out:-system boards}"
+  return 0
+}
+
 # Fragt alle Setup-Werte leer ab (keine Vorbelegung)
 ui_configure() {
   local v
@@ -273,6 +346,7 @@ ui_configure() {
   if [[ "$BUILD_METHOD" == "build" ]]; then
     # Nur bei explizitem BUILD_METHOD=build – Standard ist der GitHub-Release-Download
     while true; do
+      [[ -n "$BUILD_VMID" ]] || BUILD_VMID="$(next_free_ctid "$VMID")"
       wt_fill BUILD_VMID "CT-ID (Build)" "Temporärer Build-Container (numerisch):" num || exit 0
       [[ "$VMID" != "$BUILD_VMID" ]] && break
       wt_yesno "CT-IDs gleich" "Produktions- und Build-CT-ID dürfen nicht identisch sein.\n\nErneut eingeben?" || exit 0
@@ -295,7 +369,7 @@ ui_configure() {
   wt_fill MAIL_TO "Mail an" "Empfänger-Adresse(n), komma-getrennt:" || exit 0
   wt_fill SMTP_HOST "SMTP-Host" "SMTP-Server:" || exit 0
   wt_fill SMTP_PORT "SMTP-Port" "SMTP-Port:" num || exit 0
-  wt_fill COMMODITY_KEYS "Commodity-Keys" "Komma-getrennt, lowercase (z. B. system boards):" || exit 0
+  ui_commodity_keys || exit 0
   v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "${KEYWORDS:-}")" || exit 0
   KEYWORDS="${v//$'\n'/}"
 }
@@ -313,6 +387,7 @@ ui_vmid() {
 # BUILD_VMID nur erforderlich, wenn BUILD_METHOD=build (Standard ist Release-Download).
 # Standardwerte – reiner Prefill: ENV überschreibt, der User kann im Dialog alles ändern.
 apply_defaults() {
+  [[ -n "$VMID" ]] || VMID="$(next_free_ctid 2>/dev/null)"   # erste freie ID als Vorlage
   CT_HOSTNAME="${CT_HOSTNAME:-LenovoTracker}"
   RAM="${RAM:-32}"
   SWAP="${SWAP:-32}"
@@ -323,6 +398,7 @@ apply_defaults() {
   GATEWAY="${GATEWAY:-${DETECTED_GATEWAY:-${BASE_IP:+${BASE_IP}.1}}}"
   SMTP_HOST="${SMTP_HOST:-${DETECTED_SMTP_HOST:-}}"
   SMTP_PORT="${SMTP_PORT:-${DETECTED_SMTP_PORT:-25}}"   # Plain-SMTP-Default
+  COMMODITY_KEYS="${COMMODITY_KEYS:-system boards}"     # Tracker-Standard, Checkliste editierbar
 }
 
 # Netz-Defaults vom PVE-Host erkennen (Default-Route → Bridge/Gateway, Host-IP → IP-Basis)

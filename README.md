@@ -40,9 +40,10 @@ Im interaktiven Menü sind **alle technischen Felder mit sinnvollen Defaults
 voreingestellt** (Hostname, RAM, Swap, CPU-Limit, Disk, Bridge, Gateway,
 IP-Basis) und bleiben editierbar. Bridge, Gateway und IP-Basis werden dabei
 automatisch vom PVE-Host erkannt (Default-Route + Host-IP), der SMTP-Host
-aus dem Postfix-Relayhost bzw. dem MX/A-Record der Absender-Domain. Nur CT-ID, Mail-Adressen
-und Commodity-Keys fragt das Setup leer ab. Per Env gesetzte Werte
-überschreiben die Defaults.
+aus dem Postfix-Relayhost bzw. dem MX/A-Record der Absender-Domain, die
+CT-ID mit der ersten freien ID vorbelegt und Commodity-Keys per
+Mehrfachauswahl-Checkliste gewählt. Nur Mail-Adressen fragt das Setup leer
+ab. Per Env gesetzte Werte überschreiben die Defaults.
 
 ```bash
 VMID=110 MAIL_FROM="du@example.de" MAIL_TO="du@example.de" \
@@ -71,7 +72,7 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 
 | Variable | Pflicht | Bedeutung |
 |---|---|---|
-| `VMID` | ja | Produktions-CT |
+| `VMID` | ja (als Vorlage wird die erste freie ID ab 100 vorbelegt) | Produktions-CT |
 | `BUILD_VMID` | nur bei `BUILD_METHOD=build` | temporärer Build-Container |
 | `CT_HOSTNAME` | nein (Default `LenovoTracker`) | Hostname des Tracker-CTs |
 | `RAM` | nein (Default `32`) | MB (Peak gemessen ~16–20 MB) |
@@ -83,7 +84,7 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 | `NET0` | nein | komplette Netzkonfiguration statt `BRIDGE`/`GATEWAY`/`BASE_IP` |
 | `MAIL_FROM` / `MAIL_TO` | ja | Absender/Empfänger (komma-getrennt) |
 | `SMTP_HOST` / `SMTP_PORT` | nein (automatisch ermittelt: Postfix-Relayhost des Hosts, sonst MX/A der Absender-Domain; Port sonst `25`) | Plain-SMTP |
-| `COMMODITY_KEYS` | ja | Commodity-Filter (z. B. `system boards`) |
+| `COMMODITY_KEYS` | nein (Default `system boards`) | Commodity-Filter – im Setup als Mehrfachauswahl-Checkliste (Leertaste an/aus) über alle bekannten Warengruppen |
 | `KEYWORDS` | nein | Keyword-Filter, z. B. `KEYWORDS="RTX"` |
 | `EXTRA_RECIPIENTS` | nein | weitere Empfänger (komma-getrennt) |
 | `FORCE=1` | nein | existierenden CT löschen + neu aufbauen |
