@@ -40,7 +40,7 @@ Im interaktiven Menü sind **alle technischen Felder mit sinnvollen Defaults
 voreingestellt** (Hostname, RAM, Swap, CPU-Limit, Disk, Bridge, Gateway,
 IP-Basis) und bleiben editierbar. Bridge, Gateway und IP-Basis werden dabei
 automatisch vom PVE-Host erkannt (Default-Route + Host-IP), der SMTP-Host
-aus dem Postfix-Relayhost bzw. dem MX der Domain. Nur CT-ID, Mail-Adressen
+aus dem Postfix-Relayhost bzw. dem MX/A-Record der Absender-Domain. Nur CT-ID, Mail-Adressen
 und Commodity-Keys fragt das Setup leer ab. Per Env gesetzte Werte
 überschreiben die Defaults.
 
@@ -82,7 +82,7 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 | `GATEWAY` / `BASE_IP` | nein (automatisch vom Host erkannt; Gateway ohne Bridge-Route: Vorschlag `<IP-Basis>.1`) | Netz (CT-IP = `<BASE_IP>.<VMID>`) |
 | `NET0` | nein | komplette Netzkonfiguration statt `BRIDGE`/`GATEWAY`/`BASE_IP` |
 | `MAIL_FROM` / `MAIL_TO` | ja | Absender/Empfänger (komma-getrennt) |
-| `SMTP_HOST` / `SMTP_PORT` | nein (automatisch ermittelt: Postfix-Relayhost des Hosts, sonst MX der eigenen Domain; Port sonst `25`) | Plain-SMTP |
+| `SMTP_HOST` / `SMTP_PORT` | nein (automatisch ermittelt: Postfix-Relayhost des Hosts, sonst MX/A der Absender-Domain; Port sonst `25`) | Plain-SMTP |
 | `COMMODITY_KEYS` | ja | Commodity-Filter (z. B. `system boards`) |
 | `KEYWORDS` | nein | Keyword-Filter, z. B. `KEYWORDS="RTX"` |
 | `EXTRA_RECIPIENTS` | nein | weitere Empfänger (komma-getrennt) |

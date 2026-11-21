@@ -26,7 +26,8 @@
 #    CT_HOSTNAME=LenovoTracker RAM=32 SWAP=32 CPULIMIT=0.25 DISK=local:0.25
 #    BRIDGE=vmbr0 (sonst automatisch erkannt), GATEWAY/BASE_IP automatisch vom Host
 #    (Gateway ohne Route an der Bridge: Vorschlag <IP-Basis>.1 – editierbar)
-#    SMTP_HOST automatisch ermittelt (Postfix-Relayhost, sonst MX der Domain),
+#    SMTP_HOST automatisch ermittelt (Postfix-Relayhost, sonst MX/A der
+#    Absender-Domain bzw. der eigenen Domain),
 #    SMTP_PORT aus dem Relayhost, sonst 25 – beides nur Vorschläge, editierbar
 #    (BUILD_VMID nur bei BUILD_METHOD=build – Standard ist Release-Download)
 #
@@ -286,6 +287,11 @@ ui_configure() {
   wt_fill GATEWAY "Gateway" "Gateway-IP:" || exit 0
   wt_fill BASE_IP "IP-Basis" "IP-Basis (CT erhält <Basis>.<CT-ID>):" || exit 0
   wt_fill MAIL_FROM "Mail von" "Absender-Adresse:" || exit 0
+  # SMTP-Host aus der Absender-Domain ableiten (MX/A), falls die Vorab-Erkennung
+  # nichts fand (dort ist MAIL_FROM noch unbekannt)
+  if [[ -z "${SMTP_HOST:-}" && "$MAIL_FROM" == *"@"* ]]; then
+    SMTP_HOST="$(mx_for_domain "${MAIL_FROM##*@}")"
+  fi
   wt_fill MAIL_TO "Mail an" "Empfänger-Adresse(n), komma-getrennt:" || exit 0
   wt_fill SMTP_HOST "SMTP-Host" "SMTP-Server:" || exit 0
   wt_fill SMTP_PORT "SMTP-Port" "SMTP-Port:" num || exit 0
@@ -336,9 +342,31 @@ detect_net_defaults() {
   DETECTED_BASE_IP="${DETECTED_BASE_IP%.*}"   # letztes Oktett ab → Netzpräfix
 }
 
+# Mailhost für <domain> laut DNS: MX-Record, sonst A-Record der Domain
+# (RFC 5321 Implicit-MX – wenn kein MX existiert, gilt der A-Record).
+mx_for_domain() {
+  local dom="$1" mx=""
+  if command -v host >/dev/null 2>&1; then
+    mx="$(host -t mx "$dom" 2>/dev/null | awk '/ is handled by /{print $NF; exit}')"
+    mx="${mx%.}"
+    if [[ -z "$mx" ]]; then
+      mx="$(host -t a "$dom" 2>/dev/null | awk '{print $NF; exit}' | grep -E '^[0-9.]+$' | head -1)"
+    fi
+  elif command -v nslookup >/dev/null 2>&1; then
+    mx="$(nslookup -type=mx "$dom" 2>/dev/null | awk '/mail exchanger/ {print $NF; exit}')"
+    mx="${mx%.}"
+    if [[ -z "$mx" ]]; then
+      # erst nach einer "Name:"-Zeile lesen – sonst fängt man die Adresse des DNS-Servers
+      mx="$(nslookup "$dom" 2>/dev/null \
+        | awk '/^Name/{f=1; next} f && /^Address/{print $NF; exit}')"
+    fi
+  fi
+  [[ -n "$mx" ]] && echo "$mx"
+}
+
 # SMTP-Host automatisch ermitteln (nur Vorschlag – ENV/editierbar gewinnt):
 # 1) Postfix-Relayhost des PVE-Hosts (postconf bzw. main.cf),
-# 2) sonst MX-Record der eigenen Domain (hostname -f → Domain → MX).
+# 2) sonst MX/A der Absender-Domain (MAIL_FROM), sonst der eigenen Domain.
 DETECTED_SMTP_HOST=""; DETECTED_SMTP_PORT=""
 detect_smtp() {
   [[ -n "${SMTP_HOST:-}" ]] && return 0
@@ -359,18 +387,16 @@ detect_smtp() {
     DETECTED_SMTP_HOST="$host"; DETECTED_SMTP_PORT="$port"
     return 0
   fi
-  local fqdn dom mx=""
-  fqdn="$(hostname -f 2>/dev/null | head -1)"
-  dom="${fqdn#*.}"
-  if [[ -n "$dom" && "$dom" != "$fqdn" && "$dom" == *.* ]]; then
-    if command -v host >/dev/null 2>&1; then
-      mx="$(host -t mx "$dom" 2>/dev/null | awk '{print $NF; exit}')"
-    elif command -v nslookup >/dev/null 2>&1; then
-      mx="$(nslookup -type=mx "$dom" 2>/dev/null | awk '/mail exchanger/ {print $NF; exit}')"
-    fi
-    mx="${mx%.}"
-    [[ -n "$mx" ]] && DETECTED_SMTP_HOST="$mx"
+  local dom
+  if [[ "${MAIL_FROM:-}" == *"@"* ]]; then
+    dom="${MAIL_FROM##*@}"                                       # lenovo@aomme.de -> aomme.de
+  else
+    local fqdn
+    fqdn="$(hostname -f 2>/dev/null | head -1)"
+    dom="${fqdn#*.}"
   fi
+  [[ -n "$dom" && "$dom" == *.* ]] || return 0
+  DETECTED_SMTP_HOST="$(mx_for_domain "$dom")"
 }
 
 # ---------- Bridge-Helfer (per-Bridge Gateway/IP-Basis, Auswahl-Menü) ----------
@@ -943,8 +969,9 @@ Defaults (voreingestellt – per Env überschreibbar, im Dialog editierbar):
   BRIDGE: Auswahl-Menü aller Host-Bridges – Gateway/IP-Basis passen sich je
   nach gewählter Bridge automatisch an (Default-Route wird markiert);
   ohne Route an der Bridge gilt der Vorschlag <IP-Basis>.1
-  SMTP_HOST: automatisch ermittelt (Postfix-Relayhost des Hosts, sonst MX
-  der eigenen Domain)  SMTP_PORT: aus dem Relayhost, sonst 25
+  SMTP_HOST: automatisch ermittelt (Postfix-Relayhost des Hosts, sonst MX/A
+  der Domain aus der Absender-Adresse bzw. des Hostnamens)
+  SMTP_PORT: aus dem Relayhost, sonst 25
 
 Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
   BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen
