@@ -25,6 +25,7 @@
 #  Defaults (per Env überschreibbar, im Dialog editierbar):
 #    CT_HOSTNAME=LenovoTracker RAM=32 SWAP=32 CPULIMIT=0.25 DISK=local:0.25
 #    BRIDGE=vmbr0 (sonst automatisch erkannt), GATEWAY/BASE_IP automatisch vom Host
+#    (Gateway ohne Route an der Bridge: Vorschlag <IP-Basis>.1 – editierbar)
 #    (BUILD_VMID nur bei BUILD_METHOD=build – Standard ist Release-Download)
 #
 #  Lizenz: MIT – free to use (siehe LICENSE im Repo).
@@ -310,8 +311,8 @@ apply_defaults() {
   CPULIMIT="${CPULIMIT:-0.25}"
   DISK="${DISK:-local:0.25}"
   BRIDGE="${BRIDGE:-${DETECTED_BRIDGE:-vmbr0}}"
-  GATEWAY="${GATEWAY:-${DETECTED_GATEWAY:-}}"
   BASE_IP="${BASE_IP:-${DETECTED_BASE_IP:-}}"
+  GATEWAY="${GATEWAY:-${DETECTED_GATEWAY:-${BASE_IP:+${BASE_IP}.1}}}"
 }
 
 # Netz-Defaults vom PVE-Host erkennen (Default-Route → Bridge/Gateway, Host-IP → IP-Basis)
@@ -381,9 +382,12 @@ ui_pick_bridge() {
     fi
   fi
   # Gateway/IP-Basis konsequent aus der gewählten Bridge ableiten – passt je nach
-  # vmbr; wenn dort nichts erkennbar ist, fragen die Folgefelder leer ab.
+  # vmbr. Hat die Bridge keine Route (wurde also nicht erkannt), gilt die gängige
+  # Konvention <IP-Basis>.1 als Vorschlag – editierbar; wenn auch die IP-Basis
+  # fehlt, fragt das Gateway-Feld leer ab.
   GATEWAY="$(bridge_gateway "$BRIDGE")"
   BASE_IP="$(bridge_base_ip "$BRIDGE")"
+  [[ -n "$GATEWAY" ]] || GATEWAY="${BASE_IP:+${BASE_IP}.1}"
   return 0
 }
 
@@ -895,7 +899,8 @@ Pflichtwerte (keine Defaults – interaktiv abgefragt oder per Env setzen):
 Defaults (voreingestellt – per Env überschreibbar, im Dialog editierbar):
   CT_HOSTNAME=LenovoTracker  RAM=32  SWAP=32  CPULIMIT=0.25  DISK=local:0.25
   BRIDGE: Auswahl-Menü aller Host-Bridges – Gateway/IP-Basis passen sich je
-  nach gewählter Bridge automatisch an (Default-Route wird markiert)
+  nach gewählter Bridge automatisch an (Default-Route wird markiert);
+  ohne Route an der Bridge gilt der Vorschlag <IP-Basis>.1
 
 Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
   BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen

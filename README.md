@@ -78,7 +78,7 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 | `CPULIMIT` | nein (Default `0.25`) | Viertel-Kern |
 | `DISK` | nein (Default `local:0.25`) | Rootfs-Größe |
 | `BRIDGE` | nein (Default automatisch erkannt, sonst `vmbr0`) | Proxmox-Bridge – im Setup als Menü aller Host-Bridges wählbar, Gateway/IP-Basis passen sich der Wahl automatisch an |
-| `GATEWAY` / `BASE_IP` | nein (automatisch vom Host erkannt) | Netz (CT-IP = `<BASE_IP>.<VMID>`) |
+| `GATEWAY` / `BASE_IP` | nein (automatisch vom Host erkannt; Gateway ohne Bridge-Route: Vorschlag `<IP-Basis>.1`) | Netz (CT-IP = `<BASE_IP>.<VMID>`) |
 | `NET0` | nein | komplette Netzkonfiguration statt `BRIDGE`/`GATEWAY`/`BASE_IP` |
 | `MAIL_FROM` / `MAIL_TO` | ja | Absender/Empfänger (komma-getrennt) |
 | `SMTP_HOST` / `SMTP_PORT` | ja | Plain-SMTP |
