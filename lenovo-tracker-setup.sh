@@ -53,6 +53,204 @@ msg_error() { echo -e "  ${C_ERR}✗ ${*}${NC}" >&2; }
 msg_warn()  { echo -e "  ${C_WARN}⚠ ${*}${NC}"; }
 die()       { msg_error "$*"; exit 1; }
 
+# ------------------------------- i18n (DE/EN) --------------------------------
+# UI_LANG=de|en – Standard: automatisch nach $LANG (de* → DE, sonst EN), Override
+# per Env (z. B. UI_LANG=en). Schlüssel sind die deutschen Originaltexte; fehlt
+# ein EN-Eintrag, wird der deutsche Text angezeigt.
+UI_LANG="${UI_LANG:-}"
+[[ "$UI_LANG" == "de" || "$UI_LANG" == "en" ]] || case "${LANG:-}" in de*|DE*) UI_LANG="de" ;; *) UI_LANG="en" ;; esac
+
+declare -A MSG_EN=(
+  ["Option wählen (Pfeiltasten/TAB, ENTER bestätigt):"]="Choose an option (arrows/TAB, ENTER to confirm):"
+  ["Installation"]="Install tracker"
+  ["Status & Log anzeigen"]="Show status & log"
+  ["Beenden"]="Exit"
+  ["Erkannte Installation: CT"]="Detected installation: CT"
+  ["Clearance-Sale Mainboard-Tracker – Proxmox-Setup"]="Clearance-Sale Mainboard Tracker – Proxmox setup"
+  ["CT-ID des Tracker-CTs (numerisch):"]="Tracker CT ID (numeric):"
+  ["Hostname des Tracker-CTs:"]="Tracker CT hostname:"
+  ["RAM in MB:"]="RAM in MB:"
+  ["Swap in MB:"]="Swap in MB:"
+  ["CPU-Limit, z. B. 0.25 (Viertel-Kern):"]="CPU limit, e. g. 0.25 (quarter core):"
+  ["Rootfs, z. B. local:0.25:"]="Rootfs, e. g. local:0.25:"
+  ["Temporärer Build-Container (numerisch):"]="Temporary build container (numeric):"
+  ["CT-IDs gleich"]="CT IDs identical"
+  ["Produktions- und Build-CT-ID dürfen nicht identisch sein.\n\nErneut eingeben?"]="Production and build CT IDs must differ.\n\nEnter again?"
+  ["Gateway-IP (z. B. 10.10.10.1):"]="Gateway IP (e. g. 10.10.10.1):"
+  ["IP-Basis ohne Punkt, z. B. 10.10.10 (CT erhält <Basis>.<CT-ID>):"]="IP base without dot, e. g. 10.10.10 (CT gets <base>.<CT-ID>):"
+  ["Absender-Adresse:"]="Sender address:"
+  ["Empfänger-Adresse(n), komma-getrennt:"]="Recipient address(es), comma separated:"
+  ["SMTP-Server (z. B. smtp.protonmail.ch):"]="SMTP server (e. g. smtp.protonmail.ch):"
+  ["SMTP-Benutzer (optional, alle Provider – leer = plain):"]="SMTP user (optional, any provider – empty = plain):"
+  ["SMTP-Passwort / Token (Proton: SMTP-Token · Gmail: App-Passwort):"]="SMTP password / token (Proton: SMTP token · Gmail: app password):"
+  ["SMTP-Port (mit Login: 587):"]="SMTP port (with login: 587):"
+  ["Komma-getrennt, leer = alle Mainboards:"]="Comma separated, empty = all mainboards:"
+  ["CT-ID"]="CT ID"
+  ["CT-ID erforderlich."]="CT ID required."
+  ["Bridge"]="Bridge"
+  ["Proxmox-Bridge (z. B. vmbr0):"]="Proxmox bridge (e. g. vmbr0):"
+  ["Bridge wählen"]="Choose bridge"
+  ["Bridge für das CT – Gateway/IP-Basis passen sich der Auswahl an:"]="Bridge for the CT – gateway/IP base follow the selection:"
+  ["· Default-Route"]="· default route"
+  ["Bridge manuell eingeben"]="Enter bridge manually"
+  ["Commodity-Keys"]="Commodity keys"
+  ["Komma-getrennt, lowercase (z. B. system boards):"]="Comma separated, lowercase (e. g. system boards):"
+  ["Was soll getrackt werden? (Leertaste = an/aus, ENTER = bestätigen):"]="What should be tracked? (space = on/off, ENTER = confirm):"
+  ["Mainboards – Tracker-Standard"]="Mainboards – tracker default"
+  ["Cover mit Tastatur"]="Cover with keyboard"
+  ["Interne Tastaturen"]="Internal keyboards"
+  ["Externe Tastaturen"]="External keyboards"
+  ["Kühlkörper"]="Heat sinks"
+  ["Lüfter"]="Fans"
+  ["LCD-Einheit"]="LCD assembly"
+  ["Prozessoren"]="Processors"
+  ["WLAN-Adapter"]="WLAN adapters"
+  ["WWAN-Adapter"]="WWAN adapters"
+  ["Optische Laufwerke"]="Optical drives"
+  ["Netzteile (extern)"]="AC adapters"
+  ["Festplatten"]="Hard drives"
+  ["Zeigegeräte"]="Pointing devices"
+  ["Dockingstations"]="Docking stations"
+  ["LCD-Panels"]="LCD panels"
+  ["Externe HDDs"]="External HDDs"
+  ["Interne Kabel"]="Internal cables"
+  ["Interne Netzteile"]="Internal power supplies"
+  ["Komplettaustausch"]="Whole unit exchange"
+  ["Setup starten"]="Start setup"
+  ["CT-IDs gleich?"]="CT IDs identical?"
+  ["Deinstallieren"]="Uninstall"
+  ["SMTP-Passwort"]="SMTP password"
+  ["SMTP-Token"]="SMTP token"
+  ["Test-Mail"]="Test e-mail"
+  ["Mail von"]="Mail from"
+  ["Mail an"]="Mail to"
+  ["Weitere Empfänger"]="More recipients"
+  ["SMTP-Host"]="SMTP host"
+  ["SMTP-Login"]="SMTP login"
+  ["SMTP-Port"]="SMTP port"
+  ["Keyword-Filter"]="Keyword filter"
+  ["Absender-Adresse: (edit)"]="Sender address:"
+  ["Empfänger, komma-getrennt:"]="Recipients, comma separated:"
+  ["Komma-getrennt, leer = keine:"]="Comma separated, empty = none:"
+  ["SMTP-Server:"]="SMTP server:"
+  ["SMTP-Benutzer (leer = kein Login/Plain-SMTP):"]="SMTP user (empty = no login/plain SMTP):"
+  ["SMTP- / App-Passwort (leer = kein Login):"]="SMTP / app password (empty = no login):"
+  ["SMTP-Benutzer (optional; Proton: deine Adresse – leer = plain):"]="SMTP user (optional; Proton: your address – empty = plain):"
+  ["SMTP-Passwort / Token (Proton: SMTP-Token · Gmail: App-Passwort · Provider-abhängig):"]="SMTP password / token (Proton: SMTP token · Gmail: app password · provider specific):"
+  ["SMTP-Server für die Submission:"]="SMTP server for submission:"
+  ["Eingabe prüfen"]="Check input"
+  ["Netz"]="Network"
+  ["Kein Alpine-Template via pveam verfügbar – Repos/Internet prüfen."]="No Alpine template available via pveam - check repos/internet."
+  ["Quellen nicht ladbar von"]="Cannot fetch sources from"
+  ["– Repo privat? Dann Repo lokal klonen und Script aus dem Repo-Ordner starten."]="- private repo? Clone it locally and run the script from the repo folder."
+  ["Sende Test-Mail (CT"]="Sending test e-mail (CT"
+  ["from/to/smtp_host prüfen"]="check from/to/smtp_host"
+  ["CT-ID (VMID) erforderlich."]="CT ID (VMID) required."
+  ["Löschen braucht FORCE=1 im nicht-interaktiven Modus."]="Deletion needs FORCE=1 in non-interactive mode."
+  ["entfernt"]="removed"
+  ["existiert nicht – nichts zu löschen"]="does not exist - nothing to delete"
+  ["Host-Artefakte entfernt"]="host artifacts removed"
+  ["Unbekanntes Kommando:"]="Unknown command:"
+  ["siehe --help"]="see --help"
+  ["Abgebrochen."]="Aborted."
+  ["SMTP-Login gesetzt:"]="SMTP login set:"
+  ["Port:"]="Port:"
+  ["Config-Editor braucht whiptail/TTY."]="Config editor needs whiptail/TTY."
+  ["nicht lesbar."]="not readable."
+  ["nicht ladbar."]="cannot be loaded."
+  ["existiert nicht."]="does not exist."
+  ["Cgroup-Pfad"]="Cgroup path"
+  ["nicht gefunden"]="not found"
+  ["vorbereiten (Fallback-Build)"]="prepare (fallback build)"
+  ["anlegen"]="create"
+  ["existiert – FORCE=1: stoppe + lösche"]="exists - FORCE=1: stop + delete"
+  ["läuft"]="running"
+  ["läuft nicht –"]="not running -"
+  ["bitte starten."]="please start it."
+  ["1/6  Binary von GitHub Releases laden (kein Build-CT nötig)"]="1/6  Download binary from GitHub releases (no build CT needed)"
+  ["Binary aus Releases:"]="Binary from releases:"
+  ["Release-Download fehlgeschlagen"]="Release download failed"
+  ["nutze vorhandenes Binary"]="using existing binary"
+  ["Kein Binary verfügbar (Release-Download fehlgeschlagen). Später erneut versuchen – oder BUILD_METHOD=build BUILD_VMID=<id> setzen, um explizit einen temporären Build-CT zu nutzen."]="No binary available (release download failed). Retry later - or set BUILD_METHOD=build BUILD_VMID=<id> to explicitly use a temporary build CT."
+  ["2/6  Produktions-CT"]="2/6  Production CT"
+  ["3/6  Binary + curl-impersonate installieren"]="3/6  Install binary + curl-impersonate"
+  ["curl-impersonate-Binary nicht im Tarball gefunden"]="curl-impersonate binary not found in tarball"
+  ["curl-impersonate einsatzbereit"]="curl-impersonate ready"
+  ["curl-impersonate --version schlug fehl – prüfen!"]="curl-impersonate --version failed - check!"
+  ["4/6  Config generieren"]="4/6  Generate config"
+  ["Config installiert"]="Config installed"
+  ["5/6  Cron (*/30) + Logging einrichten"]="5/6  Set up cron (*/30) + logging"
+  ["crond läuft init-überwacht (::respawn), Intervall */30"]="crond supervised by init (::respawn), interval */30"
+  ["6/6  Verifikation (--dry-run gegen die Live-API)"]="6/6  Verification (--dry-run against live API)"
+  ["Binary läuft im CT nicht (dynamisch gelinkt?) – Build mit crt-static prüfen."]="Binary does not run in CT (dynamically linked?) - check crt-static build."
+  ["Dry-Run lieferte keine Daten (Akamai 403? Netzwerk?):"]="Dry-run returned no data (Akamai 403? network?):"
+  ["Der Cron versucht es alle 30 Min erneut – Log:"]="The cron retries every 30 min - log:"
+  ["Mailzustellung geprüft."]="Mail delivery verified."
+  ["Setup bleibt abgeschlossen – Mail erst bei korrigierter Config."]="Setup stays complete - mail only after fixing the config."
+  ["SMTP-Host auf Submission-Server gesetzt:"]="SMTP host set to submission server:"
+  ["SMTP-Login geleert – Versand läuft wieder plain (Auth-Banner möglich)."]="SMTP login cleared - sending plain again (auth banner possible)."
+  ["Test-Mail fehlgeschlagen – Config korrigieren und erneut senden:"]="Test e-mail failed - fix config and send again:"
+  ["Whiptail/TTY nicht verfügbar – NONINTERACTIVE: alle Werte müssen als Env-Variablen gesetzt sein."]="Whiptail/TTY not available - NONINTERACTIVE: all values must be set via env."
+  ["Keine Standardwerte – interaktiv ausführen oder per Env setzen. Fehlend:"]="No defaults - run interactively or set via env. Missing:"
+  ["Quellen: lokales Repo"]="Sources: local repo"
+  ["Quellen von GitHub laden"]="Fetching sources from GitHub"
+  ["Quellen geladen"]="Sources loaded"
+  ["whiptail fehlt – installiere Setup-UI"]="whiptail missing - installing setup UI"
+  ["whiptail installiert"]="whiptail installed"
+  ["whiptail nicht installierbar – Fallback ohne Dialoge"]="whiptail not installable - fallback without dialogs"
+  ["Bitte als root ausführen (pct braucht root)."]="Please run as root (pct needs root)."
+  ["pct nicht gefunden – das Script gehört auf einen Proxmox-VE-Host."]="pct not found - this script belongs on a Proxmox VE host."
+  ["Binary: GitHub Release (Download, kein Build-CT)"]="Binary: GitHub release (download, no build CT)"
+  ["Binary: Build-CT"]="Binary: build CT"
+  ["Fallback-Build"]="fallback build"
+  ["Login"]="login"
+  ["Statischer Build fehlgeschlagen (Log:"]="Static build failed (log:"
+  ["Binary nicht aus dem Build-CT ladbar – Build fehlgeschlagen?"]="Cannot pull binary from build CT - build failed?"
+  ["Binary gebaut:"]="Binary built:"
+  ["Config gespeichert (Backup:"]="Config saved (backup:"
+  ["smtp_user nicht setzbar."]="cannot set smtp_user."
+  ["smtp_pass nicht setzbar."]="cannot set smtp_pass."
+  ["smtp_host nicht gefunden."]="smtp_host not found."
+  ["smtp_port nicht gefunden."]="smtp_port not found."
+  ["commodity_keys nicht gefunden."]="commodity_keys not found."
+  ["name_keywords nicht gefunden."]="name_keywords not found."
+  ["from nicht gefunden."]="from not found."
+  ["to nicht gefunden."]="to not found."
+  ["extra_recipients nicht gefunden."]="extra_recipients not found."
+  ["VMID muss numerisch sein."]="VMID must be numeric."
+  ["BUILD_VMID muss numerisch sein."]="BUILD_VMID must be numeric."
+  ["VMID und BUILD_VMID dürfen nicht identisch sein."]="VMID and BUILD_VMID must differ."
+  ["RAM muss numerisch sein."]="RAM must be numeric."
+  ["SWAP muss numerisch sein."]="SWAP must be numeric."
+  ["CPULIMIT muss numerisch sein (z. B. 0.25)."]="CPULIMIT must be numeric (e. g. 0.25)."
+  ["SMTP_PORT muss numerisch sein."]="SMTP_PORT must be numeric."
+  ["GATEWAY muss eine gültige IPv4 sein (z. B. 10.10.10.1), aktuell:"]="GATEWAY must be a valid IPv4 (e. g. 10.10.10.1), currently:"
+  ["BASE_IP muss eine IP-Basis ohne Punkt am Ende sein (z. B. 10.10.10), aktuell:"]="BASE_IP must be an IP base without trailing dot (e. g. 10.10.10), currently:"
+  ["Mail von darf nicht leer sein."]="Mail from must not be empty."
+  ["Mail an darf nicht leer sein."]="Mail to must not be empty."
+  ["SMTP-Host darf nicht leer sein."]="SMTP host must not be empty."
+  ["Kein Alpine-Template gefunden – lade via pveam"]="No Alpine template found - downloading via pveam"
+  ["bleibt unangetastet."]="left untouched."
+  ["startet nicht"]="does not start"
+  ["konnte nicht entfernt werden"]="could not be removed"
+  ["Build-CT"]="build CT"
+  ["Löscht CT"]="Deletes CT"
+  ["inkl. State/History und die Host-Binaries.
+
+Wirklich deinstallieren?"]="incl. state/history and host binaries.
+
+Really uninstall?"
+  ["existiert bereits. FORCE=1 für Neuaufbau (State geht verloren!) oder VMID ändern."]="already exists. FORCE=1 to rebuild (state will be lost!) or choose another VMID."
+)
+t() {
+  local key="$1"
+  if [[ "$UI_LANG" == "en" ]]; then
+    printf '%s' "${MSG_EN[$key]:-$key}"
+  else
+    printf '%s' "$key"
+  fi
+}
+
 LAST_LOG="/tmp/.lenovo-setup-last.log"
 
 # Spinner um einen Hintergrund-Job (Output → $LAST_LOG, bei Fehler Tail-Ausgabe)
@@ -165,21 +363,21 @@ header_info() {
 \_____|\___/|_| |_|\__, |  \___/\__,_/____|\__,_|  |_|\__,_|\__, |
                    |___/                                    |___/
 BANNER
-  echo -e "${NC}  ${C_HEAD}Clearance-Sale Mainboard-Tracker${NC} – Proxmox-Setup  ${C_OK}(MIT, free to use)${NC}"
+  echo -e "${NC}  ${C_HEAD}$(t 'Clearance-Sale Mainboard-Tracker – Proxmox-Setup')${NC}  ${C_OK}(MIT, free to use)${NC}"
   echo
 }
 
 prereq() {
-  [[ $EUID -eq 0 ]] || die "Bitte als root ausführen (pct braucht root)."
-  command -v pct >/dev/null 2>&1 || die "pct nicht gefunden – das Script gehört auf einen Proxmox-VE-Host."
+  [[ $EUID -eq 0 ]] || die "$(t 'Bitte als root ausführen (pct braucht root).')"
+  command -v pct >/dev/null 2>&1 || die "$(t 'pct nicht gefunden – das Script gehört auf einen Proxmox-VE-Host.')"
 }
 
 require_ctid() {  # require_ctid <id> <unterkommando>
-  [[ -n "${1:-}" ]] || die "CT-ID angeben: --${2} <VMID>"
+  [[ -n "${1:-}" ]] || die "$(t 'CT-ID angeben:') --${2} <VMID>"
 }
 
 require_running_ct() {  # require_running_ct <id> <hinweis>
-  pct status "$1" 2>/dev/null | grep -q running || die "CT ${1} läuft nicht – ${2}"
+  pct status "$1" 2>/dev/null | grep -q running || die "$(t 'CT') ${1} $(t 'läuft nicht –') ${2}"
 }
 
 unquote() {  # umschließende Anführungszeichen entfernen (toml_value-Ergebnisse)
@@ -196,14 +394,14 @@ ensure_ui() {
   command -v whiptail >/dev/null 2>&1 && return 0
   [[ "$NONINTERACTIVE" == "1" ]] && return 1
   [[ -t 0 || -t 1 ]] || return 1
-  msg_info "whiptail fehlt – installiere Setup-UI"
+  msg_info "$(t 'whiptail fehlt – installiere Setup-UI')"
   { apt-get install -y -qq whiptail || { apt-get update -qq && apt-get install -y -qq whiptail; }; } \
     >"$LAST_LOG" 2>&1 || true
   if command -v whiptail >/dev/null 2>&1; then
-    msg_ok "whiptail installiert"
+    msg_ok "$(t 'whiptail installiert')"
     return 0
   fi
-  msg_warn "whiptail nicht installierbar – Fallback ohne Dialoge"
+  msg_warn "$(t 'whiptail nicht installierbar – Fallback ohne Dialoge')"
   return 1
 }
 
@@ -212,11 +410,11 @@ TEMPLATE_TPL=""
 ensure_template() {
   TEMPLATE_TPL="$(template_path)"
   [[ -n "$TEMPLATE_TPL" ]] && return 0
-  msg_info "Kein Alpine-Template gefunden – lade via pveam"
+  msg_info "$(t 'Kein Alpine-Template gefunden – lade via pveam')"
   pveam update >"$LAST_LOG" 2>&1 || true
   local name
   name="$(pveam available --section system 2>/dev/null | awk '/alpine-/ {print $2}' | sort -V | tail -1)"
-  [[ -n "$name" ]] || die "Kein Alpine-Template via pveam verfügbar – Repos/Internet prüfen."
+  [[ -n "$name" ]] || die "$(t 'Kein Alpine-Template via pveam verfügbar – Repos/Internet prüfen.')"
   spin_run "Alpine-Template ${name} laden" pveam download local "$name"
   TEMPLATE_TPL="$(template_path)"
   [[ -n "$TEMPLATE_TPL" ]] || die "Template-Download fehlgeschlagen."
@@ -229,19 +427,19 @@ fetch_sources() {
   if [[ -f "${REPO_DIR}/rust-tracker/Cargo.toml" && -f "${REPO_DIR}/rust-tracker/src/main.rs" ]]; then
     SRC_CARGO="${REPO_DIR}/rust-tracker/Cargo.toml"
     SRC_MAIN="${REPO_DIR}/rust-tracker/src/main.rs"
-    msg_ok "Quellen: lokales Repo (${REPO_DIR})"
+    msg_ok "$(t 'Quellen: lokales Repo') (${REPO_DIR})"
     return
   fi
   local tmp="/root/.lenovo-tracker-src"
-  msg_info "Quellen von GitHub laden (${REPO_RAW})"
+  msg_info "$(t 'Quellen von GitHub laden') (${REPO_RAW})"
   rm -rf "$tmp" && mkdir -p "$tmp"
   ct_download "${REPO_RAW}/rust-tracker/Cargo.toml" "${tmp}/Cargo.toml" || true
   ct_download "${REPO_RAW}/rust-tracker/src/main.rs" "${tmp}/main.rs" || true
   [[ -s "${tmp}/Cargo.toml" && -s "${tmp}/main.rs" ]] \
-    || die "Quellen nicht ladbar von ${REPO_RAW} – Repo privat? Dann Repo lokal klonen und Script aus dem Repo-Ordner starten."
+    || die "$(t 'Quellen nicht ladbar von') ${REPO_RAW} $(t '– Repo privat? Dann Repo lokal klonen und Script aus dem Repo-Ordner starten.')"
   SRC_CARGO="${tmp}/Cargo.toml"
   SRC_MAIN="${tmp}/main.rs"
-  msg_ok "Quellen geladen (main.rs $(stat -c %s "$SRC_MAIN") B)"
+  msg_ok "$(t 'Quellen geladen') (main.rs $(stat -c %s "$SRC_MAIN") B)"
 }
 
 # ------------------------------- Whiptail-TUI --------------------------------
@@ -308,20 +506,6 @@ wt_msgbox() {  # wt_msgbox <title> <text> – Fehler-/Hinweis-Box
   whiptail --backtitle "$BACKTITLE" --title "$1" --msgbox "$2" 14 70 3>&1 1>&2 2>&3 || true
 }
 
-# Formular-Seite: mehrere Felder auf einem Screen (whiptail --form).
-# Zeilen als "Label|Vorbelegung"; liefert die Werte zeilenweise auf stdout.
-ui_form() {  # ui_form <title> <text> <rows> <Label|Wert> ...
-  local title="$1" text="$2" rows="$3"; shift 3
-  local -a args=()
-  local y=1 row label val
-  for row in "$@"; do
-    label="${row%%|*}"; val="${row#*|}"
-    args+=("$label" "$y" 1 "$val" "$y" 26 44)
-    y=$((y + 1))
-  done
-  whiptail --backtitle "$BACKTITLE" --title "$title" --form "$text" \
-    $(( rows + 12 )) 74 "$rows" "${args[@]}" 3>&1 1>&2 2>&3
-}
 
 # Validierung: echte IPv4 (4 Oktette, je 0-255)
 is_ipv4() {
@@ -382,7 +566,7 @@ KNOWN_COMMODITIES=(
 # fällt es auf die Freitext-Eingabe zurück.
 ui_commodity_keys() {
   if ! ui_available; then
-    wt_fill COMMODITY_KEYS "Commodity-Keys" "Komma-getrennt, lowercase (z. B. system boards):" || return 1
+    wt_fill COMMODITY_KEYS "$(t 'Commodity-Keys')" "$(t 'Komma-getrennt, lowercase (z. B. system boards):')" || return 1
     return 0
   fi
   local -a sel=""
@@ -391,7 +575,7 @@ ui_commodity_keys() {
   local key desc state k i
   for ((i = 0; i < ${#KNOWN_COMMODITIES[@]}; i += 2)); do
     key="${KNOWN_COMMODITIES[i]}"
-    desc="${KNOWN_COMMODITIES[i + 1]}"
+    desc="$(t "${KNOWN_COMMODITIES[i + 1]}")"
     state="OFF"
     for k in "${sel[@]}"; do
       k="${k#"${k%%[![:space:]]*}"}"; k="${k%"${k##*[![:space:]]}"}"
@@ -401,7 +585,7 @@ ui_commodity_keys() {
   done
   local raw
   raw="$(whiptail --backtitle "$BACKTITLE" --title "Commodity-Keys" --checklist \
-    "Was soll getrackt werden? (Leertaste = an/aus, ENTER = bestätigen):" \
+    "$(t 'Was soll getrackt werden? (Leertaste = an/aus, ENTER = bestätigen):')" \
     22 74 14 "${items[@]}" 3>&1 1>&2 2>&3)" || return 1
   eval "set -- $raw"
   local out=""
@@ -412,115 +596,68 @@ ui_commodity_keys() {
   return 0
 }
 
-# Wizard: alle Setup-Werte auf gruppierten Formular-Seiten (Vorschläge sind
-# vorbelegt – ENV/Erkennung/Defaults). Jede Seite validiert sich selbst und
-# wiederholt sich bei Fehlern; Abbruch (Cancel) beendet das Setup.
+# Wizard: fragt alle Setup-Werte ab (Vorschläge vorbelegt – ENV/Erkennung/
+# Defaults). Felder validieren direkt (wt_fill), Cancel beendet das Setup.
 ui_configure() {
-  local v out err
-  local -a f=()
+  local v
 
-  # --- Seite 1: Container & Ressourcen -------------------------------------
-  while true; do
-    out="$(ui_form "1 · Container & Ressourcen" \
-      "CT und Ressourcen des Trackers (Werte sind editierbar):" 6 \
-      "CT-ID|${VMID}" \
-      "Hostname|${CT_HOSTNAME}" \
-      "RAM (MB)|${RAM}" \
-      "Swap (MB)|${SWAP}" \
-      "CPU-Limit|${CPULIMIT}" \
-      "Rootfs|${DISK}")" || exit 0
-    mapfile -t f <<< "$out"
-    VMID="${f[0]}"; CT_HOSTNAME="${f[1]}"; RAM="${f[2]}"; SWAP="${f[3]}"; CPULIMIT="${f[4]}"; DISK="${f[5]}"
-    err=""
-    valid_value num "$VMID" >/dev/null        || err+="· CT-ID muss numerisch sein\n"
-    [[ -n "$CT_HOSTNAME" ]]                   || err+="· Hostname darf nicht leer sein\n"
-    valid_value num "$RAM" >/dev/null         || err+="· RAM muss numerisch sein (MB)\n"
-    valid_value num "$SWAP" >/dev/null        || err+="· Swap muss numerisch sein (MB)\n"
-    valid_value dec "$CPULIMIT" >/dev/null    || err+="· CPU-Limit muss numerisch sein (z. B. 0.25)\n"
-    [[ -n "$DISK" ]]                          || err+="· Rootfs darf nicht leer sein (z. B. local:0.25)\n"
-    [[ -z "$err" ]] && break
-    wt_msgbox "Eingabe prüfen" "Seite 1 – diese Angaben sind ungültig:\n\n$err"
-  done
+  # --- Container & Ressourcen ---
+  wt_fill VMID "CT-ID (Produktion)" "$(t 'CT-ID des Tracker-CTs (numerisch):')" num || exit 0
+  wt_fill CT_HOSTNAME "Hostname" "$(t 'Hostname des Tracker-CTs:')" || exit 0
+  wt_fill RAM "RAM" "$(t 'RAM in MB:')" num || exit 0
+  wt_fill SWAP "Swap" "$(t 'Swap in MB:')" num || exit 0
+  wt_fill CPULIMIT "CPU-Limit" "$(t 'CPU-Limit, z. B. 0.25 (Viertel-Kern):')" dec || exit 0
+  wt_fill DISK "Rootfs" "$(t 'Rootfs, z. B. local:0.25:')" || exit 0
 
   # Nur bei explizitem BUILD_METHOD=build – Standard ist der Release-Download
   if [[ "$BUILD_METHOD" == "build" ]]; then
     while true; do
       [[ -n "$BUILD_VMID" ]] || BUILD_VMID="$(next_free_ctid "$VMID")"
-      out="$(ui_form "Build-Container (Fallback)" "Temporärer Build-CT (nur BUILD_METHOD=build):" 1 \
-        "CT-ID|${BUILD_VMID}")" || exit 0
-      BUILD_VMID="${out%%$'\n'*}"
-      valid_value num "$BUILD_VMID" >/dev/null || { wt_msgbox "Eingabe prüfen" "CT-ID muss numerisch sein."; continue; }
+      wt_fill BUILD_VMID "CT-ID (Build)" "$(t 'Temporärer Build-Container (numerisch):')" num || exit 0
       [[ "$VMID" != "$BUILD_VMID" ]] && break
-      wt_msgbox "Eingabe prüfen" "Build-CT-ID darf nicht identisch mit ${VMID} sein."
+      wt_yesno "$(t 'CT-IDs gleich')" "$(t 'Produktions- und Build-CT-ID dürfen nicht identisch sein.
+
+Erneut eingeben?')" || exit 0
     done
   fi
 
-  # --- Seite 2: Netzwerk ----------------------------------------------------
+  # --- Netzwerk ---
   ui_pick_bridge || exit 0   # Menü der Host-Bridges; setzt BRIDGE/GATEWAY/BASE_IP
-  while true; do
-    out="$(ui_form "2 · Netzwerk" \
-      "Gateway und IP-Basis – der CT bekommt die IP <Basis>.<CT-ID>:" 2 \
-      "Gateway-IP|${GATEWAY}" \
-      "IP-Basis|${BASE_IP}")" || exit 0
-    mapfile -t f <<< "$out"
-    GATEWAY="${f[0]}"; BASE_IP="$(normalize_base_ip "${f[1]}")"
-    err=""
-    valid_value ipv4 "$GATEWAY" >/dev/null  || err+="· Gateway muss eine gültige IPv4 sein (z. B. 10.10.10.1)\n"
-    valid_value baseip "$BASE_IP" >/dev/null || err+="· IP-Basis: drei Oktette ohne Punkt am Ende (z. B. 10.10.10)\n"
-    [[ -z "$err" ]] && break
-    wt_msgbox "Eingabe prüfen" "Seite 2 – diese Angaben sind ungültig:\n\n$err"
-  done
+  wt_fill GATEWAY "Gateway" "$(t 'Gateway-IP (z. B. 10.10.10.1):')" ipv4 || exit 0
+  wt_fill BASE_IP "IP-Basis" "$(t 'IP-Basis ohne Punkt, z. B. 10.10.10 (CT erhält <Basis>.<CT-ID>):')" baseip || exit 0
 
-  # --- Seite 3: Mail & SMTP -------------------------------------------------
-  # Login OPTIONAL: gesetzt = authentifizierte Submission über STARTTLS (für
-  # alle Provider, z. B. Proton SMTP-Token, Gmail App-Passwort) – DKIM/SPF
-  # durch den Provider, kein "failed authentication"-Banner. Leer = plain.
-  while true; do
-    out="$(ui_form "3 · Mail & SMTP" \
-      "Absender, Empfänger, Mailserver (Vorschläge ermittelt) – Login optional:" 5 \
-      "Mail von|${MAIL_FROM:-}" \
-      "Mail an|${MAIL_TO:-}" \
-      "SMTP-Host|${SMTP_HOST:-}" \
-      "SMTP-Benutzer|${SMTP_USER:-}" \
-      "SMTP-Port|${SMTP_PORT:-}")" || exit 0
-    mapfile -t f <<< "$out"
-    MAIL_FROM="${f[0]}"; MAIL_TO="${f[1]}"; SMTP_HOST="${f[2]}"; SMTP_USER="${f[3]}"; SMTP_PORT="${f[4]}"
-    # SMTP-Host aus der Absender-Domain ableiten, falls Vorab-Erkennung nichts fand
-    if [[ -z "$SMTP_HOST" && "$MAIL_FROM" == *"@"* ]]; then
-      SMTP_HOST="$(mx_for_domain "${MAIL_FROM##*@}")"
-    fi
-    # Login gesetzt → Submission-Port (STARTTLS) als Default
-    [[ -n "$SMTP_USER" && "$SMTP_PORT" == "25" ]] && SMTP_PORT="587"
-    err=""
-    valid_value email "$MAIL_FROM" >/dev/null || err+="· Mail von: gültige Absender-Adresse (z. B. du@example.de)\n"
-    [[ -n "$MAIL_TO" ]]                       || err+="· Mail an: mindestens eine Empfänger-Adresse\n"
-    [[ -n "$SMTP_HOST" ]]                     || err+="· SMTP-Host darf nicht leer sein\n"
-    valid_value num "$SMTP_PORT" >/dev/null   || err+="· SMTP-Port muss numerisch sein (mit Login: 587)\n"
-    [[ -z "$err" ]] && break
-    wt_msgbox "Eingabe prüfen" "Seite 3 – diese Angaben sind ungültig:\n\n$err"
-  done
-  # SMTP-Passwort separat und maskiert (--form zeigt alles im Klartext)
+  # --- Mail & SMTP (Login OPTIONAL – alle Provider) ---
+  wt_fill MAIL_FROM "Mail von" "$(t 'Absender-Adresse:')" email || exit 0
+  # SMTP-Host aus der Absender-Domain ableiten, falls die Vorab-Erkennung nichts fand
+  if [[ -z "${SMTP_HOST:-}" && "$MAIL_FROM" == *"@"* ]]; then
+    SMTP_HOST="$(mx_for_domain "${MAIL_FROM##*@}")"
+  fi
+  wt_fill MAIL_TO "Mail an" "$(t 'Empfänger-Adresse(n), komma-getrennt:')" || exit 0
+  wt_fill SMTP_HOST "SMTP-Host" "$(t 'SMTP-Server (z. B. smtp.protonmail.ch):')" || exit 0
+  wt_fill SMTP_USER "SMTP-Login" "$(t 'SMTP-Benutzer (optional, alle Provider – leer = plain):')" || exit 0
   if [[ -n "$SMTP_USER" ]]; then
-    v="$(whiptail --backtitle "$BACKTITLE" --title "SMTP-Passwort" --passwordbox \
-      "SMTP-Passwort / Token für ${SMTP_USER} (Proton: SMTP-Token, nicht das Login-Passwort):" \
-      11 70 "${SMTP_PASS}" 3>&1 1>&2 2>&3)" || exit 0
+    v="$(whiptail --backtitle "$BACKTITLE" --title "SMTP-Passwort" --passwordbox       "$(t 'SMTP-Passwort / Token (Proton: SMTP-Token · Gmail: App-Passwort):')"       11 70 "${SMTP_PASS}" 3>&1 1>&2 2>&3)" || exit 0
     SMTP_PASS="$v"
+    # Login gesetzt → Submission-Port (STARTTLS) als Default
+    [[ "$SMTP_PORT" == "25" ]] && SMTP_PORT="587"
   else
     SMTP_PASS=""
   fi
+  wt_fill SMTP_PORT "SMTP-Port" "$(t 'SMTP-Port (mit Login: 587):')" num || exit 0
 
-  # --- Seite 4: Filter ------------------------------------------------------
+  # --- Filter ---
   ui_commodity_keys || exit 0
-  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "${KEYWORDS:-}")" || exit 0
-  KEYWORDS="${v//$'\n'/}"
+  v="$(wt_input "Keyword-Filter" "$(t 'Komma-getrennt, leer = alle Mainboards:')" "${KEYWORDS:-}")" || exit 0
+  KEYWORDS="${v//$'
+'/}"
 }
 
 # CT-ID für Status/Test-Mail/Probe/Peak/Uninstall erfragen, falls nicht gesetzt
 ui_vmid() {
   [[ -n "$VMID" ]] && return 0
   local v
-  v="$(wt_input "CT-ID" "CT-ID des Tracker-CTs (numerisch):" "")" || exit 0
-  [[ -n "$v" ]] || die "CT-ID erforderlich."
+  v="$(wt_input "$(t 'CT-ID')" "$(t 'CT-ID des Tracker-CTs (numerisch):')" "")" || exit 0
+  [[ -n "$v" ]] || die "$(t 'CT-ID erforderlich.')"
   VMID="$v"
 }
 
@@ -649,19 +786,19 @@ ui_pick_bridge() {
   local bridges sel b gw base desc
   bridges="$(list_bridges)"
   if [[ -z "$bridges" ]] || ! ui_available; then
-    wt_fill BRIDGE "Bridge" "Proxmox-Bridge (z. B. vmbr0):" || return 1
+    wt_fill BRIDGE "$(t 'Bridge')" "$(t 'Proxmox-Bridge (z. B. vmbr0):')" || return 1
   else
     local items=()
     while IFS= read -r b; do
       [[ -n "$b" ]] || continue
       gw="$(bridge_gateway "$b")"; base="$(bridge_base_ip "$b")"
       desc="Gateway ${gw:-—} · IP-Basis ${base:-—}"
-      [[ "$b" == "${DETECTED_BRIDGE:-}" ]] && desc+=" · Default-Route"
+      [[ "$b" == "${DETECTED_BRIDGE:-}" ]] && desc+="$(t ' · Default-Route')"
       items+=("$b" "$desc")
     done <<< "$bridges"
-    items+=("custom" "Bridge manuell eingeben")
-    sel="$(wt_menu "Bridge wählen" \
-      "Bridge für das CT – Gateway/IP-Basis passen sich der Auswahl an:" \
+    items+=("custom" "$(t 'Bridge manuell eingeben')")
+    sel="$(wt_menu "$(t 'Bridge wählen')" \
+      "$(t 'Bridge für das CT – Gateway/IP-Basis passen sich der Auswahl an:')" \
       "${items[@]}")" || return 1
     if [[ "$sel" == "custom" ]]; then
       wt_fill BRIDGE "Bridge" "Proxmox-Bridge (z. B. vmbr0):" || return 1
@@ -688,21 +825,21 @@ require_config() {
     [[ -n "${!v:-}" ]] || missing+=("$v")
   done
   if [[ ${#missing[@]} -gt 0 ]]; then
-    die "Keine Standardwerte – interaktiv ausführen oder per Env setzen. Fehlend: ${missing[*]}"
+    die "$(t 'Keine Standardwerte – interaktiv ausführen oder per Env setzen. Fehlend:') ${missing[*]}"
   fi
-  [[ "$VMID" =~ ^[0-9]+$ ]] || die "VMID muss numerisch sein."
+  [[ "$VMID" =~ ^[0-9]+$ ]] || die "$(t 'VMID muss numerisch sein.')"
   if [[ "$BUILD_METHOD" == "build" ]]; then
-    [[ "$BUILD_VMID" =~ ^[0-9]+$ ]] || die "BUILD_VMID muss numerisch sein."
-    [[ "$VMID" != "$BUILD_VMID" ]] || die "VMID und BUILD_VMID dürfen nicht identisch sein."
+    [[ "$BUILD_VMID" =~ ^[0-9]+$ ]] || die "$(t 'BUILD_VMID muss numerisch sein.')"
+    [[ "$VMID" != "$BUILD_VMID" ]] || die "$(t 'VMID und BUILD_VMID dürfen nicht identisch sein.')"
   fi
-  [[ "$RAM" =~ ^[0-9]+$ ]] || die "RAM muss numerisch sein."
-  [[ "$SWAP" =~ ^[0-9]+$ ]] || die "SWAP muss numerisch sein."
-  [[ "$CPULIMIT" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "CPULIMIT muss numerisch sein (z. B. 0.25)."
-  [[ "$SMTP_PORT" =~ ^[0-9]+$ ]] || die "SMTP_PORT muss numerisch sein."
+  [[ "$RAM" =~ ^[0-9]+$ ]] || die "$(t 'RAM muss numerisch sein.')"
+  [[ "$SWAP" =~ ^[0-9]+$ ]] || die "$(t 'SWAP muss numerisch sein.')"
+  [[ "$CPULIMIT" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "$(t 'CPULIMIT muss numerisch sein (z. B. 0.25).')"
+  [[ "$SMTP_PORT" =~ ^[0-9]+$ ]] || die "$(t 'SMTP_PORT muss numerisch sein.')"
   BASE_IP="$(normalize_base_ip "$BASE_IP")"
-  is_ipv4 "$GATEWAY" || die "GATEWAY muss eine gültige IPv4 sein (z. B. 10.10.10.1), aktuell: '$GATEWAY'."
+  is_ipv4 "$GATEWAY" || die "$(t 'GATEWAY muss eine gültige IPv4 sein (z. B. 10.10.10.1), aktuell:') '$GATEWAY'."
   [[ "$BASE_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] \
-    || die "BASE_IP muss eine IP-Basis ohne Punkt am Ende sein (z. B. 10.10.10), aktuell: '$BASE_IP'."
+    || die "$(t 'BASE_IP muss eine IP-Basis ohne Punkt am Ende sein (z. B. 10.10.10), aktuell:') '$BASE_IP'."
 }
 
 prepare_net() {
@@ -786,12 +923,12 @@ toml_insert_after() {  # toml_insert_after <file> <section> <afterkey> <key> <va
 cmd_edit_config() {
   local id="${1:-${DETECTED_VMID:-$VMID}}"
   require_ctid "$id" "edit-config"
-  ui_available || die "Config-Editor braucht whiptail/TTY."
-  require_running_ct "$id" "bitte starten."
+  ui_available || die "$(t 'Config-Editor braucht whiptail/TTY.')"
+  require_running_ct "$id" "$(t 'bitte starten.')"
 
   local cfg="/root/lenovotracker-config-edit.toml"
   pct exec "$id" -- cat "${CONF_DIR}/config.toml" > "$cfg" 2>/dev/null
-  [[ -s "$cfg" ]] || die "Config in CT ${id} nicht lesbar."
+  [[ -s "$cfg" ]] || die "$(t 'Config in CT') ${id} $(t 'nicht lesbar.')"
 
   local commodity keywords mail_from mail_to mail_extra smtp_host smtp_port v
   commodity="$(toml_array_items "$(toml_value "$cfg" tracker commodity_keys)")"
@@ -802,30 +939,30 @@ cmd_edit_config() {
   smtp_host="$(toml_value "$cfg" mail smtp_host | unquote)"
   smtp_port="$(toml_value "$cfg" mail smtp_port)"
 
-  v="$(wt_input "Commodity-Keys" "Komma-getrennt, lowercase:" "$commodity")" || exit 0
-  [[ -n "$v" ]] || die "Commodity-Keys dürfen nicht leer sein."
+  v="$(wt_input "$(t 'Commodity-Keys')" "$(t 'Komma-getrennt, lowercase:')" "$commodity")" || exit 0
+  [[ -n "$v" ]] || die "$(t 'Commodity-Keys dürfen nicht leer sein.')"
   commodity="$v"
-  v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "$keywords")" || exit 0
+  v="$(wt_input "$(t 'Keyword-Filter')" "$(t 'Komma-getrennt, leer = alle Mainboards:')" "$keywords")" || exit 0
   keywords="$v"
-  v="$(wt_input "Mail von" "Absender-Adresse:" "$mail_from")" || exit 0
-  [[ -n "$v" ]] || die "Mail von darf nicht leer sein."
+  v="$(wt_input "$(t 'Mail von')" "$(t 'Absender-Adresse:')" "$mail_from")" || exit 0
+  [[ -n "$v" ]] || die "$(t 'Mail von darf nicht leer sein.')"
   mail_from="$v"
-  v="$(wt_input "Mail an" "Empfänger, komma-getrennt:" "$mail_to")" || exit 0
-  [[ -n "$v" ]] || die "Mail an darf nicht leer sein."
+  v="$(wt_input "$(t 'Mail an')" "$(t 'Empfänger, komma-getrennt:')" "$mail_to")" || exit 0
+  [[ -n "$v" ]] || die "$(t 'Mail an darf nicht leer sein.')"
   mail_to="$v"
-  v="$(wt_input "Weitere Empfänger" "Komma-getrennt, leer = keine:" "$mail_extra")" || exit 0
+  v="$(wt_input "$(t 'Weitere Empfänger')" "$(t 'Komma-getrennt, leer = keine:')" "$mail_extra")" || exit 0
   mail_extra="$v"
-  v="$(wt_input "SMTP-Host" "SMTP-Server:" "$smtp_host")" || exit 0
-  [[ -n "$v" ]] || die "SMTP-Host darf nicht leer sein."
+  v="$(wt_input "$(t 'SMTP-Host')" "$(t 'SMTP-Server:')" "$smtp_host")" || exit 0
+  [[ -n "$v" ]] || die "$(t 'SMTP-Host darf nicht leer sein.')"
   smtp_host="$v"
   smtp_user="$(toml_value "$cfg" mail smtp_user | unquote)"
   smtp_pass="$(toml_value "$cfg" mail smtp_pass | unquote)"
-  v="$(wt_input "SMTP-Login" "SMTP-Benutzer (leer = kein Login/Plain-SMTP):" "$smtp_user")" || exit 0
+  v="$(wt_input "$(t 'SMTP-Login')" "$(t 'SMTP-Benutzer (leer = kein Login/Plain-SMTP):')" "$smtp_user")" || exit 0
   smtp_user="$v"
-  v="$(wt_input "SMTP-Passwort" "SMTP- / App-Passwort (leer = kein Login):" "$smtp_pass")" || exit 0
+  v="$(wt_input "$(t 'SMTP-Passwort')" "$(t 'SMTP- / App-Passwort (leer = kein Login):')" "$smtp_pass")" || exit 0
   smtp_pass="$v"
-  v="$(wt_input "SMTP-Port" "SMTP-Port (mit Login: 587):" "$smtp_port")" || exit 0
-  [[ "$v" =~ ^[0-9]+$ ]] || die "SMTP-Port muss numerisch sein."
+  v="$(wt_input "$(t 'SMTP-Port')" "$(t 'SMTP-Port (mit Login: 587):')" "$smtp_port")" || exit 0
+  [[ "$v" =~ ^[0-9]+$ ]] || die "$(t 'SMTP-Port muss numerisch sein.')"
   smtp_port="$v"
 
   toml_set "$cfg" tracker commodity_keys "$(toml_array "$commodity")" || die "commodity_keys nicht gefunden."
@@ -843,7 +980,7 @@ cmd_edit_config() {
 
   push_ct_config "$id" "$cfg"
   rm -f "$cfg"
-  msg_ok "Config gespeichert (Backup: ${CONF_DIR}/config.toml.bak)"
+  msg_ok "$(t 'Config gespeichert (Backup:') ${CONF_DIR}/config.toml.bak)"
 
   local dry
   dry="$(pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --dry-run 2>&1 || true)"
@@ -855,61 +992,61 @@ cmd_edit_config() {
 }
 
 ui_summary_confirm() {
-  local bininfo="Binary: GitHub Release (Download, kein Build-CT)"
-  [[ "$BUILD_METHOD" == "build" ]] && bininfo="Binary: Build-CT ${BUILD_VMID} (Fallback-Build)"
+  local bininfo="$(t 'Binary: GitHub Release (Download, kein Build-CT)')"
+  [[ "$BUILD_METHOD" == "build" ]] && bininfo="$(t 'Binary: Build-CT') ${BUILD_VMID} ($(t 'Fallback-Build'))"
   local smtpinfo="${SMTP_HOST}:${SMTP_PORT}"
-  [[ -n "${SMTP_USER:-}" ]] && smtpinfo+=" · Login ${SMTP_USER}" || smtpinfo+=" · plain"
-  local text="CT: ${VMID} (${CT_HOSTNAME}) · ${bininfo}
+  [[ -n "${SMTP_USER:-}" ]] && smtpinfo+=" · $(t 'Login') ${SMTP_USER}" || smtpinfo+=" · plain"
+  local text="$(t 'CT'): ${VMID} (${CT_HOSTNAME}) · ${bininfo}
 RAM: ${RAM} MB + ${SWAP} MB Swap · CPU-Limit: ${CPULIMIT} · Disk: ${DISK}
-Netz: ${BRIDGE} · ${BASE_IP}.${VMID}/24 · Gateway ${GATEWAY}
+$(t 'Netz'): ${BRIDGE} · ${BASE_IP}.${VMID}/24 · GW ${GATEWAY}
 
-Mail: ${MAIL_FROM} → ${MAIL_TO}
+Mail: ${MAIL_FROM} -> ${MAIL_TO}
 SMTP: ${smtpinfo}
 
 Filter: ${COMMODITY_KEYS}
 Keywords: ${KEYWORDS:-alle}"
-  wt_yesno "Setup starten" "$text"
+  wt_yesno "$(t 'Setup starten')" "$text"
 }
 
 ui_ct_exists() {  # rc 0 = neu aufbauen
   local sel
-  sel="$(wt_menu "CT ${VMID} existiert" "Was möchtest du tun?" \
+  sel="$(wt_menu "$(t 'CT ${VMID} existiert')" "$(t 'Was möchtest du tun?')" \
     "edit"    "Config bearbeiten (State bleibt erhalten)" \
     "rebuild" "Neu aufbauen (State/History gehen verloren)" \
     "cancel"  "Abbrechen")" || exit 0
   case "$sel" in
     edit)    cmd_edit_config "$VMID"; exit 0 ;;
     rebuild) return 0 ;;
-    cancel)  die "Abgebrochen – CT ${VMID} bleibt unangetastet." ;;
+    cancel)  die "$(t 'Abgebrochen – CT') ${VMID} $(t 'bleibt unangetastet.')" ;;
   esac
 }
 
 # ------------------------------- Unterkommandos ------------------------------
 build_in_ct() {  # Fallback: Binary im temporären Build-CT bauen
   fetch_sources
-  msg_info "Build-CT ${BUILD_VMID} vorbereiten (Fallback-Build)"
+  msg_info "$(t 'Build-CT') ${BUILD_VMID} $(t 'vorbereiten (Fallback-Build)')"
   pct destroy "${BUILD_VMID}" --purge >/dev/null 2>&1 || true
   spin_run "Build-CT anlegen" pct create "${BUILD_VMID}" "$1" \
     --hostname rust-build --memory "${BUILD_RAM}" --cores 4 --swap 512 \
     --net0 "${NET0/${VMID}/${BUILD_VMID}}" \
     --rootfs "${BUILD_DISK}" --unprivileged 1 --start 1
-  if ! wait_ct "${BUILD_VMID}"; then die "Build-CT startet nicht"; fi
-  msg_ok "Build-CT läuft"
+  if ! wait_ct "${BUILD_VMID}"; then die "$(t 'Build-CT startet nicht')"; fi
+  msg_ok "$(t 'Build-CT läuft')"
   spin_run "Rust-Toolchain installieren (kein OpenSSL/cmake/go)" \
     pct exec "${BUILD_VMID}" -- sh -c 'apk update -q && apk add -q rust cargo build-base pkgconf musl-dev ca-certificates'
-  msg_info "Quellen übertragen + bauen (12 Unit-Tests inklusive)"
+  msg_info "$(t 'Quellen übertragen + bauen (12 Unit-Tests inklusive)')"
   pct exec "${BUILD_VMID}" -- mkdir -p /build/src
   pct push "${BUILD_VMID}" "$SRC_CARGO" /build/Cargo.toml
   pct push "${BUILD_VMID}" "$SRC_MAIN" /build/src/main.rs
   rm -f "$HOST_BIN"
   spin_run "cargo test --release (12 Tests)" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo test --release 2>&1 | grep "test result"'
   spin_run "cargo rustc --release (statisch, musl)" pct exec "${BUILD_VMID}" -- sh -c 'cd /build && cargo rustc --release -- -C target-feature=+crt-static' \
-    || die "Statischer Build fehlgeschlagen (Log: ${LAST_LOG})"
+    || die "$(t 'Statischer Build fehlgeschlagen (Log:') ${LAST_LOG})"
   pct pull "${BUILD_VMID}" /build/target/release/lenovo-tracker "$HOST_BIN" \
-    || die "Binary nicht aus dem Build-CT ladbar – Build fehlgeschlagen?"
+    || die "$(t 'Binary nicht aus dem Build-CT ladbar – Build fehlgeschlagen?')"
   command -v strip >/dev/null 2>&1 && strip -s "$HOST_BIN" || true
-  pct destroy "${BUILD_VMID}" --purge >/dev/null || msg_warn "Build-CT ${BUILD_VMID} konnte nicht entfernt werden"
-  msg_ok "Binary gebaut: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B)"
+  pct destroy "${BUILD_VMID}" --purge >/dev/null || msg_warn "$(t 'Build-CT') ${BUILD_VMID} $(t 'konnte nicht entfernt werden')"
+  msg_ok "$(t 'Binary gebaut:') ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B)"
 }
 
 cmd_setup() {
@@ -922,31 +1059,29 @@ cmd_setup() {
   apply_defaults   # Prefill für die Dialoge – ENV-Setzungen bleiben erhalten
 
   if ui_available; then
-    local sel menu_text="Option wählen (Pfeiltasten/TAB, ENTER bestätigt):"
+    local sel menu_text="$(t 'Option wählen (Pfeiltasten/TAB, ENTER bestätigt):')"
     local menu=()
     if [[ -n "$DETECTED_VMID" ]]; then
-      menu_text+="\n\nErkannte Installation: CT ${DETECTED_VMID}"
+      menu_text+="\n\n$(t 'Erkannte Installation: CT') ${DETECTED_VMID}"
       menu+=("config" "Config bearbeiten (CT ${DETECTED_VMID})")
     fi
-    menu+=("install"  "Installation (alle Werte abfragen)" \
-           "status"   "Status & Log anzeigen" \
-           "smtpauth" "SMTP-Login einrichten (optional, alle Provider)" \
-           "exit"     "Beenden")
+    menu+=("install"  "$(t 'Installation')" \
+           "status"   "$(t 'Status & Log anzeigen')" \
+           "exit"     "$(t 'Beenden')")
     sel="$(wt_menu "Lenovo-Tracker Setup" "$menu_text" "${menu[@]}")" || exit 0
     case "$sel" in
       config)    ui_vmid; cmd_edit_config "$VMID"; exit 0 ;;
       status)    ui_vmid; cmd_status "$VMID"; exit 0 ;;
-      smtpauth)  ui_vmid; cmd_smtp_auth "$VMID"; exit 0 ;;
       exit)      exit 0 ;;
       install)   ui_configure ;;
     esac
-    ui_summary_confirm || die "Abgebrochen."
+    ui_summary_confirm || die "$(t 'Abgebrochen.')"
     clear
     header_info
   else
     # Kein whiptail/TTY: Werte ausschließlich aus Env-Variablen
     header_info
-    msg_warn "Whiptail/TTY nicht verfügbar – NONINTERACTIVE: alle Werte müssen als Env-Variablen gesetzt sein."
+    msg_warn "$(t 'Whiptail/TTY nicht verfügbar – NONINTERACTIVE: alle Werte müssen als Env-Variablen gesetzt sein.')"
   fi
 
   require_config
@@ -957,18 +1092,18 @@ cmd_setup() {
   # ---------- 1) Binary besorgen (GitHub-Release → vorhandenes Binary → Opt-in Build-CT) ----------
   local bin_ok=0
   if [[ "$BUILD_METHOD" != "build" ]]; then
-    msg_info "1/6  Binary von GitHub Releases laden (kein Build-CT nötig)"
+    msg_info "$(t '1/6  Binary von GitHub Releases laden (kein Build-CT nötig)')"
     if spin_run "Release-Download" ct_download "$RELEASE_URL" "${HOST_BIN}.tmp" && [[ -s "${HOST_BIN}.tmp" ]]; then
       mv "${HOST_BIN}.tmp" "$HOST_BIN" && chmod +x "$HOST_BIN"
-      msg_ok "Binary aus Releases: ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B)"
+      msg_ok "$(t 'Binary aus Releases:') ${HOST_BIN} ($(stat -c %s "$HOST_BIN") B)"
       bin_ok=1
     else
-      msg_warn "Release-Download fehlgeschlagen"
+      msg_warn "$(t 'Release-Download fehlgeschlagen')"
       rm -f "${HOST_BIN}.tmp"
     fi
   fi
   if [[ $bin_ok -eq 0 && "$SKIP_BUILD" == "1" && -f "$HOST_BIN" ]]; then
-    msg_ok "SKIP_BUILD=1 – nutze vorhandenes Binary ${HOST_BIN}"
+    msg_ok "SKIP_BUILD=1 – $(t 'nutze vorhandenes Binary') ${HOST_BIN}"
     bin_ok=1
   fi
   if [[ $bin_ok -eq 0 && "$BUILD_METHOD" == "build" ]]; then
@@ -976,14 +1111,14 @@ cmd_setup() {
     bin_ok=1
   fi
   if [[ $bin_ok -eq 0 ]]; then
-    die "Kein Binary verfügbar (Release-Download fehlgeschlagen). Später erneut versuchen – oder BUILD_METHOD=build BUILD_VMID=<id> setzen, um explizit einen temporären Build-CT zu nutzen."
+    die "$(t 'Kein Binary verfügbar (Release-Download fehlgeschlagen). Später erneut versuchen – oder BUILD_METHOD=build BUILD_VMID=<id> setzen, um explizit einen temporären Build-CT zu nutzen.')"
   fi
 
   # ---------- 2) Produktions-CT ----------
-  msg_info "2/6  Produktions-CT ${VMID} anlegen"
+  msg_info "$(t '2/6  Produktions-CT') ${VMID} $(t 'anlegen')"
   if pct status "${VMID}" >/dev/null 2>&1; then
     if [[ "$FORCE" == "1" ]]; then
-      msg_warn "CT ${VMID} existiert – FORCE=1: stoppe + lösche"
+      msg_warn "$(t 'CT') ${VMID} $(t 'existiert – FORCE=1: stoppe + lösche')"
       pct stop "${VMID}" >/dev/null 2>&1 || true
       pct destroy "${VMID}" --purge
     elif ui_available; then
@@ -991,7 +1126,7 @@ cmd_setup() {
       pct stop "${VMID}" >/dev/null 2>&1 || true
       pct destroy "${VMID}" --purge
     else
-      die "CT ${VMID} existiert bereits. FORCE=1 für Neuaufbau (State geht verloren!) oder VMID ändern."
+      die "$(t 'CT') ${VMID} $(t 'existiert bereits. FORCE=1 für Neuaufbau (State geht verloren!) oder VMID ändern.')"
     fi
   fi
   spin_run "CT ${VMID} erstellen" pct create "${VMID}" "$tpl" \
@@ -999,11 +1134,11 @@ cmd_setup() {
     --net0 "$NET0" --rootfs "${DISK}" --unprivileged 1 --onboot 1 \
     --tags lenovo-tracker --start 1
   sleep 3
-  if ! wait_ct "${VMID}"; then die "CT ${VMID} startet nicht"; fi
-  msg_ok "CT ${VMID} läuft"
+  if ! wait_ct "${VMID}"; then die "$(t 'CT') ${VMID} $(t 'startet nicht')"; fi
+  msg_ok "$(t 'CT') ${VMID} $(t 'läuft')"
 
   # ---------- 3) Binary + curl-impersonate ----------
-  msg_info "3/6  Binary + curl-impersonate installieren"
+  msg_info "$(t '3/6  Binary + curl-impersonate installieren')"
   pct exec "${VMID}" -- mkdir -p "$APP_DIR" "$CONF_DIR" "$STATE_DIR"
   pct push "${VMID}" "$HOST_BIN" "${APP_DIR}/lenovo-tracker"
   pct exec "${VMID}" -- chmod +x "${APP_DIR}/lenovo-tracker"
@@ -1013,18 +1148,18 @@ cmd_setup() {
   tar xzf "$ci_tar" -C /tmp/ci-extract
   local ci_bin
   ci_bin="$(find /tmp/ci-extract -name 'curl-impersonate' -type f | head -1)"
-  [[ -n "$ci_bin" ]] || die "curl-impersonate-Binary nicht im Tarball gefunden"
+  [[ -n "$ci_bin" ]] || die "$(t 'curl-impersonate-Binary nicht im Tarball gefunden')"
   pct push "${VMID}" "$ci_bin" "${APP_DIR}/curl-impersonate"
   pct exec "${VMID}" -- chmod +x "${APP_DIR}/curl-impersonate"
   rm -rf /tmp/ci-extract "$ci_tar"
   if pct exec "${VMID}" -- "${APP_DIR}/curl-impersonate" --version >/dev/null 2>&1; then
-    msg_ok "curl-impersonate einsatzbereit"
+    msg_ok "$(t 'curl-impersonate einsatzbereit')"
   else
-    msg_warn "curl-impersonate --version schlug fehl – prüfen!"
+    msg_warn "$(t 'curl-impersonate --version schlug fehl – prüfen!')"
   fi
 
   # ---------- 4) Config ----------
-  msg_info "4/6  Config generieren (${CONF_DIR}/config.toml)"
+  msg_info "$(t '4/6  Config generieren') (${CONF_DIR}/config.toml)"
   local cfg="/root/lenovotracker-config.toml"
   cat > "$cfg" <<EOF
 # Lenovo Clearance-Tracker – generiert von lenovo-tracker-setup.sh
@@ -1057,29 +1192,29 @@ state_dir = "${STATE_DIR}"
 EOF
   pct push "${VMID}" "$cfg" "${CONF_DIR}/config.toml"
   rm -f "$cfg"
-  msg_ok "Config installiert"
+  msg_ok "$(t 'Config installiert')"
 
   # ---------- 5) Cron + Logging ----------
-  msg_info "5/6  Cron (*/30) + Logging einrichten"
+  msg_info "$(t '5/6  Cron (*/30) + Logging einrichten')"
   pct exec "${VMID}" -- sh -c \
     "grep -q 'lenovo-tracker' /etc/crontabs/root 2>/dev/null || echo '*/30 * * * * ${APP_DIR}/lenovo-tracker --config ${CONF_DIR}/config.toml --once >> ${LOG_FILE} 2>&1' >> /etc/crontabs/root"
   pct exec "${VMID}" -- sh -c \
     "grep -q 'crond -f' /etc/inittab || echo '::respawn:/usr/sbin/crond -f -l 8 -c /etc/crontabs' >> /etc/inittab"
   pct exec "${VMID}" -- touch "$LOG_FILE"
   pct exec "${VMID}" -- sh -c 'kill -HUP 1 2>/dev/null || true' >/dev/null 2>&1 || true
-  msg_ok "crond läuft init-überwacht (::respawn), Intervall */30"
+  msg_ok "$(t 'crond läuft init-überwacht (::respawn), Intervall */30')"
 
   # ---------- 6) Verifikation ----------
-  msg_info "6/6  Verifikation (--dry-run gegen die Live-API)"
+  msg_info "$(t '6/6  Verifikation (--dry-run gegen die Live-API)')"
   local dry
   dry="$(pct exec "${VMID}" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --dry-run 2>&1 || true)"
   if echo "$dry" | grep -q "DRY-RUN"; then
     msg_ok "$dry"
   elif echo "$dry" | grep -q "Error relocating"; then
-    die "Binary läuft im CT nicht (dynamisch gelinkt?) – Build mit crt-static prüfen."
+    die "$(t 'Binary läuft im CT nicht (dynamisch gelinkt?) – Build mit crt-static prüfen.')"
   else
-    msg_warn "Dry-Run lieferte keine Daten (Akamai 403? Netzwerk?): $dry"
-    msg_warn "Der Cron versucht es alle 30 Min erneut – Log: pct exec ${VMID} -- tail ${LOG_FILE}"
+    msg_warn "$(t 'Dry-Run lieferte keine Daten (Akamai 403? Netzwerk?):') $dry"
+    msg_warn "$(t 'Der Cron versucht es alle 30 Min erneut – Log:') pct exec ${VMID} -- tail ${LOG_FILE}"
   fi
 
   pct set "${VMID}" --onboot 1 --tags lenovo-tracker >/dev/null
@@ -1097,12 +1232,12 @@ EOF
   echo
 
   # Test-Mail direkt anbieten – fängt falsche Empfänger/SMTP sofort ab
-  if [[ "$NONINTERACTIVE" != "1" ]] && ui_available && wt_yesno "Test-Mail" \
+  if [[ "$NONINTERACTIVE" != "1" ]] && ui_available && wt_yesno "$(t 'Test-Mail')" \
     "Jetzt eine Test-Mail senden, um from/to/SMTP zu prüfen?"; then
     if cmd_testmail "$VMID"; then
-      msg_ok "Mailzustellung geprüft."
+      msg_ok "$(t 'Mailzustellung geprüft.')"
     else
-      msg_warn "Setup bleibt abgeschlossen – Mail erst bei korrigierter Config."
+      msg_warn "$(t 'Setup bleibt abgeschlossen – Mail erst bei korrigierter Config.')"
     fi
   fi
 }
@@ -1110,7 +1245,7 @@ EOF
 cmd_probe() {
   local id="${1:-$VMID}"
   require_ctid "$id" "probe"
-  require_running_ct "$id" "Probe braucht den laufenden Tracker-CT."
+  require_running_ct "$id" "$(t 'Probe braucht den laufenden Tracker-CT.')"
   local CURLBIN="${APP_DIR}/curl-impersonate"
   local BASE="https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get"
   local REF="https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
@@ -1138,10 +1273,10 @@ cmd_probe() {
 cmd_peak() {
   local id="${1:-$VMID}"
   require_ctid "$id" "peak"
-  pct status "$id" >/dev/null 2>&1 || die "CT ${id} existiert nicht."
+  pct status "$id" >/dev/null 2>&1 || die "$(t 'CT') ${id} $(t 'existiert nicht.')"
   local CG="/sys/fs/cgroup/lxc/${id}"
-  [[ -f "${CG}/memory.peak" ]] || die "Cgroup-Pfad ${CG}/memory.peak nicht gefunden"
-  msg_warn "CT ${id} wird neu gestartet (nullt den Cgroup-Peak) – kurze Unterbrechung"
+  [[ -f "${CG}/memory.peak" ]] || die "$(t 'Cgroup-Pfad') ${CG}/memory.peak $(t 'nicht gefunden')"
+  msg_warn "$(t 'CT ${id} wird neu gestartet (nullt den Cgroup-Peak) – kurze Unterbrechung')"
   pct stop "$id" && pct start "$id" && sleep 5
   echo "== Peak-RAM-Messung (3 Läufe, Produktionsconfig) =="
   local peak max=0
@@ -1159,7 +1294,7 @@ cmd_status() {
   require_ctid "$id" "status"
   echo "== CT ${id} =="
   if ! pct status "$id" >/dev/null 2>&1; then
-    msg_warn "CT ${id} existiert nicht (noch nicht installiert)."
+    msg_warn "$(t 'CT') ${id} $(t 'existiert nicht (noch nicht installiert).')"
     return 0
   fi
   pct status "$id"
@@ -1182,9 +1317,9 @@ cmd_smtp_auth() {
   prereq
   require_ctid "$id" "smtp-auth"
   require_running_ct "$id" "bitte starten."
-  ui_available || die "SMTP-Login-Setup braucht einen Dialog (TTY) – oder NONINTERACTIVE-Setup mit SMTP_USER/SMTP_PASS per Env."
+  ui_available || die "$(t 'SMTP-Login-Setup braucht einen Dialog (TTY) – oder NONINTERACTIVE-Setup mit SMTP_USER/SMTP_PASS per Env.')"
   cfg="/root/lenovotracker-smtp.toml"
-  pct pull "$id" "${CONF_DIR}/config.toml" "$cfg" || die "Config aus CT ${id} nicht ladbar."
+  pct pull "$id" "${CONF_DIR}/config.toml" "$cfg" || die "$(t 'Config aus CT') ${id} $(t 'nicht ladbar.')"
   [[ -s "$cfg" ]] || die "Config in CT ${id} nicht lesbar."
 
   smtp_host="$(toml_value "$cfg" mail smtp_host | unquote)"
@@ -1192,7 +1327,7 @@ cmd_smtp_auth() {
   smtp_user="$(toml_value "$cfg" mail smtp_user | unquote)"
   smtp_pass="$(toml_value "$cfg" mail smtp_pass | unquote)"
 
-  v="$(wt_input "SMTP-Benutzer" "SMTP-Benutzer (optional; Proton: deine Adresse – leer = plain):" "$smtp_user")" || exit 0
+  v="$(wt_input "$(t 'SMTP-Login')" "$(t 'SMTP-Benutzer (optional; Proton: deine Adresse – leer = plain):')" "$smtp_user")" || exit 0
   smtp_user="$v"
   v="$(whiptail --backtitle "$BACKTITLE" --title "SMTP-Token" --passwordbox \
     "SMTP-Passwort / Token (optional; Proton: SMTP-Token · Gmail: App-Passwort · Provider-abhängig):" \
@@ -1203,13 +1338,13 @@ cmd_smtp_auth() {
     # Proton-MX-Hosts sind für Submission nicht gedacht → Submission-Server setzen
     if [[ -z "$smtp_host" || "$smtp_host" =~ ^mail(sec)?\.protonmail\.ch$ ]]; then
       smtp_host="smtp.protonmail.ch"
-      msg_info "SMTP-Host auf Submission-Server gesetzt: ${smtp_host}"
+      msg_info "$(t 'SMTP-Host auf Submission-Server gesetzt:') ${smtp_host}"
     else
-      v="$(wt_input "SMTP-Host" "SMTP-Server für die Submission:" "$smtp_host")" || exit 0
+      v="$(wt_input "$(t 'SMTP-Host')" "$(t 'SMTP-Server für die Submission:')" "$smtp_host")" || exit 0
       smtp_host="$v"
     fi
     [[ -z "$smtp_port" || "$smtp_port" == "25" ]] && smtp_port="587"
-    msg_info "Port: ${smtp_port} (STARTTLS-Submission)"
+    msg_info "$(t 'Port:') ${smtp_port} (STARTTLS)"
   else
     smtp_pass=""
   fi
@@ -1224,9 +1359,9 @@ cmd_smtp_auth() {
   push_ct_config "$id" "$cfg"
   rm -f "$cfg"
   if [[ -n "$smtp_user" ]]; then
-    msg_ok "SMTP-Login gesetzt: ${smtp_user} über ${smtp_host}:${smtp_port} (STARTTLS)"
+    msg_ok "$(t 'SMTP-Login gesetzt:') ${smtp_user} -> ${smtp_host}:${smtp_port} (STARTTLS)"
   else
-    msg_warn "SMTP-Login geleert – Versand läuft wieder plain (Auth-Banner möglich)."
+    msg_warn "$(t 'SMTP-Login geleert – Versand läuft wieder plain (Auth-Banner möglich).')"
   fi
   cmd_testmail "$id" || true
 }
@@ -1235,83 +1370,124 @@ cmd_testmail() {
   local id="${1:-$VMID}"
   require_ctid "$id" "test-mail"
   require_running_ct "$id" "bitte starten."
-  msg_info "Sende Test-Mail (CT ${id})"
+  msg_info "$(t 'Sende Test-Mail (CT') ${id})"
   if pct exec "$id" -- "${APP_DIR}/lenovo-tracker" --config "${CONF_DIR}/config.toml" --test-mail; then
     return 0
   fi
-  msg_warn "Test-Mail fehlgeschlagen – Config korrigieren und erneut senden:"
-  msg_warn "  pct exec ${id} -- vi ${CONF_DIR}/config.toml   (from/to/smtp_host prüfen)"
+  msg_warn "$(t 'Test-Mail fehlgeschlagen – Config korrigieren und erneut senden:')"
+  msg_warn "  pct exec ${id} -- vi ${CONF_DIR}/config.toml   ($(t 'from/to/smtp_host prüfen'))"
   msg_warn "  pct exec ${id} -- ${APP_DIR}/lenovo-tracker --config ${CONF_DIR}/config.toml --test-mail"
   return 1
 }
 
 cmd_uninstall() {
   prereq
-  [[ -n "${VMID:-}" ]] || die "CT-ID (VMID) erforderlich."
+  [[ -n "${VMID:-}" ]] || die "$(t 'CT-ID (VMID) erforderlich.')"
   if [[ "$FORCE" != "1" ]]; then
     if ui_available; then
-      wt_yesno "Deinstallieren" "Löscht CT ${VMID} inkl. State/History\nund die Host-Binaries.\n\nWirklich deinstallieren?" || { echo "Abbruch."; return; }
+      wt_yesno "$(t 'Deinstallieren')" "$(t 'Löscht CT') ${VMID} $(t 'inkl. State/History und die Host-Binaries.
+
+Wirklich deinstallieren?')" || { echo "Abbruch."; return; }
     else
-      die "Löschen braucht FORCE=1 im nicht-interaktiven Modus."
+      die "$(t 'Löschen braucht FORCE=1 im nicht-interaktiven Modus.')"
     fi
   fi
   if pct status "${VMID}" >/dev/null 2>&1; then
     pct stop "${VMID}" >/dev/null 2>&1 || true
-    pct destroy "${VMID}" --purge && msg_ok "CT ${VMID} entfernt"
+    pct destroy "${VMID}" --purge && msg_ok "$(t 'CT') ${VMID} $(t 'entfernt')"
   else
-    msg_warn "CT ${VMID} existiert nicht – nichts zu löschen"
+    msg_warn "$(t 'CT') ${VMID} $(t 'existiert nicht – nichts zu löschen')"
   fi
   rm -f /root/lenovo-tracker-rs /root/lenovo-tracker-rs2 /root/lt-new \
         /root/curl-impersonate /root/curl-impersonate-check /root/lenovotracker-config.toml \
         /root/.lenovo-tracker-src
-  msg_ok "Host-Artefakte entfernt"
+  msg_ok "$(t 'Host-Artefakte entfernt')"
 }
 
 cmd_help() {
   # Statischer Text: im curl-One-Liner (bash -c) gibt es kein BASH_SOURCE
-  cat <<'EOF'
+  if [[ "$UI_LANG" == "en" ]]; then
+    cat <<'EOF'
+Lenovo Clearance-Sale Mainboard Tracker - Proxmox helper setup
+
+The classic (on the Proxmox host):
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
+
+With a repo clone:
+  bash lenovo-tracker-setup.sh                    # interactive menu
+  NONINTERACTIVE=1 bash lenovo-tracker-setup.sh   # no dialogs - required values via env
+  SKIP_BUILD=1 bash lenovo-tracker-setup.sh       # use existing binary
+  FORCE=1 bash lenovo-tracker-setup.sh            # delete+recreate existing CT
+
+Subcommands (also in the one-liner):
+  ... --edit-config [VMID] edit an existing config
+  ... --smtp-auth [VMID]   set SMTP login/token (optional, any provider) + test mail
+  ... --status [VMID]      show CT status, cron, log and state
+  ... --test-mail [VMID]   send a test e-mail
+  ... --probe [VMID]       live API parameter matrix test
+  ... --peak [VMID]        measure peak RAM (CT restart, 3 runs)
+  ... --uninstall          remove CT + host artifacts
+
+Required values (no defaults - asked interactively or set via env):
+  MAIL_FROM MAIL_TO   (VMID/SMTP_HOST get sensible suggestions; SMTP login optional)
+
+Defaults (pre-filled, overridable via env, editable in dialogs):
+  CT_HOSTNAME=LenovoTracker  RAM=32  SWAP=32  CPULIMIT=0.25  DISK=local:0.25
+  COMMODITY_KEYS=system boards  VMID=first free ID from 100 (pct+qm)
+  BRIDGE: menu of host bridges - gateway/IP base follow the selection
+  SMTP_HOST: auto-detected (host Postfix relay, else MX/A of sender domain)
+  SMTP_USER/SMTP_PASS: empty = plain SMTP; set = STARTTLS submission (port 587),
+  provider signs DKIM/SPF (Proton: smtp.protonmail.ch + SMTP token)
+
+More optional: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION UI_LANG=en|de
+  BUILD_METHOD=build BUILD_VMID=<id>  -> explicitly use a temporary build CT
+  (default: binary is downloaded from GitHub releases, no build CT)
+
+License: MIT - free to use (see LICENSE). Copyright (c) 2026 LMasterPiec3
+EOF
+  else
+    cat <<'EOF'
 Lenovo Clearance-Sale Mainboard-Tracker – Proxmox-Helper-Setup
 
 Der Klassiker (auf dem Proxmox-Host):
   bash -c "$(curl -fsSL https://raw.githubusercontent.com/LMasterPiec3/LenovoTracker/main/lenovo-tracker-setup.sh)"
 
 Mit Repo-Klon:
-  bash lenovo-tracker-setup.sh                    # interaktives Menü (alle Werte)
-  NONINTERACTIVE=1 bash lenovo-tracker-setup.sh   # ohne Dialoge – alle Pflichtwerte per Env
+  bash lenovo-tracker-setup.sh                    # interaktives Menü
+  NONINTERACTIVE=1 bash lenovo-tracker-setup.sh   # ohne Dialoge – Pflichtwerte per Env
   SKIP_BUILD=1 bash lenovo-tracker-setup.sh       # vorhandenes Binary nutzen
   FORCE=1 bash lenovo-tracker-setup.sh            # existierenden CT löschen+neu
 
 Unterkommandos (auch im One-Liner):
   … --edit-config [VMID] bestehende Config bearbeiten
-  … --status [VMID]    CT-Status, Cron, Log und State anzeigen
-  … --test-mail [VMID] Test-Mail senden
-  … --smtp-auth [VMID] SMTP-Login/Token einrichten (optional, alle Provider) + Test-Mail
-  … --probe [VMID]     API-Parameter-Matrix live testen
-  … --peak [VMID]      Peak-RAM messen (CT-Restart, 3 Läufe)
-  … --uninstall        CT + Host-Artefakte entfernen
+  … --smtp-auth [VMID]   SMTP-Login/Token einrichten (optional, alle Provider) + Test-Mail
+  … --status [VMID]      CT-Status, Cron, Log und State anzeigen
+  … --test-mail [VMID]   Test-Mail senden
+  … --probe [VMID]       API-Parameter-Matrix live testen
+  … --peak [VMID]        Peak-RAM messen (CT-Restart, 3 Läufe)
+  … --uninstall          CT + Host-Artefakte entfernen
 
-Pflichtwerte (keine Defaults – interaktiv abgefragt oder per Env setzen):
-  VMID MAIL_FROM MAIL_TO SMTP_HOST SMTP_PORT COMMODITY_KEYS
+Pflichtwerte (interaktiv abgefragt oder per Env setzen):
+  MAIL_FROM MAIL_TO   (VMID/SMTP_HOST bekommen sinnvolle Vorschläge; SMTP-Login optional)
 
 Defaults (voreingestellt – per Env überschreibbar, im Dialog editierbar):
   CT_HOSTNAME=LenovoTracker  RAM=32  SWAP=32  CPULIMIT=0.25  DISK=local:0.25
+  COMMODITY_KEYS=system boards  VMID=erste freie ID ab 100 (pct+qm)
   BRIDGE: Auswahl-Menü aller Host-Bridges – Gateway/IP-Basis passen sich je
-  nach gewählter Bridge automatisch an (Default-Route wird markiert);
-  ohne Route an der Bridge gilt der Vorschlag <IP-Basis>.1
+  nach gewählter Bridge an; ohne Route gilt der Vorschlag <IP-Basis>.1
   SMTP_HOST: automatisch ermittelt (Postfix-Relayhost des Hosts, sonst MX/A
-  der Domain aus der Absender-Adresse bzw. des Hostnamens)
-  SMTP_PORT: aus dem Relayhost, sonst 25
-  SMTP_USER/SMTP_PASS: leer = Plain-SMTP; gesetzt = Submission über
-  STARTTLS (Port 587 automatisch), Provider signiert DKIM/SPF
+  der Absender-Domain)
+  SMTP_USER/SMTP_PASS: leer = Plain-SMTP; gesetzt = Submission über STARTTLS
+  (Port 587 automatisch), Provider signiert DKIM/SPF
 
-Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
+Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION UI_LANG=en|de
   BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen
   (Standard: Binary wird aus den GitHub-Releases geladen, kein Build-CT)
 
 Lizenz: MIT – free to use (siehe LICENSE). Copyright (c) 2026 LMasterPiec3
 EOF
+  fi
 }
-
 # bash -c "$(curl …)" --probe legt das Argument in $0 (nicht $1) — beides akzeptieren:
 ARGS=()
 if [[ "${0:-}" == --* ]]; then ARGS+=("$0"); fi
@@ -1328,5 +1504,5 @@ case "$MODE" in
   --peak)       cmd_peak "${ARGS[1]:-$VMID}" ;;
   --uninstall)  cmd_uninstall ;;
   --help|-h)    cmd_help ;;
-  *)            msg_error "Unbekanntes Kommando: $MODE (siehe --help)"; exit 1 ;;
+  *)            msg_error "$(t 'Unbekanntes Kommando:') $MODE ($(t 'siehe --help'))"; exit 1 ;;
 esac
