@@ -252,29 +252,57 @@ wt_yesno() {  # wt_yesno <title> <text> -> rc 0=Ja 1=Nein
   whiptail --backtitle "$BACKTITLE" --title "$1" --yesno "$2" 14 70
 }
 
+# Wert-Validator: gibt den normalisierten Wert zurück, rc!=0 bei ungültig.
+# kind: text | num | dec | ipv4 | baseip | email
+valid_value() {
+  local kind="$1" v="$2" o ok
+  case "$kind" in
+    num)   [[ "$v" =~ ^[0-9]+$ ]] || return 1; echo "$v" ;;
+    dec)   [[ "$v" =~ ^[0-9]+([.][0-9]+)?$ ]] || return 1; echo "$v" ;;
+    ipv4)  is_ipv4 "$v" || return 1; echo "$v" ;;
+    baseip)
+      v="$(normalize_base_ip "$v")"
+      [[ "$v" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || return 1
+      ok=1
+      for o in ${v//./ }; do (( o <= 255 )) || ok=0; done
+      [[ $ok -eq 1 ]] || return 1
+      echo "$v"
+      ;;
+    email) [[ "$v" =~ ^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$ ]] || return 1; echo "$v" ;;
+    *)     [[ -n "$v" ]] || return 1; echo "$v" ;;
+  esac
+}
+
 # Pflichtfeld-Dialog: schreibt den Wert in die Variable $1.
 # Vorbelegt mit dem aktuellen Variablenstand (ENV oder Default) – editierbar.
-# kind: text | num | dec | ipv4 | baseip – leere/ungültige Eingaben werden erneut abgefragt.
+# kind siehe valid_value – leere/ungültige Eingaben werden erneut abgefragt.
 wt_fill() {
-  local var="$1" title="$2" prompt="$3" kind="${4:-text}" v o ok
+  local var="$1" title="$2" prompt="$3" kind="${4:-text}" v
   while true; do
     v="$(wt_input "$title" "$prompt" "${!var:-}")" || return 1
-    [[ -n "$v" ]] || continue
-    case "$kind" in
-      num)   [[ "$v" =~ ^[0-9]+$ ]] || continue ;;
-      dec)   [[ "$v" =~ ^[0-9]+([.][0-9]+)?$ ]] || continue ;;
-      ipv4)  is_ipv4 "$v" || continue ;;
-      baseip)
-        v="$(normalize_base_ip "$v")"
-        [[ "$v" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || continue
-        ok=1
-        for o in ${v//./ }; do (( o <= 255 )) || ok=0; done
-        [[ $ok -eq 1 ]] || continue
-        ;;
-    esac
+    v="$(valid_value "$kind" "$v")" || continue
     printf -v "$var" '%s' "$v"
     return 0
   done
+}
+
+wt_msgbox() {  # wt_msgbox <title> <text> – Fehler-/Hinweis-Box
+  whiptail --backtitle "$BACKTITLE" --title "$1" --msgbox "$2" 14 70 3>&1 1>&2 2>&3 || true
+}
+
+# Formular-Seite: mehrere Felder auf einem Screen (whiptail --form).
+# Zeilen als "Label|Vorbelegung"; liefert die Werte zeilenweise auf stdout.
+ui_form() {  # ui_form <title> <text> <rows> <Label|Wert> ...
+  local title="$1" text="$2" rows="$3"; shift 3
+  local -a args=()
+  local y=1 row label val
+  for row in "$@"; do
+    label="${row%%|*}"; val="${row#*|}"
+    args+=("$label" "$y" 1 "$val" "$y" 26 44)
+    y=$((y + 1))
+  done
+  whiptail --backtitle "$BACKTITLE" --title "$title" --form "$text" \
+    $(( rows + 12 )) 74 "$rows" "${args[@]}" 3>&1 1>&2 2>&3
 }
 
 # Validierung: echte IPv4 (4 Oktette, je 0-255)
@@ -366,43 +394,101 @@ ui_commodity_keys() {
   return 0
 }
 
-# Fragt alle Setup-Werte leer ab (keine Vorbelegung)
+# Wizard: alle Setup-Werte auf gruppierten Formular-Seiten (Vorschläge sind
+# vorbelegt – ENV/Erkennung/Defaults). Jede Seite validiert sich selbst und
+# wiederholt sich bei Fehlern; Abbruch (Cancel) beendet das Setup.
 ui_configure() {
-  local v
-  wt_fill VMID "CT-ID (Produktion)" "CT-ID des Tracker-CTs (numerisch):" num || exit 0
+  local v out err
+  local -a f=()
+
+  # --- Seite 1: Container & Ressourcen -------------------------------------
+  while true; do
+    out="$(ui_form "1 · Container & Ressourcen" \
+      "CT und Ressourcen des Trackers (Werte sind editierbar):" 6 \
+      "CT-ID|${VMID}" \
+      "Hostname|${CT_HOSTNAME}" \
+      "RAM (MB)|${RAM}" \
+      "Swap (MB)|${SWAP}" \
+      "CPU-Limit|${CPULIMIT}" \
+      "Rootfs|${DISK}")" || exit 0
+    mapfile -t f <<< "$out"
+    VMID="${f[0]}"; CT_HOSTNAME="${f[1]}"; RAM="${f[2]}"; SWAP="${f[3]}"; CPULIMIT="${f[4]}"; DISK="${f[5]}"
+    err=""
+    valid_value num "$VMID" >/dev/null        || err+="· CT-ID muss numerisch sein\n"
+    [[ -n "$CT_HOSTNAME" ]]                   || err+="· Hostname darf nicht leer sein\n"
+    valid_value num "$RAM" >/dev/null         || err+="· RAM muss numerisch sein (MB)\n"
+    valid_value num "$SWAP" >/dev/null        || err+="· Swap muss numerisch sein (MB)\n"
+    valid_value dec "$CPULIMIT" >/dev/null    || err+="· CPU-Limit muss numerisch sein (z. B. 0.25)\n"
+    [[ -n "$DISK" ]]                          || err+="· Rootfs darf nicht leer sein (z. B. local:0.25)\n"
+    [[ -z "$err" ]] && break
+    wt_msgbox "Eingabe prüfen" "Seite 1 – diese Angaben sind ungültig:\n\n$err"
+  done
+
+  # Nur bei explizitem BUILD_METHOD=build – Standard ist der Release-Download
   if [[ "$BUILD_METHOD" == "build" ]]; then
-    # Nur bei explizitem BUILD_METHOD=build – Standard ist der GitHub-Release-Download
     while true; do
       [[ -n "$BUILD_VMID" ]] || BUILD_VMID="$(next_free_ctid "$VMID")"
-      wt_fill BUILD_VMID "CT-ID (Build)" "Temporärer Build-Container (numerisch):" num || exit 0
+      out="$(ui_form "Build-Container (Fallback)" "Temporärer Build-CT (nur BUILD_METHOD=build):" 1 \
+        "CT-ID|${BUILD_VMID}")" || exit 0
+      BUILD_VMID="${out%%$'\n'*}"
+      valid_value num "$BUILD_VMID" >/dev/null || { wt_msgbox "Eingabe prüfen" "CT-ID muss numerisch sein."; continue; }
       [[ "$VMID" != "$BUILD_VMID" ]] && break
-      wt_yesno "CT-IDs gleich" "Produktions- und Build-CT-ID dürfen nicht identisch sein.\n\nErneut eingeben?" || exit 0
+      wt_msgbox "Eingabe prüfen" "Build-CT-ID darf nicht identisch mit ${VMID} sein."
     done
   fi
-  wt_fill CT_HOSTNAME "Hostname" "Hostname des Tracker-CTs:" || exit 0
-  wt_fill RAM "RAM" "RAM in MB:" num || exit 0
-  wt_fill SWAP "Swap" "Swap in MB:" num || exit 0
-  wt_fill CPULIMIT "CPU-Limit" "CPU-Limit, z. B. 0.25 (Viertel-Kern):" dec || exit 0
-  wt_fill DISK "Rootfs" "Disk-Größe, z. B. local:0.25:" || exit 0
-  ui_pick_bridge || exit 0
-  wt_fill GATEWAY "Gateway" "Gateway-IP (z. B. 10.10.10.1):" ipv4 || exit 0
-  wt_fill BASE_IP "IP-Basis" "IP-Basis ohne Punkt, z. B. 10.10.10 (CT erhält <Basis>.<CT-ID>):" baseip || exit 0
-  wt_fill MAIL_FROM "Mail von" "Absender-Adresse:" || exit 0
-  # SMTP-Host aus der Absender-Domain ableiten (MX/A), falls die Vorab-Erkennung
-  # nichts fand (dort ist MAIL_FROM noch unbekannt)
-  if [[ -z "${SMTP_HOST:-}" && "$MAIL_FROM" == *"@"* ]]; then
-    SMTP_HOST="$(mx_for_domain "${MAIL_FROM##*@}")"
+
+  # --- Seite 2: Netzwerk ----------------------------------------------------
+  ui_pick_bridge || exit 0   # Menü der Host-Bridges; setzt BRIDGE/GATEWAY/BASE_IP
+  while true; do
+    out="$(ui_form "2 · Netzwerk" \
+      "Gateway und IP-Basis – der CT bekommt die IP <Basis>.<CT-ID>:" 2 \
+      "Gateway-IP|${GATEWAY}" \
+      "IP-Basis|${BASE_IP}")" || exit 0
+    mapfile -t f <<< "$out"
+    GATEWAY="${f[0]}"; BASE_IP="$(normalize_base_ip "${f[1]}")"
+    err=""
+    valid_value ipv4 "$GATEWAY" >/dev/null  || err+="· Gateway muss eine gültige IPv4 sein (z. B. 10.10.10.1)\n"
+    valid_value baseip "$BASE_IP" >/dev/null || err+="· IP-Basis: drei Oktette ohne Punkt am Ende (z. B. 10.10.10)\n"
+    [[ -z "$err" ]] && break
+    wt_msgbox "Eingabe prüfen" "Seite 2 – diese Angaben sind ungültig:\n\n$err"
+  done
+
+  # --- Seite 3: Mail & SMTP -------------------------------------------------
+  while true; do
+    out="$(ui_form "3 · Mail & SMTP" \
+      "Absender, Empfänger und Mailserver (automatisch ermittelte Vorschläge):" 5 \
+      "Mail von|${MAIL_FROM:-}" \
+      "Mail an|${MAIL_TO:-}" \
+      "SMTP-Host|${SMTP_HOST:-}" \
+      "SMTP-Benutzer|${SMTP_USER:-}" \
+      "SMTP-Port|${SMTP_PORT:-}")" || exit 0
+    mapfile -t f <<< "$out"
+    MAIL_FROM="${f[0]}"; MAIL_TO="${f[1]}"; SMTP_HOST="${f[2]}"; SMTP_USER="${f[3]}"; SMTP_PORT="${f[4]}"
+    # SMTP-Host aus der Absender-Domain ableiten, falls Vorab-Erkennung nichts fand
+    if [[ -z "$SMTP_HOST" && "$MAIL_FROM" == *"@"* ]]; then
+      SMTP_HOST="$(mx_for_domain "${MAIL_FROM##*@}")"
+    fi
+    # Login gesetzt → Submission-Port (STARTTLS) als Default
+    [[ -n "$SMTP_USER" && "$SMTP_PORT" == "25" ]] && SMTP_PORT="587"
+    err=""
+    valid_value email "$MAIL_FROM" >/dev/null || err+="· Mail von: gültige Absender-Adresse (z. B. du@example.de)\n"
+    [[ -n "$MAIL_TO" ]]                       || err+="· Mail an: mindestens eine Empfänger-Adresse\n"
+    [[ -n "$SMTP_HOST" ]]                     || err+="· SMTP-Host darf nicht leer sein\n"
+    valid_value num "$SMTP_PORT" >/dev/null   || err+="· SMTP-Port muss numerisch sein (mit Login: 587)\n"
+    [[ -z "$err" ]] && break
+    wt_msgbox "Eingabe prüfen" "Seite 3 – diese Angaben sind ungültig:\n\n$err"
+  done
+  # SMTP-Passwort separat und maskiert (--form zeigt alles im Klartext)
+  if [[ -n "$SMTP_USER" ]]; then
+    v="$(whiptail --backtitle "$BACKTITLE" --title "SMTP-Passwort" --passwordbox \
+      "SMTP-Passwort / Token für ${SMTP_USER} (Proton: SMTP-Token, nicht das Login-Passwort):" \
+      11 70 "${SMTP_PASS}" 3>&1 1>&2 2>&3)" || exit 0
+    SMTP_PASS="$v"
+  else
+    SMTP_PASS=""
   fi
-  wt_fill MAIL_TO "Mail an" "Empfänger-Adresse(n), komma-getrennt:" || exit 0
-  wt_fill SMTP_HOST "SMTP-Host" "SMTP-Server (z. B. smtp.protonmail.ch):" || exit 0
-  # Login optional: gesetzt = authentifizierte Submission über STARTTLS (DKIM/SPF
-  # durch den Provider – kein "failed authentication"-Banner); leer = Plain-SMTP
-  wt_fill SMTP_USER "SMTP-Login" "SMTP-Benutzer (leer = kein Login, Plain-SMTP):" || exit 0
-  wt_fill SMTP_PASS "SMTP-Passwort" "SMTP- / App-Passwort (leer = kein Login):" || exit 0
-  if [[ -n "$SMTP_USER" && "$SMTP_PORT" == "25" ]]; then
-    SMTP_PORT="587"   # Submission-Standard (STARTTLS)
-  fi
-  wt_fill SMTP_PORT "SMTP-Port" "SMTP-Port (mit Login: 587):" num || exit 0
+
+  # --- Seite 4: Filter ------------------------------------------------------
   ui_commodity_keys || exit 0
   v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "${KEYWORDS:-}")" || exit 0
   KEYWORDS="${v//$'\n'/}"
@@ -751,12 +837,14 @@ cmd_edit_config() {
 ui_summary_confirm() {
   local bininfo="Binary: GitHub Release (Download, kein Build-CT)"
   [[ "$BUILD_METHOD" == "build" ]] && bininfo="Binary: Build-CT ${BUILD_VMID} (Fallback-Build)"
+  local smtpinfo="${SMTP_HOST}:${SMTP_PORT}"
+  [[ -n "${SMTP_USER:-}" ]] && smtpinfo+=" · Login ${SMTP_USER}" || smtpinfo+=" · plain"
   local text="CT: ${VMID} (${CT_HOSTNAME}) · ${bininfo}
 RAM: ${RAM} MB + ${SWAP} MB Swap · CPU-Limit: ${CPULIMIT} · Disk: ${DISK}
-Netz: ${BRIDGE} · ${BASE_IP}.${VMID}/24
+Netz: ${BRIDGE} · ${BASE_IP}.${VMID}/24 · Gateway ${GATEWAY}
 
 Mail: ${MAIL_FROM} → ${MAIL_TO}
-SMTP: ${SMTP_HOST}:${SMTP_PORT}
+SMTP: ${smtpinfo}
 
 Filter: ${COMMODITY_KEYS}
 Keywords: ${KEYWORDS:-alle}"

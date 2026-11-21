@@ -61,8 +61,10 @@ bash lenovo-tracker-setup.sh
 
 Das Script richtet **alles** ein (Stil der Proxmox-Community-Helper-Scripts):
 interaktives whiptail-Menü (wird bei Bedarf via `apt` nachinstalliert) →
-Binary aus den GitHub Releases laden → Produktions-CT (Alpine, minimal) →
-curl-impersonate → Config → Cron → Dry-Run-Verifikation.
+**Wizard mit 4 Formular-Seiten** (1 Container & Ressourcen, 2 Netzwerk mit
+Bridge-Auswahl, 3 Mail & SMTP, 4 Filter) → Binary aus den GitHub Releases
+laden → Produktions-CT (Alpine, minimal) → curl-impersonate → Config →
+Cron → Dry-Run-Verifikation → optionale Test-Mail.
 
 Binary-Quelle: **GitHub-Release-Download (Standard – kein zweiter LXC, kein
 Build-CT)** → vorhandenes `/root/lenovo-tracker-rs` (`SKIP_BUILD=1`) →
