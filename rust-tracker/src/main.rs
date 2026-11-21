@@ -11,6 +11,7 @@
 use anyhow::{anyhow, bail, Context, Result};
 use lettre::Transport;
 use lettre::message::{Mailbox, MultiPart};
+use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::SmtpTransport;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -127,8 +128,12 @@ struct MailCfg {
     smtp_host: String,
     #[serde(default = "default_smtp_port")]
     smtp_port: u16,
+    #[serde(default)]
+    smtp_user: String,
+    #[serde(default)]
+    smtp_pass: String,
     // HINWEIS: smtp_starttls wird bewusst ignoriert (unbekannte Felder sind
-    // serde egal) – der STARTTLS-Pfad von Proton hängt, TLS-Stack ist entfernt.
+    // serde egal) – TLS läuft über das rustls-Feature von lettre, nicht per Flag.
 }
 
 #[derive(Deserialize, Default)]
@@ -1135,13 +1140,25 @@ fn compose_mail(cfg: &Config, subject: &str, text: &str, html: &str) -> Result<l
 }
 
 fn deliver_mail(cfg: &Config, msg: &lettre::Message) -> Result<()> {
-    // Plain-SMTP (Proton :25): kein TLS-Stack im Binary, der STARTTLS-Pfad
-    // hängt bei Proton ohnehin (siehe README "Produktivstand").
-    let mailer = SmtpTransport::builder_dangerous(&cfg.mail.smtp_host)
-        .port(cfg.mail.smtp_port)
-        .timeout(Some(Duration::from_secs(60)))
-        .build();
-    mailer.send(msg).map(|_| ())?;
+    // Mit smtp_user/smtp_pass: authentifizierte Submission über STARTTLS – der
+    // Provider signiert DKIM/SPF (kein "failed authentication"-Banner beim
+    // Empfänger). Ohne Login: Legacy Plain-SMTP (z. B. Proton-MX :25), SPF
+    // prüft dann die Host-IP des Absenders.
+    let builder = if cfg.mail.smtp_user.is_empty() {
+        SmtpTransport::builder_dangerous(&cfg.mail.smtp_host)
+            .port(cfg.mail.smtp_port)
+            .timeout(Some(Duration::from_secs(60)))
+    } else {
+        SmtpTransport::starttls_relay(&cfg.mail.smtp_host)
+            .with_context(|| format!("SMTP-Host ungültig/nicht nutzbar: {}", cfg.mail.smtp_host))?
+            .port(cfg.mail.smtp_port)
+            .credentials(Credentials::new(
+                cfg.mail.smtp_user.clone(),
+                cfg.mail.smtp_pass.clone(),
+            ))
+            .timeout(Some(Duration::from_secs(60)))
+    };
+    builder.build().send(msg).map(|_| ())?;
     Ok(())
 }
 
@@ -1162,7 +1179,12 @@ fn send_test_mail(cfg: &Config) -> Result<()> {
     );
     let msg = compose_mail(cfg, &subject, &text, &html)?;
     deliver_mail(cfg, &msg)?;
-    log_info!("Mail via SMTP {} gesendet: {}", cfg.mail.smtp_host, cfg.mail.from);
+    log_info!(
+        "Mail via SMTP {} ({}) gesendet: {}",
+        cfg.mail.smtp_host,
+        if cfg.mail.smtp_user.is_empty() { "plain" } else { "STARTTLS+AUTH" },
+        cfg.mail.from
+    );
     Ok(())
 }
 
@@ -1547,6 +1569,27 @@ mod tests {
         assert!(!text2.contains("CPU:"));
         let html2 = build_mail_html(&diff, "https://example.com", "2026-11-19T00:00:00Z", &BTreeMap::new(), &label);
         assert!(!html2.contains("background:#f1f3f5"));
+    }
+
+    #[test]
+    fn test_smtp_auth_config_parse() {
+        // ohne smtp_user/smtp_pass: Defaults leer (Legacy Plain-SMTP aktiv)
+        let base = "[api]\nurl=\"https://example.com\"\n[tracker]\n\
+                    [mail]\nfrom=\"a@b.de\"\nto=[\"c@d.de\"]\nsmtp_host=\"mail.example.de\"\nsmtp_port=25\n\
+                    [paths]\n";
+        let cfg: Config = toml::from_str(base).expect("Basis-Config muss parsen");
+        assert!(cfg.mail.smtp_user.is_empty());
+        assert!(cfg.mail.smtp_pass.is_empty());
+        assert_eq!(cfg.mail.smtp_port, 25);
+        // mit Login: Felder landen in der Config (Submission über STARTTLS)
+        let mail_part = base.trim_end_matches("[paths]\n");
+        let with_auth = format!(
+            "{}smtp_user=\"user@b.de\"\nsmtp_pass=\"secret\"\n[paths]\n",
+            mail_part
+        );
+        let cfg2: Config = toml::from_str(&with_auth).expect("Config mit Auth muss parsen");
+        assert_eq!(cfg2.mail.smtp_user, "user@b.de");
+        assert_eq!(cfg2.mail.smtp_pass, "secret");
     }
 
     #[test]

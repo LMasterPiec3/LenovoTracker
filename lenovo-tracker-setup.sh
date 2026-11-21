@@ -31,6 +31,7 @@
 #    SMTP_HOST automatisch ermittelt (Postfix-Relayhost, sonst MX/A der
 #    Absender-Domain bzw. der eigenen Domain),
 #    SMTP_PORT aus dem Relayhost, sonst 25 – beides nur Vorschläge, editierbar
+#    SMTP_USER/SMTP_PASS: gesetzt = STARTTLS-Submission (Port 587), leer = Plain-SMTP
 #    (BUILD_VMID nur bei BUILD_METHOD=build – Standard ist Release-Download)
 #
 #  Lizenz: MIT – free to use (siehe LICENSE im Repo).
@@ -393,8 +394,15 @@ ui_configure() {
     SMTP_HOST="$(mx_for_domain "${MAIL_FROM##*@}")"
   fi
   wt_fill MAIL_TO "Mail an" "Empfänger-Adresse(n), komma-getrennt:" || exit 0
-  wt_fill SMTP_HOST "SMTP-Host" "SMTP-Server:" || exit 0
-  wt_fill SMTP_PORT "SMTP-Port" "SMTP-Port:" num || exit 0
+  wt_fill SMTP_HOST "SMTP-Host" "SMTP-Server (z. B. smtp.protonmail.ch):" || exit 0
+  # Login optional: gesetzt = authentifizierte Submission über STARTTLS (DKIM/SPF
+  # durch den Provider – kein "failed authentication"-Banner); leer = Plain-SMTP
+  wt_fill SMTP_USER "SMTP-Login" "SMTP-Benutzer (leer = kein Login, Plain-SMTP):" || exit 0
+  wt_fill SMTP_PASS "SMTP-Passwort" "SMTP- / App-Passwort (leer = kein Login):" || exit 0
+  if [[ -n "$SMTP_USER" && "$SMTP_PORT" == "25" ]]; then
+    SMTP_PORT="587"   # Submission-Standard (STARTTLS)
+  fi
+  wt_fill SMTP_PORT "SMTP-Port" "SMTP-Port (mit Login: 587):" num || exit 0
   ui_commodity_keys || exit 0
   v="$(wt_input "Keyword-Filter" "Komma-getrennt, leer = alle Mainboards:" "${KEYWORDS:-}")" || exit 0
   KEYWORDS="${v//$'\n'/}"
@@ -424,6 +432,10 @@ apply_defaults() {
   GATEWAY="${GATEWAY:-${DETECTED_GATEWAY:-${BASE_IP:+${BASE_IP}.1}}}"
   SMTP_HOST="${SMTP_HOST:-${DETECTED_SMTP_HOST:-}}"
   SMTP_PORT="${SMTP_PORT:-${DETECTED_SMTP_PORT:-25}}"   # Plain-SMTP-Default
+  SMTP_USER="${SMTP_USER:-}"
+  SMTP_PASS="${SMTP_PASS:-}"
+  # Mit Login ist der Submission-Port (STARTTLS) der richtige Default
+  [[ -n "$SMTP_USER" && "$SMTP_PORT" == "25" ]] && SMTP_PORT="587"
   COMMODITY_KEYS="${COMMODITY_KEYS:-system boards}"     # Tracker-Standard, Checkliste editierbar
 }
 
@@ -644,6 +656,26 @@ toml_set() {  # toml_set <file> <section> <key> <value>
   mv "$file.tmp" "$file"
 }
 
+toml_insert_after() {  # toml_insert_after <file> <section> <afterkey> <key> <value>
+  local file="$1" section="$2" after="$3" key="$4" val="$5"
+  awk -v s="[$section]" -v a="$after" -v k="$key" -v v="$val" '
+    /^[[:space:]]*\[/ { sec=$0; gsub(/[[:space:]]/,"",sec) }
+    sec==s {
+      line=$0
+      sub(/^[[:space:]]*/,"",line)
+      if (line ~ "^" a "[[:space:]]*=") {
+        print
+        print k " = " v
+        inserted=1
+        next
+      }
+    }
+    { print }
+    END { if (!inserted) exit 3 }
+  ' "$file" > "$file.tmp" || { rm -f "$file.tmp"; return 1; }
+  mv "$file.tmp" "$file"
+}
+
 cmd_edit_config() {
   local id="${1:-${DETECTED_VMID:-$VMID}}"
   [[ -n "$id" ]] || die "CT-ID angeben: --edit-config <VMID>"
@@ -679,7 +711,13 @@ cmd_edit_config() {
   v="$(wt_input "SMTP-Host" "SMTP-Server:" "$smtp_host")" || exit 0
   [[ -n "$v" ]] || die "SMTP-Host darf nicht leer sein."
   smtp_host="$v"
-  v="$(wt_input "SMTP-Port" "SMTP-Port:" "$smtp_port")" || exit 0
+  smtp_user="$(toml_value "$cfg" mail smtp_user | sed 's/^"//; s/"$//')"
+  smtp_pass="$(toml_value "$cfg" mail smtp_pass | sed 's/^"//; s/"$//')"
+  v="$(wt_input "SMTP-Login" "SMTP-Benutzer (leer = kein Login/Plain-SMTP):" "$smtp_user")" || exit 0
+  smtp_user="$v"
+  v="$(wt_input "SMTP-Passwort" "SMTP- / App-Passwort (leer = kein Login):" "$smtp_pass")" || exit 0
+  smtp_pass="$v"
+  v="$(wt_input "SMTP-Port" "SMTP-Port (mit Login: 587):" "$smtp_port")" || exit 0
   [[ "$v" =~ ^[0-9]+$ ]] || die "SMTP-Port muss numerisch sein."
   smtp_port="$v"
 
@@ -690,6 +728,11 @@ cmd_edit_config() {
   toml_set "$cfg" mail extra_recipients "$(toml_array "$mail_extra")" || die "extra_recipients nicht gefunden."
   toml_set "$cfg" mail smtp_host "\"${smtp_host}\"" || die "smtp_host nicht gefunden."
   toml_set "$cfg" mail smtp_port "$smtp_port" || die "smtp_port nicht gefunden."
+  # Alte Configs haben die Keys evtl. noch nicht – dann nach smtp_port einfügen
+  toml_set "$cfg" mail smtp_user "\"${smtp_user}\"" \
+    || toml_insert_after "$cfg" mail smtp_port "smtp_user" "\"${smtp_user}\"" || die "smtp_user nicht setzbar."
+  toml_set "$cfg" mail smtp_pass "\"${smtp_pass}\"" \
+    || toml_insert_after "$cfg" mail smtp_port "smtp_pass" "\"${smtp_pass}\"" || die "smtp_pass nicht setzbar."
 
   pct exec "$id" -- cp "${CONF_DIR}/config.toml" "${CONF_DIR}/config.toml.bak" 2>/dev/null || true
   pct push "$id" "$cfg" "${CONF_DIR}/config.toml" || die "Config-Push fehlgeschlagen."
@@ -896,6 +939,8 @@ extra_recipients = $(toml_array "$EXTRA_RECIPIENTS")
 subject_prefix = "${SUBJECT_PREFIX}"
 smtp_host = "${SMTP_HOST}"
 smtp_port = ${SMTP_PORT}
+smtp_user = "${SMTP_USER}"
+smtp_pass = "${SMTP_PASS}"
 
 [paths]
 state_dir = "${STATE_DIR}"
@@ -1087,6 +1132,8 @@ Defaults (voreingestellt – per Env überschreibbar, im Dialog editierbar):
   SMTP_HOST: automatisch ermittelt (Postfix-Relayhost des Hosts, sonst MX/A
   der Domain aus der Absender-Adresse bzw. des Hostnamens)
   SMTP_PORT: aus dem Relayhost, sonst 25
+  SMTP_USER/SMTP_PASS: leer = Plain-SMTP; gesetzt = Submission über
+  STARTTLS (Port 587 automatisch), Provider signiert DKIM/SPF
 
 Weitere Optionale: NET0 EXTRA_RECIPIENTS KEYWORDS FORCE SKIP_BUILD BUILD_METHOD CI_VERSION
   BUILD_METHOD=build BUILD_VMID=<id>  → explizit temporären Build-CT nutzen

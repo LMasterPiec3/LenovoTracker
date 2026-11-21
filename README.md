@@ -84,6 +84,7 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 | `NET0` | nein | komplette Netzkonfiguration statt `BRIDGE`/`GATEWAY`/`BASE_IP` |
 | `MAIL_FROM` / `MAIL_TO` | ja | Absender/Empfänger (komma-getrennt) |
 | `SMTP_HOST` / `SMTP_PORT` | nein (automatisch ermittelt: Postfix-Relayhost des Hosts, sonst MX/A der Absender-Domain; Port sonst `25`) | Plain-SMTP |
+| `SMTP_USER` / `SMTP_PASS` | nein (leer = Plain-SMTP ohne Login) | SMTP-Login – gesetzt: authentifizierte Submission über STARTTLS (Port `587` automatisch); Provider signiert DKIM/SPF → kein "failed authentication"-Banner. Proton: `smtp.protonmail.ch:587` + App-Passwort |
 | `COMMODITY_KEYS` | nein (Default `system boards`) | Commodity-Filter – im Setup als Mehrfachauswahl-Checkliste (Leertaste an/aus) über alle bekannten Warengruppen |
 | `KEYWORDS` | nein | Keyword-Filter, z. B. `KEYWORDS="RTX"` |
 | `EXTRA_RECIPIENTS` | nein | weitere Empfänger (komma-getrennt) |
