@@ -18,6 +18,7 @@
 #    … --probe [VMID]    API-Parameter-Matrix live testen
 #    … --peak [VMID]     Peak-RAM messen (CT-Restart)
 #    … --uninstall       CT + Host-Artefakte entfernen
+#    … --smtp-auth [VMID] SMTP-Login/Token einrichten (Auth-Mail statt Banner)
 #    … --help            Usage
 #
 #  Automatisierung: NONINTERACTIVE=1 (keine Prompts – Pflichtwerte per Env, Rest bekommt Defaults)
@@ -910,11 +911,13 @@ cmd_setup() {
     fi
     menu+=("install"  "Installation (alle Werte abfragen)" \
            "status"   "Status & Log anzeigen" \
+           "smtpauth" "SMTP-Login einrichten (Auth statt Banner)" \
            "exit"     "Beenden")
     sel="$(wt_menu "Lenovo-Tracker Setup" "$menu_text" "${menu[@]}")" || exit 0
     case "$sel" in
       config)    ui_vmid; cmd_edit_config "$VMID"; exit 0 ;;
       status)    ui_vmid; cmd_status "$VMID"; exit 0 ;;
+      smtpauth)  ui_vmid; cmd_smtp_auth "$VMID"; exit 0 ;;
       exit)      exit 0 ;;
       install)   ui_configure ;;
     esac
@@ -1151,6 +1154,65 @@ cmd_status() {
   echo "Config: pct exec ${id} -- vi ${CONF_DIR}/config.toml"
 }
 
+# SMTP-Login einrichten (authentifizierte Submission über STARTTLS): fragt
+# Benutzer + Token ab, trägt sie in die Config ein (mit Backup), setzt für
+# Proton automatisch den Submission-Server/-Port und sendet sofort eine
+# Test-Mail. Leerer Benutzer = zurück auf Plain-SMTP.
+cmd_smtp_auth() {
+  local id="${1:-$VMID}" cfg smtp_host smtp_port smtp_user smtp_pass v
+  prereq
+  [[ -n "$id" ]] || die "CT-ID angeben: --smtp-auth <VMID>"
+  pct status "$id" 2>/dev/null | grep -q running || die "CT ${id} läuft nicht."
+  ui_available || die "SMTP-Login-Setup braucht einen Dialog (TTY) – oder NONINTERACTIVE-Setup mit SMTP_USER/SMTP_PASS per Env."
+  cfg="/root/lenovotracker-smtp.toml"
+  pct pull "$id" "${CONF_DIR}/config.toml" "$cfg" || die "Config aus CT ${id} nicht ladbar."
+  [[ -s "$cfg" ]] || die "Config in CT ${id} nicht lesbar."
+
+  smtp_host="$(toml_value "$cfg" mail smtp_host | sed 's/^"//; s/"$//')"
+  smtp_port="$(toml_value "$cfg" mail smtp_port)"
+  smtp_user="$(toml_value "$cfg" mail smtp_user | sed 's/^"//; s/"$//')"
+  smtp_pass="$(toml_value "$cfg" mail smtp_pass | sed 's/^"//; s/"$//')"
+
+  v="$(wt_input "SMTP-Benutzer" "SMTP-Benutzer (Proton: deine Adresse, z. B. du@example.de; leer = plain):" "$smtp_user")" || exit 0
+  smtp_user="$v"
+  v="$(whiptail --backtitle "$BACKTITLE" --title "SMTP-Token" --passwordbox \
+    "SMTP-Passwort / Token (Proton: Settings → IMAP/SMTP → SMTP tokens – wird nur einmal angezeigt):" \
+    12 70 "$smtp_pass" 3>&1 1>&2 2>&3)" || exit 0
+  smtp_pass="$v"
+
+  if [[ -n "$smtp_user" ]]; then
+    # Proton-MX-Hosts sind für Submission nicht gedacht → Submission-Server setzen
+    if [[ -z "$smtp_host" || "$smtp_host" =~ ^mail(sec)?\.protonmail\.ch$ ]]; then
+      smtp_host="smtp.protonmail.ch"
+      msg_info "SMTP-Host auf Submission-Server gesetzt: ${smtp_host}"
+    else
+      v="$(wt_input "SMTP-Host" "SMTP-Server für die Submission:" "$smtp_host")" || exit 0
+      smtp_host="$v"
+    fi
+    [[ -z "$smtp_port" || "$smtp_port" == "25" ]] && smtp_port="587"
+    msg_info "Port: ${smtp_port} (STARTTLS-Submission)"
+  else
+    smtp_pass=""
+  fi
+
+  toml_set "$cfg" mail smtp_host "\"${smtp_host}\"" || die "smtp_host nicht gefunden."
+  [[ -z "$smtp_port" ]] || toml_set "$cfg" mail smtp_port "$smtp_port" || die "smtp_port nicht gefunden."
+  toml_set "$cfg" mail smtp_user "\"${smtp_user}\"" \
+    || toml_insert_after "$cfg" mail smtp_port "smtp_user" "\"${smtp_user}\"" || die "smtp_user nicht setzbar."
+  toml_set "$cfg" mail smtp_pass "\"${smtp_pass}\"" \
+    || toml_insert_after "$cfg" mail smtp_port "smtp_pass" "\"${smtp_pass}\"" || die "smtp_pass nicht setzbar."
+
+  pct exec "$id" -- cp "${CONF_DIR}/config.toml" "${CONF_DIR}/config.toml.bak" 2>/dev/null || true
+  pct push "$id" "$cfg" "${CONF_DIR}/config.toml" || die "Config-Push fehlgeschlagen."
+  rm -f "$cfg"
+  if [[ -n "$smtp_user" ]]; then
+    msg_ok "SMTP-Login gesetzt: ${smtp_user} über ${smtp_host}:${smtp_port} (STARTTLS)"
+  else
+    msg_warn "SMTP-Login geleert – Versand läuft wieder plain (Auth-Banner möglich)."
+  fi
+  cmd_testmail "$id" || true
+}
+
 cmd_testmail() {
   local id="${1:-$VMID}"
   [[ -n "$id" ]] || die "CT-ID angeben: --test-mail <VMID>"
@@ -1205,6 +1267,7 @@ Unterkommandos (auch im One-Liner):
   … --edit-config [VMID] bestehende Config bearbeiten
   … --status [VMID]    CT-Status, Cron, Log und State anzeigen
   … --test-mail [VMID] Test-Mail senden
+  … --smtp-auth [VMID] SMTP-Login/Token einrichten (STARTTLS-Submission) + Test-Mail
   … --probe [VMID]     API-Parameter-Matrix live testen
   … --peak [VMID]      Peak-RAM messen (CT-Restart, 3 Läufe)
   … --uninstall        CT + Host-Artefakte entfernen
@@ -1242,6 +1305,7 @@ case "$MODE" in
   --edit-config) cmd_edit_config "${ARGS[1]:-$VMID}" ;;
   --status)     cmd_status "${ARGS[1]:-$VMID}" ;;
   --test-mail)  cmd_testmail "${ARGS[1]:-$VMID}" ;;
+  --smtp-auth)  cmd_smtp_auth "${ARGS[1]:-$VMID}" ;;
   --probe)      cmd_probe "${ARGS[1]:-$VMID}" ;;
   --peak)       cmd_peak "${ARGS[1]:-$VMID}" ;;
   --uninstall)  cmd_uninstall ;;
