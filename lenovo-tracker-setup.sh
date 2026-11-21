@@ -253,19 +253,45 @@ wt_yesno() {  # wt_yesno <title> <text> -> rc 0=Ja 1=Nein
 
 # Pflichtfeld-Dialog: schreibt den Wert in die Variable $1.
 # Vorbelegt mit dem aktuellen Variablenstand (ENV oder Default) – editierbar.
-# kind: text | num | dec – leere/ungültige Eingaben werden erneut abgefragt.
+# kind: text | num | dec | ipv4 | baseip – leere/ungültige Eingaben werden erneut abgefragt.
 wt_fill() {
-  local var="$1" title="$2" prompt="$3" kind="${4:-text}" v
+  local var="$1" title="$2" prompt="$3" kind="${4:-text}" v o ok
   while true; do
     v="$(wt_input "$title" "$prompt" "${!var:-}")" || return 1
     [[ -n "$v" ]] || continue
     case "$kind" in
-      num) [[ "$v" =~ ^[0-9]+$ ]] || continue ;;
-      dec) [[ "$v" =~ ^[0-9]+([.][0-9]+)?$ ]] || continue ;;
+      num)   [[ "$v" =~ ^[0-9]+$ ]] || continue ;;
+      dec)   [[ "$v" =~ ^[0-9]+([.][0-9]+)?$ ]] || continue ;;
+      ipv4)  is_ipv4 "$v" || continue ;;
+      baseip)
+        v="$(normalize_base_ip "$v")"
+        [[ "$v" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || continue
+        ok=1
+        for o in ${v//./ }; do (( o <= 255 )) || ok=0; done
+        [[ $ok -eq 1 ]] || continue
+        ;;
     esac
     printf -v "$var" '%s' "$v"
     return 0
   done
+}
+
+# Validierung: echte IPv4 (4 Oktette, je 0-255)
+is_ipv4() {
+  local a b c d
+  [[ "$1" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]] || return 1
+  a="${BASH_REMATCH[1]}"; b="${BASH_REMATCH[2]}"; c="${BASH_REMATCH[3]}"; d="${BASH_REMATCH[4]}"
+  (( a <= 255 && b <= 255 && c <= 255 && d <= 255 )) || return 1
+  return 0
+}
+
+# IP-Basis normalisieren: Punkt(e) am Ende weg; vollständige IPv4 → letztes Oktett ab
+# ("10.10.10." / "10.10.10" / "10.10.10.1"  →  "10.10.10")
+normalize_base_ip() {
+  local v="$1"
+  while [[ "$v" == *. ]]; do v="${v%.}"; done
+  if is_ipv4 "$v"; then v="${v%.*}"; fi
+  echo "$v"
 }
 
 # Erste freie CT/VM-ID ab 100 (pct + qm gelten als belegt), optional ausschließen
@@ -358,8 +384,8 @@ ui_configure() {
   wt_fill CPULIMIT "CPU-Limit" "CPU-Limit, z. B. 0.25 (Viertel-Kern):" dec || exit 0
   wt_fill DISK "Rootfs" "Disk-Größe, z. B. local:0.25:" || exit 0
   ui_pick_bridge || exit 0
-  wt_fill GATEWAY "Gateway" "Gateway-IP:" || exit 0
-  wt_fill BASE_IP "IP-Basis" "IP-Basis (CT erhält <Basis>.<CT-ID>):" || exit 0
+  wt_fill GATEWAY "Gateway" "Gateway-IP (z. B. 10.10.10.1):" ipv4 || exit 0
+  wt_fill BASE_IP "IP-Basis" "IP-Basis ohne Punkt, z. B. 10.10.10 (CT erhält <Basis>.<CT-ID>):" baseip || exit 0
   wt_fill MAIL_FROM "Mail von" "Absender-Adresse:" || exit 0
   # SMTP-Host aus der Absender-Domain ableiten (MX/A), falls die Vorab-Erkennung
   # nichts fand (dort ist MAIL_FROM noch unbekannt)
@@ -554,10 +580,15 @@ require_config() {
   [[ "$SWAP" =~ ^[0-9]+$ ]] || die "SWAP muss numerisch sein."
   [[ "$CPULIMIT" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "CPULIMIT muss numerisch sein (z. B. 0.25)."
   [[ "$SMTP_PORT" =~ ^[0-9]+$ ]] || die "SMTP_PORT muss numerisch sein."
+  BASE_IP="$(normalize_base_ip "$BASE_IP")"
+  is_ipv4 "$GATEWAY" || die "GATEWAY muss eine gültige IPv4 sein (z. B. 10.10.10.1), aktuell: '$GATEWAY'."
+  [[ "$BASE_IP" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] \
+    || die "BASE_IP muss eine IP-Basis ohne Punkt am Ende sein (z. B. 10.10.10), aktuell: '$BASE_IP'."
 }
 
 prepare_net() {
   [[ -n "$NET0" ]] && return 0
+  BASE_IP="$(normalize_base_ip "$BASE_IP")"   # defensiv: trailing dots / volle IP
   NET0="name=eth0,bridge=${BRIDGE},gw=${GATEWAY},ip=${BASE_IP}.${VMID}/24,type=veth"
 }
 
