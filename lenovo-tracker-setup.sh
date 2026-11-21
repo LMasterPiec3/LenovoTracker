@@ -672,19 +672,11 @@ cmd_setup() {
     fi
     menu+=("install"  "Installation (alle Werte abfragen)" \
            "status"   "Status & Log anzeigen" \
-           "testmail" "Test-Mail senden" \
-           "probe"    "API-Probe (Live-Test)" \
-           "peak"     "Peak-RAM messen (CT-Neustart)" \
-           "uninstall" "Deinstallieren" \
            "exit"     "Beenden")
     sel="$(wt_menu "Lenovo-Tracker Setup" "$menu_text" "${menu[@]}")" || exit 0
     case "$sel" in
       config)    ui_vmid; cmd_edit_config "$VMID"; exit 0 ;;
       status)    ui_vmid; cmd_status "$VMID"; exit 0 ;;
-      testmail)  ui_vmid; cmd_testmail "$VMID"; exit 0 ;;
-      probe)     ui_vmid; cmd_probe "$VMID"; exit 0 ;;
-      peak)      ui_vmid; cmd_peak "$VMID"; exit 0 ;;
-      uninstall) ui_vmid; cmd_uninstall; exit 0 ;;
       exit)      exit 0 ;;
       install)   ui_configure ;;
     esac

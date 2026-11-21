@@ -89,7 +89,7 @@ BUILD_VMID=<id>`), wenn mal kein Release-Asset existiert; er baut dank
 | `FORCE=1` | nein | existierenden CT löschen + neu aufbauen |
 | `SKIP_BUILD=1` | nein | vorhandenes `/root/lenovo-tracker-rs` nutzen |
 
-Weitere Kommandos (auch im One-Liner; im Menü als Menüpunkte vorhanden):
+Weitere Kommandos (nur per One-Liner/CLI, nicht im Menü):
 
 ```bash
 bash lenovo-tracker-setup.sh --edit-config 105 # bestehende Config bearbeiten
