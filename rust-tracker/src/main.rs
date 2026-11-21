@@ -1162,6 +1162,46 @@ fn deliver_mail(cfg: &Config, msg: &lettre::Message) -> Result<()> {
     Ok(())
 }
 
+fn build_test_mail_text(total: i64, count: usize, ship: &str, ts: &str) -> String {
+    format!(
+        "Testmail des Lenovo-Mainboard-Trackers.\n\n\
+         Aktueller Mainboard-Bestand: {} Stück über {} Teile.\n\
+         Versandweg: {}\nGeprüft: {}\nSeite: {}\n",
+        fmt_de(total), count, ship, ts, PAGE_URL
+    )
+}
+
+fn build_test_mail_html(total: i64, count: usize, label: &str, ship: &str, ts: &str) -> String {
+    // Gleiche Design-Sprache wie die Änderungs-Mails: Marken-Kopf, Info-Tabelle,
+    // CTA-Button, Fußzeile.
+    format!(
+        "<html><body style='margin:0;padding:0;background:#eef1f4'>\
+<table role='presentation' width='100%' cellpadding='0' cellspacing='0' bgcolor='#eef1f4' style='background:#eef1f4'><tr><td align='center' style='padding:24px 8px'>\
+<table role='presentation' width='600' cellpadding='0' cellspacing='0' style='width:600px;max-width:600px;background:#ffffff;border:1px solid #e3e6ea;border-radius:8px;overflow:hidden'>\
+<tr><td bgcolor='#e2231a' style='background:#e2231a;padding:10px 24px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;color:#ffffff;font-weight:bold'>LENOVO CLEARANCE-TRACKER</td></tr>\
+<tr><td style='padding:24px 24px 10px 24px;font-family:Arial,Helvetica,sans-serif'>\
+<div style='font-size:22px;line-height:1.3;font-weight:bold;color:#111111'>Testmail – der Tracker ist aktiv ✓</div>\
+<div style='font-size:14px;color:#555555;margin-top:8px'>Mail-Zustellung funktioniert. Bei Änderungen des Mainboard-Bestands bekommst du automatisch eine Benachrichtigung.</div>\
+</td></tr>\
+<tr><td style='padding:8px 24px 8px 24px'><table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse'>\
+<tr><td style='{cell}'>Aktueller Bestand</td><td style='{cell};text-align:right'><b style='font-size:16px'>{tot} Stück</b> über {cnt} Teile</td></tr>\
+<tr><td style='{cell}'>Filter</td><td style='{cell};text-align:right'>{label}</td></tr>\
+<tr><td style='{cell}'>Versandweg</td><td style='{cell};text-align:right'>{ship}</td></tr>\
+<tr><td style='{cell};border-bottom:none'>Geprüft</td><td style='{cell};text-align:right;border-bottom:none'>{pretty}</td></tr>\
+</table></td></tr>\
+<tr><td align='center' style='padding:16px 24px 22px 24px'><table role='presentation' cellpadding='0' cellspacing='0'><tr><td bgcolor='#e2231a' style='border-radius:6px'><a href='{url}' style='display:inline-block;padding:12px 28px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none'>Clearance-Sale ansehen →</a></td></tr></table></td></tr>\
+<tr><td bgcolor='#f7f8fa' style='background:#f7f8fa;padding:14px 24px;border-top:1px solid #e3e6ea;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8f98'>Testmail – kein Bestandswechsel · <a href='{url}' style='color:#e2231a'>{url}</a></td></tr>\
+</table></td></tr></table></body></html>",
+        cell = MAIL_CELL,
+        tot = fmt_de(total),
+        cnt = count,
+        label = esc(label),
+        ship = esc(ship),
+        pretty = esc(&pretty_ts(ts)),
+        url = esc(PAGE_URL)
+    )
+}
+
 fn send_test_mail(cfg: &Config) -> Result<()> {
     let parts = fetch_clearance_parts(cfg).map_err(|e| anyhow!("Abruf fehlgeschlagen: {}", e))?;
     let boards = filter_mainboards(&parts, &cfg.tracker.commodity_keys, &cfg.tracker.name_keywords);
@@ -1169,14 +1209,14 @@ fn send_test_mail(cfg: &Config) -> Result<()> {
     let (total, count) = compute_totals(&part_map);
     let ts = now_iso();
     let subject = format!("{} Testmail – Tracker aktiv (Rust)", cfg.mail.subject_prefix);
-    let text = format!(
-        "Testmail des Lenovo-Mainboard-Trackers (Rust-Version).\n\nAktueller Mainboard-Bestand: {} Stück über {} Teile.\nVersandweg: SMTP {}\nGeprüft: {}\nSeite: {}\n",
-        fmt_de(total), count, cfg.mail.smtp_host, ts, PAGE_URL
+    let label = filter_label(&cfg.tracker.commodity_keys, &cfg.tracker.name_keywords);
+    let ship = format!(
+        "SMTP {} ({})",
+        cfg.mail.smtp_host,
+        if cfg.mail.smtp_user.is_empty() { "plain" } else { "STARTTLS+AUTH" }
     );
-    let html = format!(
-        "<html><body><h2>Testmail – Tracker aktiv (Rust-Version)</h2><p>Aktueller Mainboard-Bestand: <b>{} Stück</b> über {} Teile.</p><p>Versandweg: SMTP {}<br>Geprüft: {}<br><a href='{}'>{}</a></p></body></html>",
-        fmt_de(total), count, esc(&cfg.mail.smtp_host), esc(&ts), PAGE_URL, PAGE_URL
-    );
+    let text = build_test_mail_text(total, count, &ship, &ts);
+    let html = build_test_mail_html(total, count, &label, &ship, &ts);
     let msg = compose_mail(cfg, &subject, &text, &html)?;
     deliver_mail(cfg, &msg)?;
     log_info!(
@@ -1590,6 +1630,26 @@ mod tests {
         let cfg2: Config = toml::from_str(&with_auth).expect("Config mit Auth muss parsen");
         assert_eq!(cfg2.mail.smtp_user, "user@b.de");
         assert_eq!(cfg2.mail.smtp_pass, "secret");
+    }
+
+    #[test]
+    fn test_test_mail_design() {
+        let text = build_test_mail_text(63, 18, "SMTP mail.example.de (plain)", "2026-11-21T10:25:03Z");
+        assert!(text.contains("63 Stück über 18 Teile"));
+        assert!(text.contains("SMTP mail.example.de (plain)"));
+        let html = build_test_mail_html(
+            63, 18,
+            "system boards · RTX",
+            "SMTP smtp.example.de (STARTTLS+AUTH)",
+            "2026-11-21T10:25:03Z",
+        );
+        assert!(html.contains("LENOVO CLEARANCE-TRACKER"));
+        assert!(html.contains("63 Stück</b> über 18 Teile"));
+        assert!(html.contains("system boards · RTX"));
+        assert!(html.contains("STARTTLS+AUTH"));
+        assert!(html.contains("Clearance-Sale ansehen"));
+        assert!(html.contains("2026-11-21 10:25:03 UTC")); // pretty_ts
+        assert!(html.contains("background:#e2231a"));
     }
 
     #[test]
