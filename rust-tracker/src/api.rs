@@ -97,6 +97,9 @@ pub struct FetchOutcome {
     pub boards: BTreeMap<String, PartState>,
     /// Aktions-/Listenpreis je Teil (nur Teile mit Preisangabe).
     pub prices: PriceMap,
+    /// Maschinentyps je Teil („20KU") – sagt, zu welchem Notebook das Board
+    /// gehört. Steht direkt in der Liste, ein Detail-Abruf ist dafür unnötig.
+    pub products: BTreeMap<String, Vec<String>>,
 }
 
 /// Seed für den Envelope `{code, msg, data: [...]}`. Filtert während des
@@ -204,6 +207,7 @@ pub fn parse_clearance(text: &str, keys: &[String]) -> FetchOutcome {
             total_parts: 0,
             boards: BTreeMap::new(),
             prices: BTreeMap::new(),
+            products: BTreeMap::new(),
         })
 }
 
@@ -223,6 +227,7 @@ impl<'de, 'a> Visitor<'de> for EnvelopeVisitor<'a> {
         let mut total_parts: usize = 0;
         let mut boards: BTreeMap<String, PartState> = BTreeMap::new();
         let mut prices: PriceMap = BTreeMap::new();
+        let mut products: BTreeMap<String, Vec<String>> = BTreeMap::new();
         while let Some(key) = map.next_key::<String>()? {
             match key.as_str() {
                 "code" => code = map.next_value()?,
@@ -232,6 +237,7 @@ impl<'de, 'a> Visitor<'de> for EnvelopeVisitor<'a> {
                         total: &mut total_parts,
                         boards: &mut boards,
                         prices: &mut prices,
+                        products: &mut products,
                     })?;
                 }
                 _ => {
@@ -244,6 +250,7 @@ impl<'de, 'a> Visitor<'de> for EnvelopeVisitor<'a> {
             total_parts,
             boards,
             prices,
+            products,
         })
     }
 }
@@ -253,6 +260,7 @@ struct ListSeed<'a> {
     total: &'a mut usize,
     boards: &'a mut BTreeMap<String, PartState>,
     prices: &'a mut PriceMap,
+    products: &'a mut BTreeMap<String, Vec<String>>,
 }
 
 impl<'de, 'a> DeserializeSeed<'de> for ListSeed<'a> {
@@ -281,6 +289,7 @@ impl<'de, 'a> Visitor<'de> for ListVisitor<'a> {
             total,
             boards,
             prices,
+            products,
         } = seed;
         while seq
             .next_element_seed(PartSeed {
@@ -288,6 +297,7 @@ impl<'de, 'a> Visitor<'de> for ListVisitor<'a> {
                 total: &mut *total,
                 boards: &mut *boards,
                 prices: &mut *prices,
+                products: &mut *products,
             })?
             .is_some()
         {}
@@ -300,6 +310,7 @@ struct PartSeed<'a> {
     total: &'a mut usize,
     boards: &'a mut BTreeMap<String, PartState>,
     prices: &'a mut PriceMap,
+    products: &'a mut BTreeMap<String, Vec<String>>,
 }
 
 impl<'de, 'a> DeserializeSeed<'de> for PartSeed<'a> {
@@ -318,6 +329,7 @@ enum PartField {
     Stock,
     Price,
     PromotionPrice,
+    Products,
     Other,
 }
 
@@ -344,6 +356,7 @@ impl<'de> DeserializeSeed<'de> for PartFieldSeed {
                     "stock" => PartField::Stock,
                     "price" => PartField::Price,
                     "promotionPrice" => PartField::PromotionPrice,
+                    "products" => PartField::Products,
                     _ => PartField::Other,
                 })
             }
@@ -452,6 +465,7 @@ impl<'de, 'a> Visitor<'de> for PartVisitor<'a> {
             total,
             boards,
             prices,
+            products,
         } = seed;
         let mut id: Option<PartId> = None;
         let mut name: Option<String> = None;
@@ -459,6 +473,7 @@ impl<'de, 'a> Visitor<'de> for PartVisitor<'a> {
         let mut stock: i64 = 0;
         let mut price: f64 = 0.0;
         let mut promo: f64 = 0.0;
+        let mut prods: Vec<String> = Vec::new();
         let mut skip = false;
         while let Some(field) = map.next_key_seed(PartFieldSeed)? {
             if skip {
@@ -483,6 +498,15 @@ impl<'de, 'a> Visitor<'de> for PartVisitor<'a> {
                 PartField::PromotionPrice => {
                     promo = map.next_value::<Option<f64>>()?.unwrap_or(0.0)
                 }
+                // Maschinentyps: nicht-matende Teile landen ohnehin im Rest-Skip.
+                PartField::Products => {
+                    prods = map
+                        .next_value::<Vec<String>>()?
+                        .into_iter()
+                        .filter(|t| !t.is_empty())
+                        .take(8)
+                        .collect();
+                }
                 PartField::Other => {
                     map.next_value::<IgnoredAny>()?;
                 }
@@ -499,6 +523,9 @@ impl<'de, 'a> Visitor<'de> for PartVisitor<'a> {
         }
         let name = name.unwrap_or_default();
         boards.insert(id.to_string(), PartState { s: stock, n: name });
+        if !prods.is_empty() {
+            products.insert(id.to_string(), prods);
+        }
         // Aktionspreis, sonst Listenpreis; 0 heißt „kein Preis bekannt".
         let unit = match to_cents(promo) {
             0 => to_cents(price),
@@ -2151,7 +2178,7 @@ pub fn fetch_specs(
     Err(last_err.unwrap_or_else(|| SpecsError::new(None, "Detail-Abruf fehlgeschlagen")))
 }
 
-/// Ergebnis eines Specs-Batches (id → Specs-Zeile).
+/// Ergebnis eines Specs-Batches.
 type SpecBatch = std::result::Result<BTreeMap<String, String>, SpecsError>;
 
 /// Ein Batch; lehnt der Server ihn als zu groß ab (4xx), wird er halbiert und

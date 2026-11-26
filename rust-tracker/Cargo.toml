@@ -10,6 +10,9 @@ serde_json = "1"
 basic-toml = "0.1"
 anyhow = "1"
 memchr = "2"
+# Nur JPEG-Decoder+Encoder für die Listen-Vorschaubilder (Lenovo liefert
+# 2736×1824-JPEGs mit ~275 KB – die Liste braucht 320 px).
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
 # Nur der MIME-Builder: den SMTP-Transport (inkl. STARTTLS/AUTH) macht curl,
 # das im Container ohnehin liegt – das spart rustls+ring+Root-Store (~900 KB).
 lettre = { version = "0.11", default-features = false, features = ["builder"] }

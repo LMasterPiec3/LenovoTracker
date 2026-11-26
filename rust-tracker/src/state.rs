@@ -232,6 +232,38 @@ pub fn state_paths(cfg: &Config) -> (PathBuf, PathBuf) {
 /// Specs-Cache (id → aufbereitete Specs-Zeile), getrennt vom State: ein
 /// Filterwechsel setzt die Baseline neu, die Hardware-Daten bleiben aber
 /// erhalten und müssen nicht erneut per Batch-POST geladen werden.
+/// Maschinentyps je Teil aus der Teileliste („20KU"). Wird je Lauf
+/// fortgeschrieben, damit die Startseite den Notebook-Typ ohne Live-Abruf zeigt.
+pub fn products_cache_path(cfg: &Config) -> PathBuf {
+    PathBuf::from(&cfg.paths.state_dir).join("part-products.json")
+}
+
+pub fn load_products_cache(path: &Path) -> BTreeMap<String, Vec<String>> {
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_default()
+}
+
+/// Nur neue/geänderte Zuordnungen schreiben – die Datei wächst langsam.
+pub fn save_products_cache(path: &Path, fresh: &BTreeMap<String, Vec<String>>) -> Result<()> {
+    if fresh.is_empty() {
+        return Ok(());
+    }
+    let mut all = load_products_cache(path);
+    let mut changed = false;
+    for (id, types) in fresh {
+        if all.get(id) != Some(types) {
+            all.insert(id.clone(), types.clone());
+            changed = true;
+        }
+    }
+    if changed {
+        write_json_atomic(path, &all)?;
+    }
+    Ok(())
+}
+
 pub fn specs_cache_path(cfg: &Config) -> PathBuf {
     PathBuf::from(&cfg.paths.state_dir).join("specs-cache.json")
 }

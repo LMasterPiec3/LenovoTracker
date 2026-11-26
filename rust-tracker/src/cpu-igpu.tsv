@@ -191,3 +191,300 @@ intelu300	Intel UHD Graphics (13. Gen, 48 EU)	832	est	-
 intelw10855m	Intel UHD P630	1328	pm3d	uhdp630
 qualcommsnapdragonsc7180	Qualcomm Adreno 618 GPU	73	pm3d	qualcommadreno618
 qualcommsnapdragonsc8280xp	Qualcomm Adreno 8cx Gen 3	891	pm3d	qualcommadreno8cxgen3
+amdryzen32200u	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdryzen32300u	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdryzen37320c	AMD Radeon 610M	515	ts	610m
+amdryzen52500u	Radeon Vega 8 (Ryzen 2000/3000)	851	pm3d	vega8
+amdryzen55500h	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen55600hs	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen56600h	AMD Radeon 660M	1535	ts	660m
+amdryzen56600hs	AMD Radeon 660M	1535	ts	660m
+amdryzen56600u	AMD Radeon 660M	1535	ts	660m
+amdryzen57520c	AMD Radeon 610M	515	ts	610m
+amdryzen57520u	AMD Radeon 610M	515	ts	610m
+amdryzen57540u	AMD Radeon 760M	2281	ts	760m
+amdryzen57640hs	AMD Radeon 760M	2281	ts	760m
+amdryzen57640u	AMD Radeon 760M	2281	ts	760m
+amdryzen58540u	AMD Radeon 760M	2281	ts	760m
+amdryzen58640hs	AMD Radeon 760M	2281	ts	760m
+amdryzen58640u	AMD Radeon 760M	2281	ts	760m
+amdryzen58645hs	AMD Radeon 760M	2281	ts	760m
+amdryzen72700e	AMD Radeon RX Vega 10 (Ryzen 2000/3000)	737	ts	rxvega10
+amdryzen72700u	AMD Radeon RX Vega 10 (Ryzen 2000/3000)	737	ts	rxvega10
+amdryzen73750h	Radeon Vega 8 (Ryzen 2000/3000)	851	pm3d	vega8
+amdryzen75800h	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen75800hs	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen76800h	AMD Radeon 680M	2298	ts	680m
+amdryzen76800hs	AMD Radeon 680M	2298	ts	680m
+amdryzen76800u	AMD Radeon 680M	2298	ts	680m
+amdryzen77840h	AMD Radeon 780M	2808	ts	780m
+amdryzen77840hs	AMD Radeon 780M	2808	ts	780m
+amdryzen77840u	AMD Radeon 780M	2808	ts	780m
+amdryzen78840h	AMD Radeon 780M	2808	ts	780m
+amdryzen78840hs	AMD Radeon 780M	2808	ts	780m
+amdryzen78840u	AMD Radeon 780M	2808	ts	780m
+amdryzen78845hs	AMD Radeon 780M	2808	ts	780m
+amdryzen95900h	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen95900hs	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen95980hs	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen96900hs	AMD Radeon 680M	2298	ts	680m
+amdryzen96980hs	AMD Radeon 680M	2298	ts	680m
+amdryzen97940hs	AMD Radeon 780M	2808	ts	780m
+amdryzenai5340	AMD Radeon 860M	2565	ts	860m
+amdryzenai5430	AMD Radeon 860M	2565	ts	860m
+amdryzenai5435	AMD Radeon 860M	2565	ts	860m
+amdryzenai5pro440	AMD Radeon 860M	2565	ts	860m
+amdryzenai7445	AMD Radeon 880M	3335	ts	880m
+amdryzenai7450	AMD Radeon 880M	3335	ts	880m
+amdryzenai9465	AMD Radeon 890M	3421	ts	890m
+amdryzenai9hx470	AMD Radeon 890M	3421	ts	890m
+amdryzenai9hx475	AMD Radeon 890M	3421	ts	890m
+intelcorei310100	Intel UHD 630	698	pm3d	uhd630
+intelcorei310100e	Intel UHD 630	698	pm3d	uhd630
+intelcorei310100f	Intel UHD 630	698	pm3d	uhd630
+intelcorei310100t	Intel UHD 630	698	pm3d	uhd630
+intelcorei310105	Intel UHD 630	698	pm3d	uhd630
+intelcorei310105f	Intel UHD 630	698	pm3d	uhd630
+intelcorei310105t	Intel UHD 630	698	pm3d	uhd630
+intelcorei310300	Intel UHD 630	698	pm3d	uhd630
+intelcorei310300t	Intel UHD 630	698	pm3d	uhd630
+intelcorei310305	Intel UHD 630	698	pm3d	uhd630
+intelcorei310320	Intel UHD 630	698	pm3d	uhd630
+intelcorei310325	Intel UHD 630	698	pm3d	uhd630
+intelcorei312100	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei312100e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei312100t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei312100te	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei312300	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei312300t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei313100	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei313100e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei313100t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei313100te	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei314100	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei38100	Intel UHD 630	698	pm3d	uhd630
+intelcorei38100b	Intel UHD 630	698	pm3d	uhd630
+intelcorei38100t	Intel UHD 630	698	pm3d	uhd630
+intelcorei38109u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei38121u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei38300	Intel UHD 630	698	pm3d	uhd630
+intelcorei38300t	Intel UHD 630	698	pm3d	uhd630
+intelcorei38350k	Intel UHD 630	698	pm3d	uhd630
+intelcorei39100	Intel UHD 630	698	pm3d	uhd630
+intelcorei39100f	Intel UHD 630	698	pm3d	uhd630
+intelcorei39100t	Intel UHD 630	698	pm3d	uhd630
+intelcorei39100te	Intel UHD 630	698	pm3d	uhd630
+intelcorei39300	Intel UHD 630	698	pm3d	uhd630
+intelcorei39300t	Intel UHD 630	698	pm3d	uhd630
+intelcorei39350k	Intel UHD 630	698	pm3d	uhd630
+intelcorei39350kf	Intel UHD 630	698	pm3d	uhd630
+intelcorei510200h	Intel UHD 630	698	pm3d	uhd630
+intelcorei510400	Intel UHD 630	698	pm3d	uhd630
+intelcorei510400f	Intel UHD 630	698	pm3d	uhd630
+intelcorei510400h	Intel UHD 630	698	pm3d	uhd630
+intelcorei510400t	Intel UHD 630	698	pm3d	uhd630
+intelcorei510500	Intel UHD 630	698	pm3d	uhd630
+intelcorei510500e	Intel UHD 630	698	pm3d	uhd630
+intelcorei510500h	Intel UHD 630	698	pm3d	uhd630
+intelcorei510500t	Intel UHD 630	698	pm3d	uhd630
+intelcorei510505	Intel UHD 630	698	pm3d	uhd630
+intelcorei510600	Intel UHD 630	698	pm3d	uhd630
+intelcorei510600k	Intel UHD 630	698	pm3d	uhd630
+intelcorei510600kf	Intel UHD 630	698	pm3d	uhd630
+intelcorei510600t	Intel UHD 630	698	pm3d	uhd630
+intelcorei512400	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512400t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512500	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512500e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512500t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512500te	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512600	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512600k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei512600t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513400	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513400e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513400t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513500	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513500e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513500t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513500te	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513600	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513600k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei513600t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei514400	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei514500	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei514500t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei514600	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei514600k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei514600t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei58210y	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei58257u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei58259u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei58279u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei58305g	Intel UHD 630	698	pm3d	uhd630
+intelcorei58400	Intel UHD 630	698	pm3d	uhd630
+intelcorei58400h	Intel UHD 630	698	pm3d	uhd630
+intelcorei58400t	Intel UHD 630	698	pm3d	uhd630
+intelcorei58500	Intel UHD 630	698	pm3d	uhd630
+intelcorei58500b	Intel UHD 630	698	pm3d	uhd630
+intelcorei58500t	Intel UHD 630	698	pm3d	uhd630
+intelcorei58600	Intel UHD 630	698	pm3d	uhd630
+intelcorei58600k	Intel UHD 630	698	pm3d	uhd630
+intelcorei58600t	Intel UHD 630	698	pm3d	uhd630
+intelcorei59400	Intel UHD 630	698	pm3d	uhd630
+intelcorei59400f	Intel UHD 630	698	pm3d	uhd630
+intelcorei59400t	Intel UHD 630	698	pm3d	uhd630
+intelcorei59500	Intel UHD 630	698	pm3d	uhd630
+intelcorei59500e	Intel UHD 630	698	pm3d	uhd630
+intelcorei59500f	Intel UHD 630	698	pm3d	uhd630
+intelcorei59500t	Intel UHD 630	698	pm3d	uhd630
+intelcorei59600	Intel UHD 630	698	pm3d	uhd630
+intelcorei59600k	Intel UHD 630	698	pm3d	uhd630
+intelcorei59600kf	Intel UHD 630	698	pm3d	uhd630
+intelcorei59600t	Intel UHD 630	698	pm3d	uhd630
+intelcorei710510y	Intel UHD 630	698	pm3d	uhd630
+intelcorei710700	Intel UHD 630	698	pm3d	uhd630
+intelcorei710700f	Intel UHD 630	698	pm3d	uhd630
+intelcorei710700k	Intel UHD 630	698	pm3d	uhd630
+intelcorei710700kf	Intel UHD 630	698	pm3d	uhd630
+intelcorei710700t	Intel UHD 630	698	pm3d	uhd630
+intelcorei710700te	Intel UHD 630	698	pm3d	uhd630
+intelcorei710810u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei710870h	Intel UHD 630	698	pm3d	uhd630
+intelcorei712700	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei712700e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei712700hl	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei712700k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei712700t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei712700te	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713700	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713700e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713700k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713700t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713800he	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei714700	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei714700k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei78086k	Intel UHD 630	698	pm3d	uhd630
+intelcorei7820qm	Intel UHD 630	698	pm3d	uhd630
+intelcorei7840qm	Intel UHD 630	698	pm3d	uhd630
+intelcorei78557u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei78559u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei78569u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei7860	Intel UHD 630	698	pm3d	uhd630
+intelcorei7860s	Intel UHD 630	698	pm3d	uhd630
+intelcorei7870	Intel UHD 630	698	pm3d	uhd630
+intelcorei78700	Intel UHD 630	698	pm3d	uhd630
+intelcorei78700b	Intel UHD 630	698	pm3d	uhd630
+intelcorei78700k	Intel UHD 630	698	pm3d	uhd630
+intelcorei78700t	Intel UHD 630	698	pm3d	uhd630
+intelcorei78705g	Intel UHD 630	698	pm3d	uhd630
+intelcorei7875k	Intel UHD 630	698	pm3d	uhd630
+intelcorei7880	Intel UHD 630	698	pm3d	uhd630
+intelcorei78809g	Intel UHD 630	698	pm3d	uhd630
+intelcorei7920	Intel UHD 630	698	pm3d	uhd630
+intelcorei7920xm	Intel UHD 630	698	pm3d	uhd630
+intelcorei7930	Intel UHD 630	698	pm3d	uhd630
+intelcorei7940	Intel UHD 630	698	pm3d	uhd630
+intelcorei7950	Intel UHD 630	698	pm3d	uhd630
+intelcorei7960	Intel UHD 630	698	pm3d	uhd630
+intelcorei7965	Intel UHD 630	698	pm3d	uhd630
+intelcorei7970	Intel UHD 630	698	pm3d	uhd630
+intelcorei79700	Intel UHD 630	698	pm3d	uhd630
+intelcorei79700e	Intel UHD 630	698	pm3d	uhd630
+intelcorei79700f	Intel UHD 630	698	pm3d	uhd630
+intelcorei79700k	Intel UHD 630	698	pm3d	uhd630
+intelcorei79700kf	Intel UHD 630	698	pm3d	uhd630
+intelcorei79700t	Intel UHD 630	698	pm3d	uhd630
+intelcorei79700te	Intel UHD 630	698	pm3d	uhd630
+intelcorei7975	Intel UHD 630	698	pm3d	uhd630
+intelcorei79800x	Intel UHD 630	698	pm3d	uhd630
+intelcorei7980x	Intel UHD 630	698	pm3d	uhd630
+intelcorei79850he	Intel UHD 630	698	pm3d	uhd630
+intelcorei7990x	Intel UHD 630	698	pm3d	uhd630
+intelcorei910850k	Intel UHD 630	698	pm3d	uhd630
+intelcorei910885h	Intel UHD 630	698	pm3d	uhd630
+intelcorei910900	Intel UHD 630	698	pm3d	uhd630
+intelcorei910900e	Intel UHD 630	698	pm3d	uhd630
+intelcorei910900f	Intel UHD 630	698	pm3d	uhd630
+intelcorei910900k	Intel UHD 630	698	pm3d	uhd630
+intelcorei910900kf	Intel UHD 630	698	pm3d	uhd630
+intelcorei910900t	Intel UHD 630	698	pm3d	uhd630
+intelcorei910900x	Intel UHD 630	698	pm3d	uhd630
+intelcorei910910	Intel UHD 630	698	pm3d	uhd630
+intelcorei910920x	Intel UHD 630	698	pm3d	uhd630
+intelcorei910940x	Intel UHD 630	698	pm3d	uhd630
+intelcorei910980hk	Intel UHD 630	698	pm3d	uhd630
+intelcorei910980xe	Intel UHD 630	698	pm3d	uhd630
+intelcorei912900	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei912900e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei912900k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei912900ks	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei912900t	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei913900	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei913900e	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei913900k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei913900ks	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei914900	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei914900k	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei914900ks	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei98950hk	Intel UHD 630	698	pm3d	uhd630
+intelcorei99800x	Intel UHD 630	698	pm3d	uhd630
+intelcorei99820x	Intel UHD 630	698	pm3d	uhd630
+intelcorei99900	Intel UHD 630	698	pm3d	uhd630
+intelcorei99900k	Intel UHD 630	698	pm3d	uhd630
+intelcorei99900kf	Intel UHD 630	698	pm3d	uhd630
+intelcorei99900ks	Intel UHD 630	698	pm3d	uhd630
+intelcorei99900t	Intel UHD 630	698	pm3d	uhd630
+intelcorei99900x	Intel UHD 630	698	pm3d	uhd630
+intelcorei99920x	Intel UHD 630	698	pm3d	uhd630
+intelcorei99940x	Intel UHD 630	698	pm3d	uhd630
+intelcorei99960x	Intel UHD 630	698	pm3d	uhd630
+intelcorei99980hk	Intel UHD 630	698	pm3d	uhd630
+intelcorei99980xe	Intel UHD 630	698	pm3d	uhd630
+intelcorei99990xe	Intel UHD 630	698	pm3d	uhd630
+intelcoreultra5115u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5125h	Intel Arc 8-Core iGPU	3271	ts	arc8coreigpu
+intelcoreultra5125u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5134u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5135h	Intel Arc 8-Core iGPU	3271	ts	arc8coreigpu
+intelcoreultra5135u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5225	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5225f	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5225u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5235	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5235h	Intel Arc Graphics 140T	3843	ts	arc140t
+intelcoreultra5235hx	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5235u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5245hx	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5245k	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5245kf	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra5322	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra5325	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra5332	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra5335	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra5336h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra5338h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra7155h	Intel Arc 8-Core iGPU	3271	ts	arc8coreigpu
+intelcoreultra7155u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7164u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7165h	Intel Arc 8-Core iGPU	3271	ts	arc8coreigpu
+intelcoreultra7165u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7251hx	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7255hx	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7255u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7265h	Intel Arc Graphics 140T	3843	ts	arc140t
+intelcoreultra7265hx	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7265kf	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7265u	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7355	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra7356h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra7365	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra7366h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultra9185h	Intel Arc 8-Core iGPU	3271	ts	arc8coreigpu
+intelcoreultra9285	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra9285hx	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra9386h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultrax7358h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultrax7368h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultrax9378h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3
+intelcoreultrax9388h	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts	4xe3

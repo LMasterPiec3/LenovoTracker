@@ -170,7 +170,7 @@ zusätzlicher Dienst, kein zusätzlicher Port nach außen im Standard):
   erscheint ein Platzhalter.
 - **CPU-Leistung** – Grundlage sind gemessene Benchmark-Werte aus
   `src/cpu-scores.tsv` (`Serie:Modell`, Name, Single, Multi, Quelle), die per
-  `include_str!` im Binary liegen: **1.863 CPU-Modelle** (Desktop und Laptop,
+  `include_str!` im Binary liegen: **1.965 CPU-Modelle** (Desktop und Laptop,
   alle Generationen), nicht nur die Teile aus dem Lenovo-Sortiment. Der Rang
   ist `Single × 10 + Multi`, damit sowohl schnelle Kerne als auch viele Kerne
   zählen (i7-12800H 33.842 vor i7-12700H 33.738 vor i9-11950H 28.576 vor
@@ -370,7 +370,7 @@ Der Parser selbst kennt die Familien trotzdem: Intel `14. Gen` als Filter,
 „Core Ultra Series 1/2“, `Ryzen AI` mit eigenem Tabellenschlüssel `rai:NNN`
 (vorher landete „Ryzen AI 7 350“ auf der Zeile des alten AMD E-350) und
 Generation „Ryzen AI 300“; ohne Messzeile greift der Familien-Median aus
-`cpu-fallback.tsv`. Die Tabellen haben aktuell 192 Zeilen (iGPU) bzw. 1.867
+`cpu-fallback.tsv`. Die Tabellen haben aktuell 489 Zeilen (iGPU) bzw. 1.965
 (CPU) und 2.262 (GPU).
 
 Grenzen: `est`-Zeilen in `cpu-igpu.tsv` sind aus dem EU-Ausbau geschätzt; für

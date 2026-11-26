@@ -1,15 +1,72 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lenovo Clearance-Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23e2231a'/><path d='M9 9v14h9' stroke='white' stroke-width='3.4' fill='none' stroke-linecap='square'/></svg>">
+<script>
+  // Design vor dem ersten Paint setzen, damit nichts hell aufblitzt.
+  try { document.documentElement.dataset.theme = localStorage.getItem("lt-theme") || "light"; }
+  catch (e) { document.documentElement.dataset.theme = "light"; }
+</script>
 <style>
   :root {
-    --bg: #f1f3f6; --card: #ffffff; --ink: #0f1419; --muted: #6a7280;
-    --line: #e2e6eb; --accent: #e2231a; --accent-dark: #bd1b13;
-    --green: #0f7b3f; --green-soft: #e7f5ec; --amber: #9a5b00; --amber-soft: #fff6e0;
-    --chip: #f2f4f7; --radius: 14px; --head-h: 66px;
+    --bg: #eef1f5; --surface: #ffffff; --surface-2: #fbfcfd; --surface-3: #f2f4f7;
+    --ink: #0f1419; --ink-2: #3d4550; --muted: #6a7280;
+    --line: #e2e6eb; --line-strong: #d3d9e0;
+    --accent: #e2231a; --accent-dark: #bd1b13; --accent-soft: #fdeceb; --accent-ink: #8a1c14;
+    --green: #0f7b3f; --green-soft: #e7f5ec;
+    --amber: #9a5b00; --amber-soft: #fff6e0; --amber-line: #f2dfae;
+    --blue-soft: #eef0fb; --blue-ink: #3a4290;
+    --gpu-soft: #eef1f6; --mx-soft: #f4f1ea; --mx-ink: #7a5a1e;
+    --thumb-ph: #c9d0d8; --focus: #e8a19d;
+    --chart-area: rgba(226,35,26,.08);
+    --shadow: 0 6px 20px rgba(16,20,25,.09);
+    --shadow-lg: 0 22px 50px rgba(16,20,25,.18);
+    --overlay: rgba(10,14,19,.9);
+    --chip: var(--surface-3);
+    --chevron-img: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236a7280' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+    --radius: 14px; --head-h: 66px;
+    color-scheme: light;
+  }
+
+  /* ---------- Dunkles Design ---------- */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0e1217; --surface: #161b22; --surface-2: #1c232c; --surface-3: #232c37;
+    --ink: #e9eef4; --ink-2: #c3ccd7; --muted: #93a0ae;
+    --line: #29323d; --line-strong: #3a4655;
+    --accent: #ff5a50; --accent-dark: #ff8078; --accent-soft: #2c1817; --accent-ink: #ffb3ad;
+    --green: #57d68d; --green-soft: #17301f;
+    --amber: #e9b45f; --amber-soft: #2a2113; --amber-line: #4b3a1c;
+    --blue-soft: #1b2434; --blue-ink: #a6bdf1;
+    --gpu-soft: #1f2630; --mx-soft: #2a2418; --mx-ink: #e2c386;
+    --thumb-ph: #3c4653; --focus: #ff8a82;
+    --chart-area: rgba(255,90,80,.14);
+    --shadow: 0 8px 24px rgba(0,0,0,.45);
+    --shadow-lg: 0 24px 60px rgba(0,0,0,.62);
+    --overlay: rgba(4,7,10,.94);
+    --chevron-img: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2393a0ae' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+  }
+
+  /* ---------- OLED-Schwarz: echte Schwarztöne, nur Linien trennen ---------- */
+  :root[data-theme="oled"] {
+    color-scheme: dark;
+    --bg: #000000; --surface: #000000; --surface-2: #0a0a0b; --surface-3: #141416;
+    --ink: #f5f7fa; --ink-2: #ccd3db; --muted: #8b929b;
+    --line: #1d1d21; --line-strong: #2f2f36;
+    --accent: #ff3b30; --accent-dark: #ff6b62; --accent-soft: #260d0b; --accent-ink: #ffb4ae;
+    --green: #5cf191; --green-soft: #07230f;
+    --amber: #f0bd63; --amber-soft: #1d1607; --amber-line: #3a2e13;
+    --blue-soft: #101827; --blue-ink: #a9c1ff;
+    --gpu-soft: #111113; --mx-soft: #1c1810; --mx-ink: #e7cb8e;
+    --thumb-ph: #33363c; --focus: #ff7b72;
+    --chart-area: rgba(255,59,48,.18);
+    --shadow: 0 0 0 1px var(--line);
+    --shadow-lg: 0 0 0 1px var(--line-strong);
+    --overlay: #000000;
+    --chevron-img: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b929b' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -24,7 +81,9 @@
 
   /* ---------- Kopf ---------- */
   header.top {
-    position: sticky; top: 0; z-index: 20; background: #fff;
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(10px) saturate(1.2);
     border-bottom: 1px solid var(--line); padding: 10px 20px;
     display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
   }
@@ -38,17 +97,16 @@
   }
   .pill b { font-size: 16px; font-variant-numeric: tabular-nums; }
   .pill span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
-  .spacer { flex: 1; }
   .actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
   .src { font-size: 10px; font-weight: 800; letter-spacing: 1.4px; padding: 4px 9px;
          border-radius: 999px; background: var(--chip); color: var(--muted); }
   .src.live { background: var(--accent); color: #fff; }
   .btn {
-    font: inherit; font-weight: 650; border: 1px solid var(--line); background: #fff;
+    font: inherit; font-weight: 650; border: 1px solid var(--line); background: var(--surface);
     color: var(--ink); border-radius: 10px; padding: 9px 15px; cursor: pointer;
     display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
   }
-  .btn:hover { background: #f7f8fa; }
+  .btn:hover { background: var(--surface-3); }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
   .btn.big { padding: 11px 20px; font-size: 15px; box-shadow: 0 2px 8px rgba(226,35,26,.25); }
@@ -66,115 +124,190 @@
     border: 0; background: transparent; font: inherit; font-weight: 650; color: var(--muted);
     padding: 9px 15px; border-radius: 10px 10px 0 0; cursor: pointer;
   }
-  nav button:hover { color: var(--ink); background: #e9edf2; }
-  nav button.active { background: #fff; color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+  nav button:hover { color: var(--ink); background: var(--surface-3); }
+  nav button.active { background: var(--surface); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
 
   main { max-width: 1320px; margin: 0 auto; padding: 0 20px 48px; }
-  section { background: #fff; border: 1px solid var(--line); border-radius: 0 14px 14px 14px; padding: 16px; }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 0 14px 14px 14px; padding: 16px; }
 
   /* ---------- Filter ---------- */
   .warn {
-    background: var(--amber-soft); border: 1px solid #f2dfae; color: var(--amber);
+    background: var(--amber-soft); border: 1px solid var(--amber-line); color: var(--amber);
     padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 12px;
   }
   .filters {
-    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-    position: sticky; top: var(--head-h); z-index: 10; background: #fff;
-    padding: 6px 0 10px; margin: -6px 0 2px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+    position: sticky; top: var(--head-h); z-index: 10;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(8px);
+    padding: 8px 0 10px; margin: -6px 0 2px;
   }
-  .search { position: relative; flex: 1 1 260px; min-width: 200px; }
+  .search { position: relative; flex: 1 1 0; min-width: 180px; }
   .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); }
   .search input {
     width: 100%; font: inherit; padding: 9px 12px 9px 36px; border: 1px solid var(--line);
-    border-radius: 10px; background: #fbfcfd;
+    border-radius: 10px; background: var(--surface-2);
   }
   select {
     font: inherit; padding: 9px 30px 9px 11px; border: 1px solid var(--line); border-radius: 10px;
-    background: #fbfcfd url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236a7280' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 10px center;
+    background-color: var(--surface-2); background-image: var(--chevron-img);
+    background-repeat: no-repeat; background-position: right 10px center;
     appearance: none; cursor: pointer; max-width: 210px;
   }
-  input:focus, select:focus, textarea:focus { outline: 2px solid #f7b9b5; outline-offset: 1px; border-color: #e8a19d; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--focus); }
   .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 2px 2px 14px; color: var(--muted); font-size: 13px; }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-left: auto; }
-  .seg button { border: 0; background: #fff; font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; color: var(--muted); }
+  .seg button { border: 0; background: var(--surface); font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; color: var(--muted); }
   .seg button.on { background: var(--chip); color: var(--ink); font-weight: 650; }
 
+  /* ---------- Filterleiste / Ergebniszeile ---------- */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  .toolbar-end { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+  .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .field > span {
+    font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    color: var(--muted); padding-left: 3px; white-space: nowrap;
+  }
+  .field.inline { flex-direction: row; align-items: center; gap: 6px; }
+  .field.inline > span { padding-left: 0; }
+  .field.inline select { flex: 1 1 auto; }
+  .field select { max-width: none; width: 100%; padding: 8px 26px 8px 9px; font-size: 13.5px; }
+  .field.sort select { min-width: 150px; }
+  .facets { display: flex; flex-wrap: wrap; gap: 8px; }
+  .facets .field { flex: 1 1 140px; max-width: 250px; }
+  .resultbar { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; min-height: 30px; }
+  .result { display: flex; align-items: baseline; gap: 7px; font-size: 13px; color: var(--muted); }
+  .result b { font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .activefilters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .activefilters[hidden] { display: none; }
+  .fchip {
+    font: inherit; font-size: 11.5px; font-weight: 650; cursor: pointer; padding: 3px 9px;
+    color: var(--accent-ink); background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 999px;
+  }
+  .fchip:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .resultbar .seg { margin-left: auto; }
+
   /* ---------- Karten ---------- */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 16px; }
   .card {
     border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
-    background: #fff; display: flex; flex-direction: column;
+    background: var(--surface); display: flex; flex-direction: column;
     transition: box-shadow .15s, transform .15s, border-color .15s;
   }
-  .card:hover { box-shadow: 0 6px 20px rgba(16,20,25,.09); border-color: #d3d9e0; transform: translateY(-1px); }
+  .card:hover { box-shadow: var(--shadow); border-color: var(--line-strong); transform: translateY(-2px); }
+  .card:focus-within { border-color: var(--focus); }
   .thumb {
-    position: relative; aspect-ratio: 4 / 3; background: #fff; border-bottom: 1px solid var(--line);
-    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    position: relative; aspect-ratio: 3 / 2; background: var(--surface-2); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: zoom-in;
   }
-  .thumb img { width: 100%; height: 100%; object-fit: contain; padding: 8px; position: relative; z-index: 1; }
-  .thumb .ph { width: 64px; height: 64px; color: #c9d0d8; stroke-width: 1.2; position: absolute; }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1;
+               transition: transform .18s; }
+  .thumb:hover img { transform: scale(1.04); }
+  .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .thumb .tag {
+    position: absolute; top: 8px; left: 8px; z-index: 2; background: var(--accent); color: #fff;
+    font-size: 9px; font-weight: 800; letter-spacing: .06em; border-radius: 5px; padding: 3px 6px;
+  }
+  .thumb .ph { width: 58px; height: 58px; color: var(--thumb-ph); stroke-width: 1.2; position: absolute; }
   .stock-badge {
     position: absolute; top: 8px; right: 8px; z-index: 2; background: rgba(15,20,25,.82); color: #fff;
     font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
     font-variant-numeric: tabular-nums; backdrop-filter: blur(2px);
   }
-  .stock-badge.zero { background: #9aa2ad; }
+  .stock-badge.zero { background: var(--muted); }
   .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
-  .name { font-size: 13.5px; font-weight: 650; line-height: 1.35; display: -webkit-box;
+  .name { font-size: 14px; font-weight: 650; line-height: 1.35; display: -webkit-box;
           -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; }
   .pid { font: 11.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); letter-spacing: .2px; }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 1px; }
   .chip {
-    font-size: 11.5px; background: var(--chip); color: #3d4550; padding: 2.5px 7px;
+    font-size: 11.5px; background: var(--chip); color: var(--ink-2); padding: 2.5px 7px;
     border-radius: 6px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   }
-  .chip.gpu { background: #eef1f6; }
-  .chip.rtx, .chip.gtx { background: var(--green-soft); color: #0b6333; }
-  .chip.quadro { background: #eef0fb; color: #3a4290; }
-  .chip.mx { background: #f4f1ea; color: #7a5a1e; }
-  .chip.none { color: var(--muted); font-style: italic; background: transparent; padding-left: 0; }
-  .chip .assumed { color: #8a6d1f; font-size: 11px; }
-  .foot { display: flex; align-items: flex-end; gap: 8px; margin-top: auto; padding-top: 4px; }
-  .price { font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
-  .sum { display: block; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chip.gpu { background: var(--gpu-soft); }
+  .chip.rtx { background: var(--green-soft); color: var(--green); }
+  .chip.quadro { background: var(--blue-soft); color: var(--blue-ink); }
+  .chip.mx { background: var(--mx-soft); color: var(--mx-ink); }
+  .chip .assumed { color: var(--mx-ink); font-size: 11px; }
+  .laptop { font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+  .laptop .mt { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink-2); }
+  .laptop a { color: var(--ink-2); text-decoration: none; border-bottom: 1px dotted var(--line-strong); }
+  .laptop a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+  .name a, .pid a, td.id a, td a.plink { color: inherit; text-decoration: none; }
+  .name a:hover, .pid a:hover, td.id a:hover, td a.plink:hover { text-decoration: underline; }
+  .lenovo-link {
+    font-size: 11px; font-weight: 650; color: var(--ink-2); text-decoration: none; white-space: nowrap;
+    border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; background: var(--surface);
+  }
+  .lenovo-link:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .foot { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 6px; }
+
+  /* ---------- Bild-Dialog (alle Originale) ---------- */
+  .lb { position: fixed; inset: 0; z-index: 60; background: var(--overlay);
+        display: flex; flex-direction: column; }
+  .lb[hidden] { display: none; }
+  .lb-top { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; padding: 14px 18px 10px; color: #eef2f6; }
+  .lb-top .t { font-weight: 650; font-size: 15px; }
+  .lb-top .s { color: #a9b2bd; font-size: 12.5px;
+               font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .lb-top .x { margin-left: auto; background: rgba(255,255,255,.12); color: #fff; border: 0; cursor: pointer;
+               font: 600 12.5px system-ui, sans-serif; padding: 6px 12px; border-radius: 8px; }
+  .lb-top .x:hover { background: rgba(255,255,255,.22); }
+  .lb-stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center;
+              justify-content: center; padding: 0 18px; }
+  .lb-stage img { max-width: 100%; max-height: 100%; object-fit: contain;
+                  background: var(--surface); border-radius: 8px; }
+  .lb-stage .lb-empty { color: #c8d0d9; font-size: 14px; }
+  .lb-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 46px;
+    border: 0; border-radius: 50%; background: rgba(255,255,255,.16); color: #fff;
+    font: 700 24px/1 system-ui, sans-serif; cursor: pointer; display: grid; place-items: center;
+    padding: 0 0 3px; transition: background .15s;
+  }
+  .lb-nav:hover { background: rgba(255,255,255,.32); }
+  .lb-nav:focus-visible { outline: 2px solid #9dc1ff; outline-offset: 2px; }
+  .lb-nav.prev { left: 12px; }
+  .lb-nav.next { right: 12px; }
+  .lb-nav[hidden] { display: none; }
+  .lb-count { color: #a9b2bd; font-variant-numeric: tabular-nums; }
+  .lb-foot { display: flex; gap: 14px; align-items: center; padding: 12px 18px 16px; color: #dfe5eb; font-size: 12.5px; }
+  .lb-foot a { color: #9dc1ff; }
+  body.locked { overflow: hidden; }
+  .price { font-size: 16px; font-weight: 750; font-variant-numeric: tabular-nums; }
   .delta {
     margin-left: auto; font-size: 12px; font-weight: 750; padding: 2px 8px; border-radius: 999px;
     background: var(--green-soft); color: var(--green);
   }
   .delta.down { background: var(--chip); color: var(--muted); }
-  .delta.back { background: #eef0fb; color: #3a4290; }
+  .delta.back { background: var(--blue-soft); color: var(--blue-ink); }
 
   /* ---------- Tabelle ---------- */
   .tablewrap { overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
   table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
   th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  th { background: #fafbfc; font-size: 10.5px; letter-spacing: .7px; text-transform: uppercase;
+  th { background: var(--surface-2); font-size: 10.5px; letter-spacing: .7px; text-transform: uppercase;
        color: var(--muted); position: sticky; top: 0; z-index: 1; }
-  tbody tr:hover { background: #fbfcfd; }
+  tbody tr:hover { background: var(--surface-2); }
   tbody tr:last-child td { border-bottom: 0; }
   td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   td.id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: nowrap; font-size: 12px; }
-  td.specs { color: #444c57; font-size: 12.5px; }
+  td.specs { color: var(--ink-2); font-size: 12.5px; }
   td.imgcell { width: 46px; padding: 4px 0 4px 8px; }
-  td.imgcell img { width: 40px; height: 30px; object-fit: contain; display: block; }
+  td.imgcell img { width: 40px; height: 30px; object-fit: contain; display: block; cursor: zoom-in; }
   td.money { font-weight: 650; }
 
   /* ---------- Verlauf / Config ---------- */
   .chart { width: 100%; height: 210px; display: block; }
   .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
-  .chart .area { fill: rgba(226,35,26,.07); }
+  .chart .area { fill: var(--chart-area); }
   .chart .grid { stroke: var(--line); stroke-width: 1; }
   .chart .dot { fill: var(--accent); }
   .meta-line { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin: 4px 2px 16px; }
   textarea {
     width: 100%; min-height: 430px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfd; color: var(--ink);
+    padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink);
     resize: vertical; tab-size: 2;
-  }
-  .tag {
-    display: inline-block; align-self: flex-start;
-    font-size: 9.5px; font-weight: 800; letter-spacing: .08em;
-    color: #8a1c14; background: #fdeceb; border-radius: 4px; padding: 2px 5px;
   }
   #more { margin: 16px auto 0; }
   #more[hidden] { display: none; }
@@ -184,6 +317,18 @@
   .empty { text-align: center; padding: 48px 12px; color: var(--muted); }
   .empty b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 6px; }
 
+  /* ---------- Feinschliff / Design-Umschalter ---------- */
+  ::selection { background: var(--accent); color: #fff; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary.big { box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent); }
+  .tablewrap { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+  .tablewrap::-webkit-scrollbar { width: 10px; height: 10px; }
+  .tablewrap::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 99px; }
+  .tablewrap::-webkit-scrollbar-track { background: transparent; }
+  .seg.theme { margin-left: 0; }
+  .seg.theme button { padding: 7px 10px; line-height: 1; font-size: 13px; }
+  .seg.theme button.on { background: var(--accent); color: #fff; }
+
   body.loading .grid, body.loading .tablewrap { opacity: .45; transition: opacity .15s; }
   #bar { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: var(--accent);
          z-index: 100; transition: width .2s; opacity: 0; }
@@ -192,7 +337,7 @@
 
   #toast {
     position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
-    background: #0f1419; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px;
+    background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-size: 13px;
     opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
     max-width: min(92vw, 680px); box-shadow: 0 8px 26px rgba(0,0,0,.25);
   }
@@ -203,6 +348,12 @@
     /* „Stand“ ausblenden, damit Marke, Zähler und Laden in eine Zeile passen */
     .stats .pill:nth-child(3) { display: none; }
   }
+  .empty .btn { margin-top: 14px; }
+  .note { margin: 16px 2px 0; font-size: 12.5px; color: var(--muted); }
+  .note summary { cursor: pointer; color: var(--ink-2); font-weight: 650; width: fit-content; }
+  .note summary:hover { color: var(--ink); }
+  .note p { margin: 6px 0 0; line-height: 1.55; max-width: 92ch; }
+
   @media (max-width: 720px) {
     header.top {
       padding: 8px 12px; gap: 8px 10px; display: grid;
@@ -223,6 +374,10 @@
     .btn.big { padding: 9px 14px; }
     select { max-width: 100%; }
     .filters select { flex: 1 1 130px; }
+    .search { flex: 1 1 100%; min-width: 140px; }
+    .toolbar-end { margin-left: 0; width: 100%; }
+    .toolbar-end .btn { margin-left: auto; }
+    .facets .field { flex: 1 1 100%; max-width: none; }
   }
 </style>
 </head>
@@ -249,6 +404,11 @@
     <div class="pill"><b id="check">–</b><span>Stand</span></div>
   </div>
   <div class="actions">
+    <div class="seg theme" role="group" aria-label="Design">
+      <button type="button" data-theme-opt="light" title="Helles Design" aria-label="Helles Design">☀</button>
+      <button type="button" data-theme-opt="dark" title="Dunkles Design" aria-label="Dunkles Design">☾</button>
+      <button type="button" data-theme-opt="oled" title="OLED-Schwarz" aria-label="OLED-Schwarz">◼</button>
+    </div>
     <span class="src" id="source">STATE</span>
     <button id="live" class="btn primary big" title="Lenovo-API jetzt abfragen – ohne Mail">
       <svg class="i ico"><use href="#ic-refresh"/></svg>
@@ -269,48 +429,58 @@
     <div id="pending" class="warn" hidden></div>
 
     <div class="filters">
-      <label class="search">
-        <svg class="i"><use href="#ic-search"/></svg>
-        <input id="q" type="search" placeholder="Suchen: Bezeichnung, Teilenummer, Tech-Daten …" autocomplete="off">
-      </label>
-      <select id="fCpu" title="CPU-Reihe"></select>
-      <select id="fGen" title="CPU-Generation"></select>
-      <select id="fRam" title="RAM"></select>
-      <select id="fGpu" title="GPU-Familie"></select>
-      <select id="fKind" title="GPU-Typ"></select>
-      <select id="fSort" title="Sortierung">
-        <optgroup label="Bestand">
-          <option value="stock">Bestand ↓</option>
-          <option value="stockAsc">Bestand ↑</option>
-        </optgroup>
-        <optgroup label="Technik">
-          <option value="perf">Leistung ↓</option>
-          <option value="gpu">GPU-Leistung ↓</option>
-          <option value="cpu">CPU-Leistung ↓</option>
-          <option value="ram">RAM ↓</option>
-        </optgroup>
-        <optgroup label="Preis">
-          <option value="price">Preis ↓</option>
-          <option value="priceAsc">Preis ↑</option>
-        </optgroup>
-        <optgroup label="Name">
-          <option value="name">Name A–Z</option>
-          <option value="nameDesc">Name Z–A</option>
-        </optgroup>
-      </select>
-      <button id="reset" class="btn ghost" title="Filter zurücksetzen">Zurücksetzen</button>
-    </div>
-
-    <div class="meta">
-      <span id="count">–</span>
-      <span id="sumline"></span>
-      <div class="seg scope" id="scopeSeg" title="Alle Teile der API oder nur die Mail-Liste">
-        <button data-scope="all" class="on">Alle</button>
-        <button data-scope="mail">Mail</button>
+      <div class="toolbar">
+        <label class="search">
+          <svg class="i"><use href="#ic-search"/></svg>
+          <input id="q" type="search" placeholder="Suchen: Bezeichnung, Teilenummer, Tech-Daten …" autocomplete="off">
+        </label>
+        <label class="field inline sort">
+          <span>Sortierung</span>
+          <select id="fSort" title="Sortierung">
+            <optgroup label="Bestand">
+              <option value="stock">Bestand ↓</option>
+              <option value="stockAsc">Bestand ↑</option>
+            </optgroup>
+            <optgroup label="Technik">
+              <option value="perf">Leistung ↓</option>
+              <option value="gpu">GPU-Leistung ↓</option>
+              <option value="cpu">CPU-Leistung ↓</option>
+              <option value="ram">RAM ↓</option>
+            </optgroup>
+            <optgroup label="Preis">
+              <option value="price">Preis ↓</option>
+              <option value="priceAsc">Preis ↑</option>
+            </optgroup>
+            <optgroup label="Name">
+              <option value="name">Name A–Z</option>
+              <option value="nameDesc">Name Z–A</option>
+            </optgroup>
+          </select>
+        </label>
+        <div class="toolbar-end">
+          <div class="seg view">
+            <button data-view="cards" class="on">Karten</button>
+            <button data-view="table">Tabelle</button>
+          </div>
+          <button id="reset" class="btn ghost" title="Alle Filter zurücksetzen">Zurücksetzen</button>
+        </div>
       </div>
-      <div class="seg view">
-        <button data-view="cards" class="on">Karten</button>
-        <button data-view="table">Tabelle</button>
+
+      <div class="facets">
+        <label class="field inline"><span>CPU</span><select id="fCpu" title="CPU-Reihe filtern"></select></label>
+        <label class="field inline"><span>Gen.</span><select id="fGen" title="CPU-Generation filtern"></select></label>
+        <label class="field inline"><span>RAM</span><select id="fRam" title="Arbeitsspeicher filtern"></select></label>
+        <label class="field inline"><span>GPU</span><select id="fGpu" title="GPU-Familie filtern"></select></label>
+        <label class="field inline"><span>GPU-Typ</span><select id="fKind" title="dedizierte oder integrierte GPU"></select></label>
+      </div>
+
+      <div class="resultbar">
+        <div class="result"><b id="count">–</b><span id="sumline"></span></div>
+        <div class="activefilters" id="afilters" hidden></div>
+        <div class="seg scope" id="scopeSeg" title="Alle Teile der API oder nur die Mail-Liste">
+          <button data-scope="all" class="on">Alle</button>
+          <button data-scope="mail">Mail</button>
+        </div>
       </div>
     </div>
 
@@ -334,11 +504,14 @@
         <tbody id="rows"></tbody>
       </table>
     </div>
-    <p class="hint" style="margin:14px 2px 0">
-      Die Seite verfolgt <b>alle</b> Teile des Abrufs (eigener Bestand, eigener Verlauf) – unabhängig davon,
-      welche Teile per E-Mail gemeldet werden. „Mail“ zeigt nur die Teile, die deine Keywords treffen.
-      „Laden“ fragt die Lenovo-API direkt ab – ohne Mail und ohne den gespeicherten State zu ändern.
-    </p>
+    <details class="note">
+      <summary>Wie diese Seite zählt</summary>
+      <p>
+        Die Seite verfolgt <b>alle</b> Teile des Abrufs (eigener Bestand, eigener Verlauf) – unabhängig davon,
+        welche Teile per E-Mail gemeldet werden. „Mail“ zeigt nur die Teile, die deine Keywords treffen.
+        „Laden“ fragt die Lenovo-API direkt ab – ohne Mail und ohne den gespeicherten State zu ändern.
+      </p>
+    </details>
   </section>
 
   <section id="tab-history" hidden>
@@ -372,6 +545,7 @@
 </main>
 
 <div id="toast"></div>
+<div id="lb" class="lb" hidden></div>
 
 <script>
 const $ = (s) => document.querySelector(s);
@@ -546,6 +720,41 @@ function renderSegs() {
   document.querySelectorAll(".seg.view button").forEach(b => b.classList.toggle("on", b.dataset.view === F.view));
 }
 
+/* Aktive Filter als entfernbare Chips – zeigt sofort, warum weniger Treffer bleiben. */
+function renderActiveFilters() {
+  const box = $("#afilters");
+  const q = F.q.trim();
+  const items = [];
+  if (q) items.push(["q", "„" + q + "“"]);
+  if (F.cpu) items.push(["cpu", F.cpu]);
+  if (F.gen) items.push(["gen", F.gen]);
+  if (F.ram !== "") items.push(["ram", F.ram === "0" ? "RAM unbekannt" : F.ram + " GB"]);
+  if (F.gpu) items.push(["gpu", F.gpu]);
+  if (F.kind) items.push(["kind", F.kind === "diskret" ? "dediziert" : "integriert"]);
+  box.replaceChildren();
+  box.hidden = !items.length;
+  for (const [key, label] of items) {
+    const b = el("button", "fchip", label + " ✕");
+    b.type = "button";
+    b.title = "Diesen Filter entfernen";
+    b.addEventListener("click", () => {
+      F[key] = "";
+      limit = STEP;
+      saveF();
+      renderFilters();
+      render();
+    });
+    box.append(b);
+  }
+}
+
+function resetFilters() {
+  Object.assign(F, { q: "", cpu: "", gen: "", ram: "", gpu: "", kind: "", sort: "stock" });
+  limit = STEP;
+  saveF();
+  applyAll();
+}
+
 /* ---------- Auswahl + Sortierung ---------- */
 function perfCmp(a, b) {
   const x = a.perf || [0, 0, 0], y = b.perf || [0, 0, 0];
@@ -611,15 +820,31 @@ function thumb(p) {
   }
   const badge = el("span", "stock-badge" + (p.stock > 0 ? "" : " zero"), p.stock + "×");
   box.append(badge);
+  box.tabIndex = 0;
+  box.setAttribute("role", "button");
+  box.setAttribute("aria-label", "Alle Bilder zu " + (p.name || p.id) + " anzeigen");
+  box.addEventListener("click", () => openGallery(p));
+  box.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openGallery(p); }
+  });
   return box;
 }
 function card(p) {
   const c = el("article", "card");
-  c.append(thumb(p));
+  const pic = thumb(p);
+  if (p.mail && data.mail_count < data.parts.length) {
+    const tag = el("span", "tag", "MAIL");
+    tag.title = "Teil trifft deine Mail-Keywords";
+    pic.append(tag);
+  }
+  c.append(pic);
   const body = el("div", "body");
-  if (p.mail && data.mail_count < data.parts.length) body.append(el("span", "tag", "MAIL"));
-  body.append(el("div", "name", p.name || "–"));
-  body.append(el("div", "pid", p.id));
+  const nameDiv = el("div", "name");
+  nameDiv.append(partLink(p, p.name || "–"));
+  body.append(nameDiv);
+  const pidDiv = el("div", "pid");
+  pidDiv.append(partLink(p, p.id));
+  body.append(pidDiv);
   const chips = el("div", "chips");
   if (p.cpu) {
     const chip = el("span", "chip", shortCpu(p));
@@ -642,8 +867,8 @@ function card(p) {
     }
     chips.append(gchip);
   }
-  if (!chips.children.length) chips.append(el("span", "chip none", "keine Tech-Daten"));
-  body.append(chips);
+  if (chips.children.length) body.append(chips);
+  body.append(laptopLine(p));
   const foot = el("div", "foot");
   const pr = el("div");
   pr.append(el("span", "price", money(p.price, data.currency)));
@@ -653,6 +878,7 @@ function card(p) {
   } else if (p.back) {
     foot.append(el("span", "delta back", "zurück"));
   }
+  foot.append(partLink(p, "Lenovo ↗", "lenovo-link"));
   body.append(foot);
   c.append(body);
   return c;
@@ -665,13 +891,20 @@ function tableRow(p) {
   if (p.image) {
     const img = document.createElement("img");
     img.loading = "lazy"; img.alt = ""; img.src = p.image;
+    img.title = "Alle Bilder anzeigen";
     img.addEventListener("error", () => img.remove());
+    img.addEventListener("click", () => openGallery(p));
     tdImg.append(img);
   }
   tr.append(tdImg);
   tr.append(el("td", "num", fmt(p.stock)));
-  tr.append(el("td", "id", p.id));
-  tr.append(el("td", null, p.name || "–"));
+  const tdId = el("td", "id");
+  tdId.append(partLink(p, p.id));
+  tr.append(tdId);
+  const tdName = el("td");
+  tdName.append(partLink(p, p.name || "–", "plink"));
+  tdName.append(laptopLine(p));
+  tr.append(tdName);
   tr.append(el("td", null, shortCpu(p) || "–"));
   tr.append(el("td", "num", p.ram ? p.ram + " GB" : "–"));
   tr.append(el("td", null, shortGpu(p) || "–"));
@@ -682,6 +915,164 @@ function tableRow(p) {
   return tr;
 }
 
+/* ---------- Lenovo-Suche & Bild-Dialog ---------- */
+// Deep-Links von Lenovo selbst (aus dem Teilen-Menü der Teilesuche):
+//   Teil:  /parts-lookup?partId=<Teilenummer>&subsource=sharelink
+//          → Suchfeld ist gefüllt, Treffer inkl. Preis werden angezeigt.
+//   Gerät: /products/<Maschinentyp>  → leitet auf die Produktseite um.
+// Beides im Browser geprüft (5B21J30477, 5B20Z26862, 20KU→ThinkPad E485).
+const LENOVO_PARTS = "https://support.lenovo.com/de/de/parts-lookup?partId=";
+const LENOVO_PRODUCTS = "https://support.lenovo.com/de/de/products/";
+
+function partUrl(id) { return LENOVO_PARTS + encodeURIComponent(id) + "&subsource=sharelink"; }
+function modelUrl(mt) { return LENOVO_PRODUCTS + encodeURIComponent(mt); }
+
+/// Link auf die Lenovo-Teilesuche mit schon eingetragener Teilenummer.
+function partLink(p, text, cls) {
+  const a = el("a", cls, text);
+  a.href = partUrl(p.id);
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.title = "Lenovo-Teilesuche für " + p.id + " öffnen";
+  return a;
+}
+
+/// „Notebook: 20KU · 20KV" – Maschinentyps aus der Lenovo-Detail-API.
+function laptopLine(p) {
+  const wrap = el("div", "laptop");
+  const types = (p.products || []).slice(0, 4);
+  wrap.append(el("span", null, "Notebook:"));
+  if (!types.length) {
+    const none = el("span", null, "Typ unbekannt");
+    none.title = "Lenovo nennt für dieses Teil keinen Maschinentyp";
+    wrap.append(none);
+    return wrap;
+  }
+  types.forEach((t, i) => {
+    if (i) wrap.append(document.createTextNode(" · "));
+    const a = el("a", "mt", t);
+    a.href = modelUrl(t);
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.title = "Lenovo-Produktseite von Gerätetyp " + t + " öffnen";
+    wrap.append(a);
+  });
+  return wrap;
+}
+
+/// Lenovo-Bilder sind deterministisch: <id>_A … <id>_E (fehlende liefern 404).
+function imageSet(p) {
+  return ["A", "B", "C", "D", "E"].map(s =>
+    "https://download.lenovo.com/Images/Parts/" + p.id + "/" + p.id + "_" + s + ".jpg");
+}
+
+/// Zustand des offenen Dialogs: Bildliste, aktueller Index, fehlende Varianten.
+let gallery = null;
+
+function openGallery(p) {
+  const lb = $("#lb");
+  const list = imageSet(p);
+  gallery = { list, idx: 0, broken: new Set() };
+
+  const top = el("div", "lb-top");
+  top.append(el("span", "t", p.name || p.id));
+  top.append(el("span", "s", p.id));
+  if ((p.products || []).length) top.append(el("span", "s", p.products.join(" / ")));
+  const count = el("span", "s lb-count");
+  top.append(count);
+  const close = el("button", "x", "Schließen ✕");
+  close.type = "button";
+  close.addEventListener("click", closeGallery);
+  top.append(close);
+
+  const stage = el("div", "lb-stage");
+  const img = document.createElement("img");
+  img.alt = (p.name || p.id) + " – Bild";
+  img.decoding = "async";
+  // Variante gibt es nicht → überspringen; fehlen alle, bleibt ein Hinweis.
+  img.addEventListener("error", () => {
+    gallery.broken.add(gallery.idx);
+    if (gallery.broken.size < gallery.list.length) {
+      stepImage(1);
+    } else {
+      img.hidden = true;
+      stage.append(el("span", "lb-empty", "keine Bilder verfügbar"));
+      count.textContent = "";
+    }
+  });
+  const prev = el("button", "lb-nav prev", "‹");
+  const next = el("button", "lb-nav next", "›");
+  for (const [b, dir, label] of [[prev, -1, "vorheriges"], [next, 1, "nächstes"]]) {
+    b.type = "button";
+    b.title = label.charAt(0).toUpperCase() + label.slice(1) + " Bild (Pfeiltasten)";
+    b.setAttribute("aria-label", b.title);
+    b.addEventListener("click", () => stepImage(dir));
+  }
+  stage.append(prev, img, next);
+
+  const foot = el("div", "lb-foot");
+  const search = document.createElement("a");
+  search.href = partUrl(p.id);
+  search.target = "_blank";
+  search.rel = "noopener";
+  search.textContent = "Bei Lenovo nach " + p.id + " suchen ↗";
+  search.title = "Lenovo-Teilesuche mit eingetragener Teilenummer";
+  foot.append(search);
+  foot.append(el("span", null, "Bilder in Originalgröße von download.lenovo.com"));
+
+  gallery.img = img;
+  gallery.count = count;
+  gallery.prev = prev;
+  gallery.next = next;
+  lb.replaceChildren(top, stage, foot);
+  lb.hidden = false;
+  document.body.classList.add("locked");
+  showImage(0);
+}
+
+/// Zeigt genau ein Bild – Pfeile blättern (zyklisch), fehlende werden übersprungen.
+function showImage(idx) {
+  const g = gallery;
+  if (!g || !g.list.length) return;
+  const n = g.list.length;
+  g.idx = ((idx % n) + n) % n;
+  g.img.hidden = false;
+  g.img.src = g.list[g.idx];
+  g.count.textContent = n > 1 ? (g.idx + 1) + " / " + n : "";
+  const many = n > 1;
+  g.prev.hidden = !many;
+  g.next.hidden = !many;
+}
+
+function stepImage(dir) {
+  const g = gallery;
+  if (!g) return;
+  const n = g.list.length;
+  for (let k = 1; k <= n; k++) {
+    const i = ((g.idx + dir * k) % n + n) % n;
+    if (!g.broken.has(i)) { showImage(i); return; }
+  }
+}
+
+function closeGallery() {
+  const lb = $("#lb");
+  gallery = null;
+  lb.hidden = true;
+  lb.replaceChildren();
+  document.body.classList.remove("locked");
+}
+// Der Container steht im Markup vor dem Skript; der Guard schützt davor,
+// dass ein fehlendes Element das gesamte Skript (inkl. Datenladen) abbricht.
+const lbRoot = $("#lb");
+if (lbRoot) lbRoot.addEventListener("click", (e) => { if (e.target.id === "lb") closeGallery(); });
+document.addEventListener("keydown", (e) => {
+  const lb = $("#lb");
+  if (!lb || lb.hidden) return;
+  if (e.key === "Escape") closeGallery();
+  else if (e.key === "ArrowLeft") { e.preventDefault(); stepImage(-1); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); stepImage(1); }
+});
+
 /* ---------- Zeichnen ---------- */
 function render() {
   const rows = selected();
@@ -690,6 +1081,7 @@ function render() {
     ? fmt(rows.length) + " Teile"
     : fmt(rows.length) + " von " + fmt(data.parts.length) + " Teilen";
   $("#sumline").textContent = "· " + fmt(stockSum) + " Stück";
+  renderActiveFilters();
 
   const cards = $("#cards");
   cards.replaceChildren();
@@ -699,6 +1091,12 @@ function render() {
     const e = el("div", "empty");
     e.append(el("b", null, "Keine Teile passen"));
     e.append(document.createTextNode("Filter lockern oder zurücksetzen."));
+    if (F.q || F.cpu || F.gen || F.ram !== "" || F.gpu || F.kind) {
+      const b = el("button", "btn", "Filter zurücksetzen");
+      b.type = "button";
+      b.addEventListener("click", resetFilters);
+      e.append(b);
+    }
     cards.append(e);
   } else if (F.view === "cards") {
     for (const p of rows.slice(0, limit)) cards.append(card(p));
@@ -837,6 +1235,25 @@ async function saveConfig() {
   }
 }
 
+/* ---------- Design-Umschalter (hell / dunkel / OLED) ---------- */
+const THEMES = ["light", "dark", "oled"];
+
+function applyTheme(theme) {
+  const t = THEMES.includes(theme) ? theme : "light";
+  document.documentElement.dataset.theme = t;
+  for (const b of document.querySelectorAll("[data-theme-opt]")) {
+    const on = b.dataset.themeOpt === t;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  try { localStorage.setItem("lt-theme", t); } catch (e) { /* privater Modus */ }
+}
+
+for (const b of document.querySelectorAll("[data-theme-opt]")) {
+  b.addEventListener("click", () => applyTheme(b.dataset.themeOpt));
+}
+applyTheme(document.documentElement.dataset.theme);
+
 /* ---------- Tabs / Events ---------- */
 function showTab(name) {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
@@ -857,12 +1274,7 @@ for (const [id, key] of [["#fCpu", "cpu"], ["#fGen", "gen"], ["#fRam", "ram"], [
   $(id).addEventListener("change", (e) => { F[key] = e.target.value; limit = STEP; saveF(); render(); });
 }
 $("#fSort").addEventListener("change", (e) => { F.sort = e.target.value; limit = STEP; saveF(); render(); });
-$("#reset").addEventListener("click", () => {
-  Object.assign(F, { q: "", cpu: "", gen: "", ram: "", gpu: "", kind: "", sort: "stock" });
-  limit = STEP;
-  saveF(); applyAll();
-  toast("Filter zurückgesetzt.");
-});
+$("#reset").addEventListener("click", () => { resetFilters(); toast("Filter zurückgesetzt."); });
 $("#live").addEventListener("click", laden);
 $("#hreload").addEventListener("click", loadHistory);
 $("#creload").addEventListener("click", loadConfig);

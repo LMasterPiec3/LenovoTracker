@@ -296,6 +296,11 @@ fn base64_decode(input: &str) -> Option<Vec<u8>> {
 // ---------------------------------------------------------------------------
 
 fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
+    if req.method == "GET" {
+        if let Some(rest) = req.path.strip_prefix("/api/thumb/") {
+            return thumb_response(cfg, rest);
+        }
+    }
     match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/") | ("GET", "/index.html") => Response {
             status: 200,
@@ -303,7 +308,7 @@ fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
             body: PAGE.as_bytes().to_vec(),
             extra: "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; \
                     script-src 'unsafe-inline'; connect-src 'self'; \
-                    img-src https://download.lenovo.com data:; form-action 'none'; \
+                    img-src 'self' https://download.lenovo.com data:; form-action 'none'; \
                     frame-ancestors 'none'\r\n"
                 .into(),
         },
@@ -313,6 +318,26 @@ fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
         ("GET", "/api/config") => config_json(config_path),
         ("POST", "/api/config") => save_config_text(config_path, &req.body),
         _ => Response::error(404, "nicht gefunden"),
+    }
+}
+
+/// Listen-Vorschau: liefert das gecachte 320-px-JPEG. Die Originale (2736×1824,
+/// ~275 KB) gehen nur über die direkte Lenovo-URL in den Bild-Dialog.
+fn thumb_response(cfg: &Config, raw: &str) -> Response {
+    let id = raw.split('?').next().unwrap_or("");
+    if !crate::api::safe_part_id(id) {
+        return Response::error(400, "ungültige Teile-ID");
+    }
+    match crate::thumb::thumb(cfg, id, crate::thumb::THUMB_WIDTH) {
+        Some(bytes) => Response {
+            status: 200,
+            ctype: "image/jpeg",
+            body: bytes,
+            extra: "Cache-Control: public, max-age=604800\r\n\
+                    X-Content-Type-Options: nosniff\r\n"
+                .into(),
+        },
+        None => Response::error(404, "kein Bild"),
     }
 }
 
@@ -422,6 +447,9 @@ fn state_json(cfg: &Config) -> Response {
         .iter()
         .map(|(id, g)| json!({ "id": id, "name": g.n, "stock": g.s, "since": g.t }))
         .collect();
+    // Maschinentyp aus dem Cache des letzten Laufs (die Liste selbst liefert
+    // beim reinen State-Abruf keine Teile).
+    let products = crate::state::load_products_cache(&crate::state::products_cache_path(cfg));
     Response::json(&json!({
         "source": "state",
         "scope": if mail_only { "mail" } else { "all" },
@@ -439,6 +467,7 @@ fn state_json(cfg: &Config) -> Response {
             None,
             gone_map,
             &keywords,
+            &products,
         ),
         "gone": gone,
         "pending": pending,
@@ -481,6 +510,13 @@ fn live_json(cfg: &Config) -> Response {
         Ok(o) => o,
         Err(e) => return Response::error(502, &format!("Abruf fehlgeschlagen: {}", e)),
     };
+    // Maschinentyp für den nächsten State-Abruf mitschreiben.
+    if let Err(e) = crate::state::save_products_cache(
+        &crate::state::products_cache_path(cfg),
+        &outcome.products,
+    ) {
+        log_warn!("Notebook-Typ-Cache nicht schreibbar: {}", e);
+    }
     // Alles zeigen, was die API liefert – der Mail-Filter gilt nur für Mails.
     let map = outcome.boards;
     let specs = match crate::load_specs_for_all(
@@ -522,7 +558,15 @@ fn live_json(cfg: &Config) -> Response {
         "keywords": keywords,
         "mail_count": mail_parts,
         "currency": currency_symbol(&cfg.api.url),
-        "parts": parts_json(&map, &specs, Some(&outcome.prices), Some(base), base_gone, &keywords),
+        "parts": parts_json(
+            &map,
+            &specs,
+            Some(&outcome.prices),
+            Some(base),
+            base_gone,
+            &keywords,
+            &outcome.products,
+        ),
         "gone": view.gone.len(),
         "pending": load_pending(&pending_path(cfg))
             .map(|p| json!({ "parts": p.parts, "total": p.total, "ts": p.ts })),
@@ -538,6 +582,7 @@ fn parts_json(
     base: Option<&BTreeMap<String, PartState>>,
     gone: &BTreeMap<String, GonePart>,
     keywords: &[String],
+    products: &BTreeMap<String, Vec<String>>,
 ) -> Vec<serde_json::Value> {
     let mut rows: Vec<(&String, &PartState)> = parts.iter().collect();
     rows.sort_unstable_by(|a, b| b.1.s.cmp(&a.1.s).then_with(|| a.0.cmp(b.0)));
@@ -545,6 +590,8 @@ fn parts_json(
         .map(|(id, p)| {
             let line = specs.get(id).map(String::as_str).unwrap_or("");
             let f = facets(line);
+            // Maschinentyp („20KU") aus der Teileliste.
+            let prod = products.get(id).cloned().unwrap_or_default();
             let delta = base.map(|b| match b.get(id) {
                 Some(old) => json!(p.s - old.s),
                 None => match gone.get(id) {
@@ -563,8 +610,11 @@ fn parts_json(
                 // Erfüllt das Teil die Mail-Keywords? Die Oberfläche kann so
                 // zwischen „allem“ und der Mail-Liste umschalten.
                 "mail": keyword_matches(id, &p.n, line, keywords),
-                // Bilder sind bei Lenovo deterministisch ableitbar (Lenovo-API.md §10).
-                "image": format!("https://download.lenovo.com/Images/Parts/{id}/{id}_A.jpg"),
+                // Liste: kleines, gecachtes Vorschaubild (das Original ist ~275 KB);
+                // der Bild-Dialog baut die Original-URLs selbst aus der ID.
+                "image": format!("/api/thumb/{id}"),
+                // Maschinentyps („20KU") – sagt, zu welchem Notebook das Board gehört.
+                "products": prod,
                 "cpu": f.cpu,
                 "cpu_brand": f.cpu_brand,
                 "cpu_series": f.cpu_series,

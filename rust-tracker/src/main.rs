@@ -16,6 +16,7 @@ mod guard;
 mod mail;
 mod report;
 mod state;
+mod thumb;
 mod webui;
 // Die Module hängen über `crate::…` voneinander ab; die Re-Exports machen ihre
 // Items im Wurzelmodul verfügbar (kein zusätzlicher Glob-Import nötig).
@@ -254,7 +255,13 @@ fn run_once(cfg: &Config, dry_run: bool) -> i32 {
     });
 
     let outcome = match outcome {
-        Ok(o) => o,
+        Ok(o) => {
+            // Notebook-Typ (Maschinentyp) für die Web-UI mitschreiben.
+            if let Err(e) = save_products_cache(&products_cache_path(cfg), &o.products) {
+                log_warn!("Notebook-Typ-Cache nicht schreibbar: {}", e);
+            }
+            o
+        }
         Err(e) => {
             log_error!("Abruf fehlgeschlagen – kein State-Update: {}", e);
             // Stoerungszaehler (nur echte Laeufe; Trockenlauf kehrt vorher um)
@@ -1575,7 +1582,8 @@ mod tests {
         assert_eq!(ai.gpu_bench, Some(3_421)); // Radeon 890M
         assert_eq!(uma("AMD Ryzen AI 9 365").gpu_bench, Some(3_335)); // 880M
         assert_eq!(uma("AMD Ryzen AI 7 350").gpu_bench, Some(2_565)); // 860M
-        assert_eq!(uma("AMD Ryzen AI 7 350").cpu_bench, None);
+                                                                      // Inzwischen in der Tabelle nachgetragen (vorher Lücke).
+        assert!(uma("AMD Ryzen AI 7 350").cpu_bench.is_some());
         // Intel 13./14. Gen: HX hat nur UHD 770, „…20H" weniger EUs.
         assert_eq!(uma("Intel Core i7-14700HX").gpu_bench, Some(2_655));
         assert_eq!(uma("Intel Core i9-14900HX").gpu_bench, Some(2_655));

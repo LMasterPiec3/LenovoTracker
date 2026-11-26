@@ -34,6 +34,10 @@ pub struct ApiCfg {
     pub curl_path: String,
     #[serde(default = "default_impersonate")]
     pub impersonate_target: String,
+    /// curl für die Teilbilder (download.lenovo.com liefert ohne Bot-Schutz
+    /// direkt aus; das normale curl genügt, Impersonation ist nicht nötig).
+    #[serde(default = "default_image_curl_path")]
+    pub image_curl_path: String,
     /// Startabstand zwischen Specs-Batches in ms (Rate-Limit-Schutz).
     #[serde(default = "default_specs_gap_ms")]
     pub specs_gap_ms: u64,
@@ -121,6 +125,9 @@ fn default_curl_path() -> String {
 }
 fn default_impersonate() -> String {
     "chrome124".into()
+}
+fn default_image_curl_path() -> String {
+    "curl".into()
 }
 fn default_specs_gap_ms() -> u64 {
     250
