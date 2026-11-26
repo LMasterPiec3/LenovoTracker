@@ -22,6 +22,13 @@ jobs:
           # Kein Git-Token im Workspace; der Release-Upload nutzt seinen eigenen GITHUB_TOKEN.
           persist-credentials: false
 
+      # Warnungen sind Fehler: Clippy läuft auf dem Runner-Toolchain, nicht im
+      # Alpine-Container (dort ist das Binary-Ziel, hier nur die Prüfung).
+      - name: Clippy
+        run: |
+          rustup component add clippy
+          cargo clippy --manifest-path rust-tracker/Cargo.toml --all-targets -- -D warnings
+
       # Im Alpine-Container bauen: gleiche musl-Umgebung wie im Build-CT.
       # Der frühere Ubuntu-Build mit rust-lld/musl-tools erzeugte ein deutlich
       # größeres Binary; Alpine + cc liefert den ~1,2-MB-static-Stand.
@@ -50,10 +57,14 @@ jobs:
           fi
 
       # Schutz vor einem Rückfall auf das alte, aufgeblähte Binary (2,28 MB).
+      # Gemessene musl-Binaries dieser Variante: ohne Web-UI ~1,2 MB, mit
+      # Web-UI (eingebettete Seite + CPU/GPU-Tabellen + JPEG-Vorschauen)
+      # 1,94 MB – die 1,5-MB-Grenze der reinen CLI-Variante ist damit nicht
+      # mehr haltbar, die Grenze bleibt aber eng am Ist-Stand.
       - name: Größen-Obergrenze prüfen
         run: |
           BIN=rust-tracker/target/release/lenovo-tracker
-          MAX=1500000   # ~1,5 MB (Web-UI + eingebettete Seite)
+          MAX=2000000   # ~2,0 MB (Web-UI-Variante, Ist-Stand 1,94 MB)
           SIZE=$(stat -c %s "$BIN")
           echo "Binary: $SIZE Bytes (Obergrenze: $MAX Bytes)"
           if [ "$SIZE" -gt "$MAX" ]; then
@@ -77,6 +88,6 @@ jobs:
           make_latest: true
           body: |
             Automatischer statischer musl-Build von `main` im Alpine-Container
-            (gleicher Build wie das Setup; ~1,2 MB).
+            (gleicher Build wie das Setup; ~1,9 MB).
             Download: `lenovo-tracker` + `lenovo-tracker.sha256` — das Selbst-Update
             prüft die Prüfsumme vor der Übernahme.

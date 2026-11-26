@@ -9,7 +9,7 @@ API-Reverse-Engineering (Endpunkte, Bot-Schutz, Part-Schema): **[Lenovo-API.md](
 ```
 Proxmox-Host
 └── LXC „lenovo-tracker-rust" (Alpine, 16 MB RAM / 32 MB Disk – belegt ~10,7 MB, Image ~12 MB)
-    ├── /opt/lenovo-tracker/lenovo-tracker        # Rust-Binary (~1,2 MB, statisch; `--serve` = Web-UI)
+    ├── /opt/lenovo-tracker/lenovo-tracker        # Rust-Binary (~1,9 MB, statisch; `--serve` = Web-UI)
     ├── /opt/lenovo-tracker/curl-impersonate      # Chrome-TLS-Imitation (Akamai, gestrippt ~5 MB)
     ├── /etc/lenovotracker/config.toml            # Konfiguration
     ├── /var/lib/lenovotracker/state.json + history.csv
