@@ -1,0 +1,50 @@
+# Lenovo Clearance-Sale Mainboard-Tracker (Rust-Version)
+# Wird von lenovo-tracker-setup.sh nach /etc/lenovotracker/config.toml
+# generiert — manuelle Kopie anpassen und neu installieren: pct push 105 …
+# Alle Felder inkl. Erklärung: siehe README.md
+
+[api]
+url = "https://support.lenovo.com/de/de/api/v4/lbom/clearanceParts/get"
+referer = "https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
+timeout_seconds = 60
+retries = 3                # Retry-Backoff: 5s, 15s, 45s (kein Retry bei HTTP 403)
+curl_path = "/opt/lenovo-tracker/curl-impersonate"
+impersonate_target = "chrome124"
+specs_gap_ms = 250         # Startabstand zwischen Specs-Batches (ms);
+                           # im CT z. B. 100 testen und Rate-Limit beobachten
+specs_batch = 200          # IDs pro Specs-POST (200 an der API verifiziert);
+                           # 60 = konservativ, bei 4xx wird automatisch halbiert
+
+[tracker]
+interval_minutes = 10      # dokumentarisch — cron steuert das Intervall
+commodity_keys = ["system boards"]   # Filter: Mainboards (lowercase, translationssicher)
+name_keywords = []         # optional: ["RTX"] oder ["B650", "AM5"] — Substring auf Name,
+                           # Teilenummer und technischen Daten; erster Lauf lädt die Specs
+
+[mail]
+mode = "smtp"              # die Rust-Version unterstützt nur smtp (kein Mail-Daemon im CT)
+from = "du@example.de"     # Absender – sollte zur Domain des SMTP-Logins passen
+to = ["du@example.de"]
+extra_recipients = []      # z. B. ["du@anderswo.de"]
+subject_prefix = "[Lenovo Tracker]"
+# SMTP-Login ist OPTIONAL: leer = Plain-SMTP (SPF prüft die Host-IP; Empfänger-
+# Server können die Mail dann als "failed authentication" markieren). Mit Login
+# läuft der Versand authentifiziert über STARTTLS (Provider signiert DKIM/SPF):
+#   Proton:  smtp.protonmail.ch:587 + SMTP-Token (Settings → IMAP/SMTP → SMTP tokens)
+#   Gmail:   smtp.gmail.com:587 + App-Passwort (2FA aktiviert)
+#   Andere:  Submission-Host/Port des Providers (fast immer :587)
+smtp_host = "smtp.example.de"
+smtp_port = 587
+smtp_user = ""             # leer = kein Login (Plain-SMTP)
+smtp_pass = ""             # Token/App-Passwort – NIE das normale Mail-Passwort
+
+[webui]
+# Web-UI: `lenovo-tracker --serve`. Standard ist Loopback (nur per SSH-Tunnel
+# erreichbar), weil die Oberfläche die Config schreiben darf.
+bind = "127.0.0.1:8787"
+# HTTP-Basic-Token (Benutzername egal). Pflicht, sobald bind nicht Loopback ist:
+#   bind = "0.0.0.0:8787"  +  token = "langes-zufallswort"
+token = ""
+
+[paths]
+state_dir = "/var/lib/lenovotracker"   # state.json + history.csv

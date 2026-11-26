@@ -1,0 +1,82 @@
+name: Build musl binary
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Parallele Pushes sollen nicht um das "latest"-Release konkurrieren
+concurrency:
+  group: release-latest
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Kein Git-Token im Workspace; der Release-Upload nutzt seinen eigenen GITHUB_TOKEN.
+          persist-credentials: false
+
+      # Im Alpine-Container bauen: gleiche musl-Umgebung wie im Build-CT.
+      # Der frühere Ubuntu-Build mit rust-lld/musl-tools erzeugte ein deutlich
+      # größeres Binary; Alpine + cc liefert den ~1,2-MB-static-Stand.
+      # Image per Multi-Arch-Digest gepinnt (alpine:3.24), damit ein beweglicher
+      # Tag den Build nicht unbemerkt austauschen kann.
+      - name: Build + Tests (Alpine musl, statisch)
+        run: |
+          docker run --rm \
+            -e CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=cc \
+            -v "$GITHUB_WORKSPACE:/src" \
+            -w /src/rust-tracker \
+            alpine@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf sh -euxc '
+              apk add --no-cache rust cargo build-base musl-dev pkgconf ca-certificates
+              cargo test --release
+              cargo rustc --release -- -C target-feature=+crt-static
+            '
+
+      - name: Statik prüfen
+        run: |
+          BIN=rust-tracker/target/release/lenovo-tracker
+          test -s "$BIN"
+          file "$BIN"
+          if file "$BIN" | grep -q "dynamically linked"; then
+            echo "::error::Binary ist dynamisch gelinkt – Release abgebrochen."
+            exit 1
+          fi
+
+      # Schutz vor einem Rückfall auf das alte, aufgeblähte Binary (2,28 MB).
+      - name: Größen-Obergrenze prüfen
+        run: |
+          BIN=rust-tracker/target/release/lenovo-tracker
+          MAX=1500000   # ~1,5 MB (Web-UI + eingebettete Seite)
+          SIZE=$(stat -c %s "$BIN")
+          echo "Binary: $SIZE Bytes (Obergrenze: $MAX Bytes)"
+          if [ "$SIZE" -gt "$MAX" ]; then
+            echo "::error::Binary ist $SIZE Bytes groß (Obergrenze $MAX) – Release abgebrochen."
+            exit 1
+          fi
+
+      - name: SHA256-Prüfsumme erzeugen
+        run: |
+          (cd rust-tracker/target/release && sha256sum lenovo-tracker) > lenovo-tracker.sha256
+          cat lenovo-tracker.sha256
+
+      - name: Upload to release "latest"
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          tag_name: latest
+          name: Latest build (auto)
+          files: |
+            rust-tracker/target/release/lenovo-tracker
+            lenovo-tracker.sha256
+          make_latest: true
+          body: |
+            Automatischer statischer musl-Build von `main` im Alpine-Container
+            (gleicher Build wie das Setup; ~1,2 MB).
+            Download: `lenovo-tracker` + `lenovo-tracker.sha256` — das Selbst-Update
+            prüft die Prüfsumme vor der Übernahme.

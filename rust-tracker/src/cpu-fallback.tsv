@@ -1,0 +1,111 @@
+# Rueckfall ohne Benchmark: Serie	Generation	Score (Median, -1 = Mindestwert)
+A-Serie	0	6321
+Athlon	0	5465
+Celeron	0	5316
+Core Ultra	0	32015
+Core i3	2	5403
+Core i3	3	6773
+Core i3	4	11236
+Core i3	5	6613
+Core i3	6	11376
+Core i3	7	11333
+Core i3	8	13948
+Core i3	9	16152
+Core i3	10	16895
+Core i3	11	16361
+Core i3	12	24605
+Core i3	13	23032
+Core i3	14	26426
+Core i5	2	7382
+Core i5	3	8577
+Core i5	4	11790
+Core i5	5	10463
+Core i5	6	12451
+Core i5	7	12527
+Core i5	8	15097
+Core i5	9	16408
+Core i5	10	18163
+Core i5	11	22803
+Core i5	12	27514
+Core i5	13	33181
+Core i5	14	37748
+Core i7	2	7551
+Core i7	3	9023
+Core i7	4	14073
+Core i7	5	14134
+Core i7	6	14146
+Core i7	7	15034
+Core i7	8	15827
+Core i7	9	15966
+Core i7	10	18949
+Core i7	11	22252
+Core i7	12	31760
+Core i7	13	37794
+Core i7	14	53711
+Core i9	7	28201
+Core i9	9	25505
+Core i9	10	27524
+Core i9	11	29565
+Core i9	12	41454
+Core i9	13	51960
+Core i9	14	59203
+Pentium	0	6271
+Ryzen 3	2	11395
+Ryzen 3	3	12722
+Ryzen 3	4	17280
+Ryzen 3	5	19887
+Ryzen 3	7	17179
+Ryzen 3	8	25367
+Ryzen 3	13	12599
+Ryzen 5	1	15364
+Ryzen 5	2	16089
+Ryzen 5	3	15376
+Ryzen 5	4	20441
+Ryzen 5	5	23205
+Ryzen 5	6	24705
+Ryzen 5	7	27654
+Ryzen 5	8	29895
+Ryzen 5	9	40873
+Ryzen 7	1	17430
+Ryzen 7	2	19361
+Ryzen 7	3	25520
+Ryzen 7	4	22909
+Ryzen 7	5	26339
+Ryzen 7	6	27624
+Ryzen 7	7	33500
+Ryzen 7	8	33609
+Ryzen 7	9	46298
+Ryzen 9	3	31726
+Ryzen 9	4	22577
+Ryzen 9	5	29218
+Ryzen 9	6	31022
+Ryzen 9	7	49032
+Ryzen 9	8	35919
+Ryzen 9	9	59331
+Xeon	0	19848
+sonstige	0	7840
+A-Serie	-1	3792
+Athlon	-1	2019
+Celeron	-1	1722
+Core Ultra	-1	25414
+Core i3	0	11488
+Core i3	-1	3832
+Core i5	0	13618
+Core i5	-1	4758
+Core i7	0	15397
+Core i7	-1	5312
+Core i9	0	30410
+Core i9	-1	18812
+Pentium	-1	2596
+Ryzen 3	0	16828
+Ryzen 3	-1	8606
+Ryzen 5	0	22859
+Ryzen 5	-1	10402
+Ryzen 7	0	26462
+Ryzen 7	-1	11961
+Ryzen 9	0	32899
+Ryzen 9	-1	22403
+Xeon	-1	5112
+sonstige	-1	1407
+	0	14232
+Ryzen AI	0	43226

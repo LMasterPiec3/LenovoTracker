@@ -1,0 +1,193 @@
+# iGPU je CPU-Modell (exakt): CPU-Schluessel<TAB>iGPU<TAB>TimeSpy<TAB>Quelle<TAB>GPU-Schluessel
+amd3015e	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amd3020e	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amda129700p	Radeon R7 (Bristol Ridge)	450	est	-
+amda49120c	Radeon R3	176	pm3d	r3
+amda69220	Radeon R4	191	pm3d	r4
+amda69220c	Radeon R4	191	pm3d	r4
+amdathlon300u	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdathlon3050e	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdathlon3050u	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdathlon3150u	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdathlon7120u	AMD Radeon 610M	515	ts	610m
+amdryzen33200u	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdryzen33250c	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdryzen33250u	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d	vega3
+amdryzen33300up	Radeon Vega 6 (Ryzen 2000/3000)	699	pm3d	vega6
+amdryzen34300u	AMD Radeon RX Vega 5 (Ryzen 4000/5000)	733	ts	rxvega5
+amdryzen35300u	AMD Radeon RX Vega 6 (Ryzen 4000/5000)	852	ts	rxvega6
+amdryzen35425u	AMD Radeon RX Vega 6 (Ryzen 4000/5000)	852	ts	rxvega6
+amdryzen37320u	AMD Radeon 610M	515	ts	610m
+amdryzen37330u	AMD Radeon 610M	515	ts	610m
+amdryzen53500c	Radeon Vega 8 (Ryzen 2000/3000)	851	pm3d	vega8
+amdryzen53500u	Radeon Vega 8 (Ryzen 2000/3000)	851	pm3d	vega8
+amdryzen53500up	Radeon Vega 8 (Ryzen 2000/3000)	851	pm3d	vega8
+amdryzen53550h	Radeon Vega 8 (Ryzen 2000/3000)	851	pm3d	vega8
+amdryzen54500u	AMD Radeon RX Vega 6 (Ryzen 4000/5000)	852	ts	rxvega6
+amdryzen54600u	AMD Radeon RX Vega 6 (Ryzen 4000/5000)	852	ts	rxvega6
+amdryzen54650u	AMD Radeon RX Vega 6 (Ryzen 4000/5000)	852	ts	rxvega6
+amdryzen54650up	AMD Radeon RX Vega 6 (Ryzen 4000/5000)	852	ts	rxvega6
+amdryzen55500u	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen55600h	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen55600u	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen55625u	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen55650up	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen57530u	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen72700up	AMD Radeon RX Vega 10 (Ryzen 2000/3000)	737	ts	rxvega10
+amdryzen73700u	AMD Radeon RX Vega 10 (Ryzen 2000/3000)	737	ts	rxvega10
+amdryzen73700up	AMD Radeon RX Vega 10 (Ryzen 2000/3000)	737	ts	rxvega10
+amdryzen74700u	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen74750up	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts	rxvega7
+amdryzen74800u	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen75700u	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen75800u	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen75850up	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen75875up	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts	rxvega8
+amdryzen76850hpro	AMD Radeon 680M	2298	ts	680m
+amdryzenai7350	AMD Radeon 860M	2565	ts	860m
+amdryzenai9365	AMD Radeon 880M	3335	ts	880m
+amdryzenai9hx370	AMD Radeon 890M	3421	ts	890m
+amdryzenai9hx375	AMD Radeon 890M	3421	ts	890m
+amdryzenaimax390	AMD Radeon 890M	3421	ts	890m
+amdryzenaimax395	AMD Radeon 890M	3421	ts	890m
+intelceleron3965u	Intel HD 610	375	pm3d	hd610
+intelceleron5205u	Intel UHD Graphics 610	194	ts	uhd610
+intelceleron6305	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelceleronj4025	Intel UHD Graphics 600	109	ts	uhd600
+intelceleronn3350	Intel HD 500	170	pm3d	hd500
+intelceleronn4000	Intel UHD Graphics 600	109	ts	uhd600
+intelceleronn4020	Intel UHD Graphics 600	109	ts	uhd600
+intelceleronn4100	Intel UHD Graphics 600	109	ts	uhd600
+intelceleronn4120	Intel UHD Graphics 600	109	ts	uhd600
+intelceleronn4500	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelceleronn5100	Intel UHD Graphics 24EUs (Alder Lake-N)	321	ts	uhd24eus
+intelcorei31005g1	Intel UHD Graphics G1 (32 EU, Ice Lake)	450	est	-
+intelcorei310110u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei31115g4	Intel UHD Graphics Xe G4 48EUs	801	ts	uhdxeg448eus
+intelcorei31215u	Intel UHD Graphics 64EUs (Alder Lake 12th Gen)	1110	ts	uhd64eus
+intelcorei31220p	Intel UHD Graphics 64EUs (Alder Lake 12th Gen)	1110	ts	uhd64eus
+intelcorei36100u	Intel HD 520	476	pm3d	hd520
+intelcorei37020u	Intel HD Graphics 620	506	pm3d	hd620
+intelcorei37100u	Intel HD Graphics 620	506	pm3d	hd620
+intelcorei37130u	Intel HD Graphics 620	506	pm3d	hd620
+intelcorei38130u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei38145u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei510210u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei510300h	Intel UHD 630	698	pm3d	uhd630
+intelcorei510310u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei51035g1	Intel UHD Graphics G1 (32 EU, Ice Lake)	450	est	-
+intelcorei51035g4	Intel Iris Plus Graphics G4 (48 EU, Ice Lake)	800	est	-
+intelcorei511300h	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei51130g7	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei511320h	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei51135g7	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei51140g7	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei51145g7	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei51235u	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei51240p	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei512450h	Intel UHD Graphics (13. Gen, 48 EU)	832	est	-
+intelcorei512450hx	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelcorei512600hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei51335u	Intel Iris Xe Graphics G7 80EUs	1181	ts	irisxeg780eus
+intelcorei513420h	Intel UHD Graphics (13. Gen, 48 EU)	832	est	-
+intelcorei513450hx	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelcorei513500hx	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelcorei513600hx	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelcorei514450hx	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelcorei514500hx	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelcorei55200u	Intel HD 5500	326	pm3d	hd5500
+intelcorei56200u	Intel HD 520	476	pm3d	hd520
+intelcorei56300u	Intel HD 520	476	pm3d	hd520
+intelcorei57200u	Intel HD Graphics 620	506	pm3d	hd620
+intelcorei57300hq	Intel HD 630	608	pm3d	hd630
+intelcorei57300u	Intel HD Graphics 620	506	pm3d	hd620
+intelcorei57y54	Intel HD 615	402	pm3d	hd615
+intelcorei57y57	Intel HD 615	402	pm3d	hd615
+intelcorei58250u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei58265u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei58300h	Intel UHD 630	698	pm3d	uhd630
+intelcorei58350u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei58365u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei59300h	Intel UHD 630	698	pm3d	uhd630
+intelcorei59300hf	Intel UHD 630	698	pm3d	uhd630
+intelcorei59400h	Intel UHD 630	698	pm3d	uhd630
+intelcorei710510u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei710610u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei71065g7	Intel Iris Plus Graphics G7 (64 EU, Ice Lake)	982	pm3d	irisplus
+intelcorei710710u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei710750h	Intel UHD 630	698	pm3d	uhd630
+intelcorei710850h	Intel UHD 630	698	pm3d	uhd630
+intelcorei710875h	Intel UHD 630	698	pm3d	uhd630
+intelcorei711370h	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei71165g7	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei711800h	Intel UHD Graphics Xe 32EUs (Tiger Lake-H)	658	ts	uhdxe32eus
+intelcorei71180g7	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei71185g7	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei71255u	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei71260p	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei712650h	Intel UHD Graphics 64EUs (Alder Lake 12th Gen)	1110	ts	uhd64eus
+intelcorei712650hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei712700h	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei712800h	Intel Iris Xe Graphics G7 96EUs	1560	ts	irisxeg796eus
+intelcorei712800hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713620h	Intel UHD Graphics 64EUs (Alder Lake 12th Gen)	1110	ts	uhd64eus
+intelcorei713650hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713700hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei713850hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei714650hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei714700hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei76500u	Intel HD 520	476	pm3d	hd520
+intelcorei76560u	Intel Iris 540	679	pm3d	iris540
+intelcorei76600u	Intel HD 520	476	pm3d	hd520
+intelcorei77500u	Intel HD Graphics 620	506	pm3d	hd620
+intelcorei77600u	Intel HD Graphics 620	506	pm3d	hd620
+intelcorei77700hq	Intel HD 630	608	pm3d	hd630
+intelcorei77820hq	Intel HD 630	608	pm3d	hd630
+intelcorei78550u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei78565u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei78650u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei78665u	Intel UHD Graphics 620	566	pm3d	uhd620
+intelcorei78750h	Intel UHD 630	698	pm3d	uhd630
+intelcorei78850h	Intel UHD 630	698	pm3d	uhd630
+intelcorei79750h	Intel UHD 630	698	pm3d	uhd630
+intelcorei79750hf	Intel UHD 630	698	pm3d	uhd630
+intelcorei79850h	Intel UHD 630	698	pm3d	uhd630
+intelcorei911950h	Intel UHD Graphics Xe 32EUs (Tiger Lake-H)	658	ts	uhdxe32eus
+intelcorei912900hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei912950hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei913900hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei913950hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei913980hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei914900hx	Intel UHD Graphics 770	2655	ts	uhd770
+intelcorei99880h	Intel UHD 630	698	pm3d	uhd630
+intelcoreultra5225h	Intel Arc Graphics 140T	3843	ts	arc140t
+intelcoreultra5226v	Intel Arc Graphics 130V	3388	ts	arc130v
+intelcoreultra5228v	Intel Arc Graphics 130V	3388	ts	arc130v
+intelcoreultra5236v	Intel Arc Graphics 130V	3388	ts	arc130v
+intelcoreultra5238v	Intel Arc Graphics 130V	3388	ts	arc130v
+intelcoreultra7255h	Intel Arc Graphics 140T	3843	ts	arc140t
+intelcoreultra7256v	Intel Arc Graphics 140V	4044	ts	arc140v
+intelcoreultra7258v	Intel Arc Graphics 140V	4044	ts	arc140v
+intelcoreultra7265k	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra7266v	Intel Arc Graphics 140V	4044	ts	arc140v
+intelcoreultra7268v	Intel Arc Graphics 140V	4044	ts	arc140v
+intelcoreultra9275hx	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra9285h	Intel Arc Graphics 140T	3843	ts	arc140t
+intelcoreultra9285k	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts	4coreigpu
+intelcoreultra9288v	Intel Arc Graphics 140V	4044	ts	arc140v
+intele2176m	Intel UHD P630	1328	pm3d	uhdp630
+intele2276m	Intel UHD P630	1328	pm3d	uhdp630
+inteli37020un	Intel HD Graphics 620	506	pm3d	hd620
+intelm38100y	Intel HD 615	402	pm3d	hd615
+intelm76y75	Intel HD 615	402	pm3d	hd615
+inteln100	Intel UHD Graphics 24EUs (Alder Lake-N)	321	ts	uhd24eus
+intelpentium5405u	Intel UHD Graphics 610	194	ts	uhd610
+intelpentium6405u	Intel UHD Graphics 610	194	ts	uhd610
+intelpentium7505	Intel UHD Graphics Xe 16EUs	348	ts	uhdxe16eus
+intelpentiumn5000	Intel UHD 605	212	pm3d	uhd605
+intelpentiumn5030	Intel UHD 605	212	pm3d	uhd605
+intelpentiumn6000	Intel UHD Graphics (Jasper Lake 32 EU)	330	ts	uhd
+intelu300	Intel UHD Graphics (13. Gen, 48 EU)	832	est	-
+intelw10855m	Intel UHD P630	1328	pm3d	uhdp630
+qualcommsnapdragonsc7180	Qualcomm Adreno 618 GPU	73	pm3d	qualcommadreno618
+qualcommsnapdragonsc8280xp	Qualcomm Adreno 8cx Gen 3	891	pm3d	qualcommadreno8cxgen3

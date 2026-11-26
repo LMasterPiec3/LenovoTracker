@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lenovo Clearance-Tracker</title>
+<style>
+  :root {
+    --bg: #f1f3f6; --card: #ffffff; --ink: #0f1419; --muted: #6a7280;
+    --line: #e2e6eb; --accent: #e2231a; --accent-dark: #bd1b13;
+    --green: #0f7b3f; --green-soft: #e7f5ec; --amber: #9a5b00; --amber-soft: #fff6e0;
+    --chip: #f2f4f7; --radius: 14px; --head-h: 66px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9;
+          stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- Kopf ---------- */
+  header.top {
+    position: sticky; top: 0; z-index: 20; background: #fff;
+    border-bottom: 1px solid var(--line); padding: 10px 20px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: baseline; gap: 7px; font-weight: 800; letter-spacing: .5px; }
+  .brand .len { color: var(--accent); font-size: 19px; }
+  .brand .trk { font-size: 12px; letter-spacing: 2.4px; color: var(--muted); }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    background: var(--chip); border-radius: 999px; padding: 5px 12px;
+    display: flex; align-items: baseline; gap: 6px; white-space: nowrap;
+  }
+  .pill b { font-size: 16px; font-variant-numeric: tabular-nums; }
+  .pill span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  .spacer { flex: 1; }
+  .actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .src { font-size: 10px; font-weight: 800; letter-spacing: 1.4px; padding: 4px 9px;
+         border-radius: 999px; background: var(--chip); color: var(--muted); }
+  .src.live { background: var(--accent); color: #fff; }
+  .btn {
+    font: inherit; font-weight: 650; border: 1px solid var(--line); background: #fff;
+    color: var(--ink); border-radius: 10px; padding: 9px 15px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  }
+  .btn:hover { background: #f7f8fa; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn.big { padding: 11px 20px; font-size: 15px; box-shadow: 0 2px 8px rgba(226,35,26,.25); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+  .btn.ghost:hover { background: var(--chip); color: var(--ink); }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .btn .spin { display: none; }
+  .btn.loading .spin { display: inline-block; animation: rot .9s linear infinite; }
+  .btn.loading .ico { display: none; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* ---------- Tabs ---------- */
+  nav { display: flex; gap: 2px; padding: 12px 20px 0; max-width: 1320px; margin: 0 auto; }
+  nav button {
+    border: 0; background: transparent; font: inherit; font-weight: 650; color: var(--muted);
+    padding: 9px 15px; border-radius: 10px 10px 0 0; cursor: pointer;
+  }
+  nav button:hover { color: var(--ink); background: #e9edf2; }
+  nav button.active { background: #fff; color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+
+  main { max-width: 1320px; margin: 0 auto; padding: 0 20px 48px; }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 0 14px 14px 14px; padding: 16px; }
+
+  /* ---------- Filter ---------- */
+  .warn {
+    background: var(--amber-soft); border: 1px solid #f2dfae; color: var(--amber);
+    padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 12px;
+  }
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    position: sticky; top: var(--head-h); z-index: 10; background: #fff;
+    padding: 6px 0 10px; margin: -6px 0 2px;
+  }
+  .search { position: relative; flex: 1 1 260px; min-width: 200px; }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .search input {
+    width: 100%; font: inherit; padding: 9px 12px 9px 36px; border: 1px solid var(--line);
+    border-radius: 10px; background: #fbfcfd;
+  }
+  select {
+    font: inherit; padding: 9px 30px 9px 11px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fbfcfd url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236a7280' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 10px center;
+    appearance: none; cursor: pointer; max-width: 210px;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #f7b9b5; outline-offset: 1px; border-color: #e8a19d; }
+  .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 2px 2px 14px; color: var(--muted); font-size: 13px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-left: auto; }
+  .seg button { border: 0; background: #fff; font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: var(--chip); color: var(--ink); font-weight: 650; }
+
+  /* ---------- Karten ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 14px; }
+  .card {
+    border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+    background: #fff; display: flex; flex-direction: column;
+    transition: box-shadow .15s, transform .15s, border-color .15s;
+  }
+  .card:hover { box-shadow: 0 6px 20px rgba(16,20,25,.09); border-color: #d3d9e0; transform: translateY(-1px); }
+  .thumb {
+    position: relative; aspect-ratio: 4 / 3; background: #fff; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; padding: 8px; position: relative; z-index: 1; }
+  .thumb .ph { width: 64px; height: 64px; color: #c9d0d8; stroke-width: 1.2; position: absolute; }
+  .stock-badge {
+    position: absolute; top: 8px; right: 8px; z-index: 2; background: rgba(15,20,25,.82); color: #fff;
+    font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+    font-variant-numeric: tabular-nums; backdrop-filter: blur(2px);
+  }
+  .stock-badge.zero { background: #9aa2ad; }
+  .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .name { font-size: 13.5px; font-weight: 650; line-height: 1.35; display: -webkit-box;
+          -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; }
+  .pid { font: 11.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); letter-spacing: .2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 1px; }
+  .chip {
+    font-size: 11.5px; background: var(--chip); color: #3d4550; padding: 2.5px 7px;
+    border-radius: 6px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chip.gpu { background: #eef1f6; }
+  .chip.rtx, .chip.gtx { background: var(--green-soft); color: #0b6333; }
+  .chip.quadro { background: #eef0fb; color: #3a4290; }
+  .chip.mx { background: #f4f1ea; color: #7a5a1e; }
+  .chip.none { color: var(--muted); font-style: italic; background: transparent; padding-left: 0; }
+  .chip .assumed { color: #8a6d1f; font-size: 11px; }
+  .foot { display: flex; align-items: flex-end; gap: 8px; margin-top: auto; padding-top: 4px; }
+  .price { font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
+  .sum { display: block; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .delta {
+    margin-left: auto; font-size: 12px; font-weight: 750; padding: 2px 8px; border-radius: 999px;
+    background: var(--green-soft); color: var(--green);
+  }
+  .delta.down { background: var(--chip); color: var(--muted); }
+  .delta.back { background: #eef0fb; color: #3a4290; }
+
+  /* ---------- Tabelle ---------- */
+  .tablewrap { overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { background: #fafbfc; font-size: 10.5px; letter-spacing: .7px; text-transform: uppercase;
+       color: var(--muted); position: sticky; top: 0; z-index: 1; }
+  tbody tr:hover { background: #fbfcfd; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: nowrap; font-size: 12px; }
+  td.specs { color: #444c57; font-size: 12.5px; }
+  td.imgcell { width: 46px; padding: 4px 0 4px 8px; }
+  td.imgcell img { width: 40px; height: 30px; object-fit: contain; display: block; }
+  td.money { font-weight: 650; }
+
+  /* ---------- Verlauf / Config ---------- */
+  .chart { width: 100%; height: 210px; display: block; }
+  .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+  .chart .area { fill: rgba(226,35,26,.07); }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart .dot { fill: var(--accent); }
+  .meta-line { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin: 4px 2px 16px; }
+  textarea {
+    width: 100%; min-height: 430px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfd; color: var(--ink);
+    resize: vertical; tab-size: 2;
+  }
+  .tag {
+    display: inline-block; align-self: flex-start;
+    font-size: 9.5px; font-weight: 800; letter-spacing: .08em;
+    color: #8a1c14; background: #fdeceb; border-radius: 4px; padding: 2px 5px;
+  }
+  #more { margin: 16px auto 0; }
+  #more[hidden] { display: none; }
+  .hint { color: var(--muted); font-size: 13px; }
+  code { background: var(--chip); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+
+  .empty { text-align: center; padding: 48px 12px; color: var(--muted); }
+  .empty b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 6px; }
+
+  body.loading .grid, body.loading .tablewrap { opacity: .45; transition: opacity .15s; }
+  #bar { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: var(--accent);
+         z-index: 100; transition: width .2s; opacity: 0; }
+  body.loading #bar { width: 70%; opacity: 1; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    background: #0f1419; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+    max-width: min(92vw, 680px); box-shadow: 0 8px 26px rgba(0,0,0,.25);
+  }
+  #toast.show { opacity: .97; transform: translateX(-50%) translateY(-4px); }
+  #toast.err { background: #a4261e; }
+
+  @media (max-width: 980px) {
+    /* „Stand“ ausblenden, damit Marke, Zähler und Laden in eine Zeile passen */
+    .stats .pill:nth-child(3) { display: none; }
+  }
+  @media (max-width: 720px) {
+    header.top {
+      padding: 8px 12px; gap: 8px 10px; display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-areas: "brand actions" "stats stats";
+    }
+    .brand { grid-area: brand; }
+    .actions { grid-area: actions; gap: 8px; }
+    .stats { grid-area: stats; }
+    .brand .trk { display: none; }
+    /* Auf schmalen Screens scrollen die Filter mit – sticky würde unter dem
+       zweizeiligen Header verschwinden. */
+    .filters { position: static; margin-top: 0; }
+    nav, main { padding-left: 10px; padding-right: 10px; }
+    section { padding: 12px; border-radius: 0 0 12px 12px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .name { font-size: 12.5px; }
+    .btn.big { padding: 9px 14px; }
+    select { max-width: 100%; }
+    .filters select { flex: 1 1 130px; }
+  }
+</style>
+</head>
+<body>
+<div id="bar"></div>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="ic-board" viewBox="0 0 24 24">
+    <rect x="3" y="3" width="18" height="18" rx="2.5"></rect>
+    <rect x="7" y="7" width="6" height="6" rx="1"></rect>
+    <path d="M16 7h1.5M16 10h1.5M16 13h1.5M7 16.5h10.5M7 19h6"></path>
+    <path d="M3 8h-1M3 12h-1M3 16h-1M8 3v-1M12 3v-1M16 3v-1"></path>
+  </symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></symbol>
+  <symbol id="ic-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-.8 4.5"></path><path d="M20 4v7h-7"></path></symbol>
+  <symbol id="ic-logo" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3"></rect><path d="M6 9h12M6 13h8M6 17h5"></path></symbol>
+</svg>
+
+<header class="top">
+  <div class="brand"><span class="len">LENOVO</span><span class="trk">CLEARANCE-TRACKER</span></div>
+  <div class="stats">
+    <div class="pill"><b id="stock">–</b><span>Stück</span></div>
+    <div class="pill"><b id="parts">–</b><span>Teile</span></div>
+    <div class="pill"><b id="check">–</b><span>Stand</span></div>
+  </div>
+  <div class="actions">
+    <span class="src" id="source">STATE</span>
+    <button id="live" class="btn primary big" title="Lenovo-API jetzt abfragen – ohne Mail">
+      <svg class="i ico"><use href="#ic-refresh"/></svg>
+      <svg class="i spin"><use href="#ic-refresh"/></svg>
+      <span id="liveLabel">Laden</span>
+    </button>
+  </div>
+</header>
+
+<nav>
+  <button data-tab="stock" class="active">Bestand</button>
+  <button data-tab="history">Verlauf</button>
+  <button data-tab="config">Einstellungen</button>
+</nav>
+
+<main>
+  <section id="tab-stock">
+    <div id="pending" class="warn" hidden></div>
+
+    <div class="filters">
+      <label class="search">
+        <svg class="i"><use href="#ic-search"/></svg>
+        <input id="q" type="search" placeholder="Suchen: Bezeichnung, Teilenummer, Tech-Daten …" autocomplete="off">
+      </label>
+      <select id="fCpu" title="CPU-Reihe"></select>
+      <select id="fGen" title="CPU-Generation"></select>
+      <select id="fRam" title="RAM"></select>
+      <select id="fGpu" title="GPU-Familie"></select>
+      <select id="fKind" title="GPU-Typ"></select>
+      <select id="fSort" title="Sortierung">
+        <optgroup label="Bestand">
+          <option value="stock">Bestand ↓</option>
+          <option value="stockAsc">Bestand ↑</option>
+        </optgroup>
+        <optgroup label="Technik">
+          <option value="perf">Leistung ↓</option>
+          <option value="gpu">GPU-Leistung ↓</option>
+          <option value="cpu">CPU-Leistung ↓</option>
+          <option value="ram">RAM ↓</option>
+        </optgroup>
+        <optgroup label="Preis">
+          <option value="price">Preis ↓</option>
+          <option value="priceAsc">Preis ↑</option>
+        </optgroup>
+        <optgroup label="Name">
+          <option value="name">Name A–Z</option>
+          <option value="nameDesc">Name Z–A</option>
+        </optgroup>
+      </select>
+      <button id="reset" class="btn ghost" title="Filter zurücksetzen">Zurücksetzen</button>
+    </div>
+
+    <div class="meta">
+      <span id="count">–</span>
+      <span id="sumline"></span>
+      <div class="seg scope" id="scopeSeg" title="Alle Teile der API oder nur die Mail-Liste">
+        <button data-scope="all" class="on">Alle</button>
+        <button data-scope="mail">Mail</button>
+      </div>
+      <div class="seg view">
+        <button data-view="cards" class="on">Karten</button>
+        <button data-view="table">Tabelle</button>
+      </div>
+    </div>
+
+    <div id="cards" class="grid"></div>
+    <button id="more" class="btn ghost" hidden>Mehr anzeigen</button>
+    <div id="tablewrap" class="tablewrap" hidden>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th class="num">Bestand</th>
+            <th>Teil</th>
+            <th>Bezeichnung</th>
+            <th>CPU</th>
+            <th class="num">RAM</th>
+            <th>GPU</th>
+            <th class="num">Preis</th>
+            <th class="num">Δ</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin:14px 2px 0">
+      Die Seite verfolgt <b>alle</b> Teile des Abrufs (eigener Bestand, eigener Verlauf) – unabhängig davon,
+      welche Teile per E-Mail gemeldet werden. „Mail“ zeigt nur die Teile, die deine Keywords treffen.
+      „Laden“ fragt die Lenovo-API direkt ab – ohne Mail und ohne den gespeicherten State zu ändern.
+    </p>
+  </section>
+
+  <section id="tab-history" hidden>
+    <div class="meta" style="margin-top:0">
+      <button id="hreload" class="btn ghost"><svg class="i"><use href="#ic-refresh"/></svg>Neu laden</button>
+      <span class="hint">Bestand aus history.csv (letzte 200 Läufe)</span>
+    </div>
+    <svg id="chart" class="chart" viewBox="0 0 900 210" preserveAspectRatio="none"></svg>
+    <div class="meta-line"><span id="cmin">–</span><span id="cmax">–</span></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Zeitpunkt</th><th class="num">Stück</th><th class="num">Teile</th></tr></thead>
+        <tbody id="hrows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="tab-config" hidden>
+    <div class="meta" style="margin-top:0">
+      <button id="save" class="btn primary">Speichern</button>
+      <button id="creload" class="btn ghost">Verwerfen &amp; neu laden</button>
+      <span class="hint" id="cpath"></span>
+    </div>
+    <p class="hint" style="margin-top:0">
+      Änderungen gelten sofort für Live-Abrufe und ab dem nächsten Cron-Lauf für die Mails.
+      Das SMTP-Passwort wird nicht angezeigt und bleibt beim Speichern erhalten.
+      Die alte Datei wird als <code>config.toml.bak</code> gesichert.
+    </p>
+    <textarea id="ctext" spellcheck="false"></textarea>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const data = { parts: [], source: "state", currency: "€", total_stock: 0, part_count: 0, checked_at: "", pending: null, mail_count: 0 };
+const F = { q: "", cpu: "", gen: "", ram: "", gpu: "", kind: "", sort: "stock", view: "cards", scope: "all" };
+const LS = "lt-ui-v3";
+try { Object.assign(F, JSON.parse(localStorage.getItem(LS) || "{}")); } catch {}
+const GPU_SRC = { ts: "3DMark Time Spy", pm3d: "PassMark → Time-Spy-Skala" };
+const IGPU_NOTE = {
+  ts: "3DMark Time Spy der iGPU",
+  pm3d: "PassMark → Time-Spy-Skala der iGPU",
+  est: "aus dem EU-/CU-Ausbau geschätzt"
+};
+const BENCH_SRC = {
+  r23: "Cinebench R23 (gemessen)",
+  cb15: "Cinebench R15 → R23-Skala",
+  cb24: "Cinebench 2024 → R23-Skala",
+  cb20: "Cinebench R20 → R23-Skala",
+  r20: "Cinebench R20 → R23-Skala",
+  r15: "Cinebench R15 → R23-Skala",
+  gb6: "Geekbench 6 → R23-Skala",
+};
+const SORTS = ["stock", "stockAsc", "perf", "gpu", "cpu", "ram", "price", "priceAsc", "name", "nameDesc"];
+if (!SORTS.includes(F.sort)) F.sort = "stock";
+if (!["cards", "table"].includes(F.view)) F.view = "cards";
+if (!["all", "mail"].includes(F.scope)) F.scope = "all";
+// Bei mehreren hundert Teilen wird in Blöcken gezeichnet (Bilder bleiben lazy).
+const STEP = 96;
+let limit = STEP;
+const saveF = () => { try { localStorage.setItem(LS, JSON.stringify(F)); } catch {} };
+
+const GPU_ORDER = ["RTX 50","RTX 40","RTX 30","RTX 20","RTX","GTX 16","GTX 10","GTX","Quadro","Quadro T","MX","Radeon","Radeon Pro","integriert","sonstige"];
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function icon(id, cls) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "i " + (cls || ""));
+  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  use.setAttribute("href", "#" + id);
+  svg.append(use);
+  return svg;
+}
+const fmt = (n) => Number(n || 0).toLocaleString("de-DE");
+function money(cents, cur) {
+  if (cents == null) return "–";
+  return (cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (cur ? "\u00a0" + cur : "");
+}
+function ago(iso) {
+  const t = Date.parse(iso);
+  if (!t) return "–";
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 90) return s + " s";
+  const m = Math.round(s / 60);
+  if (m < 90) return m + " min";
+  const h = Math.round(m / 60);
+  if (h < 48) return h + " h";
+  return new Date(t).toLocaleDateString("de-DE");
+}
+function toast(msg, isErr) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = ""; }, isErr ? 8000 : 4000);
+}
+async function errText(r) {
+  try { const j = await r.json(); return j.error || ("HTTP " + r.status); } catch { return "HTTP " + r.status; }
+}
+async function get(url) {
+  const r = await fetch(url, { headers: { "X-Requested-With": "lenovo-tracker" } });
+  if (!r.ok) throw new Error(await errText(r));
+  return r.json();
+}
+async function post(url, body) {
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Requested-With": "lenovo-tracker" },
+    body: JSON.stringify(body || {})
+  });
+  if (!r.ok) throw new Error(await errText(r));
+  return r.json();
+}
+
+/* ---------- Kopf + Warnung ---------- */
+function renderHead() {
+  $("#stock").textContent = fmt(data.total_stock);
+  $("#parts").textContent = fmt(data.part_count);
+  $("#check").textContent = data.checked_at ? "vor " + ago(data.checked_at) : "–";
+  $("#check").title = data.checked_at || "";
+  const s = $("#source");
+  s.textContent = data.source === "live" ? "LIVE" : "STATE";
+  s.className = "src" + (data.source === "live" ? " live" : "");
+  const p = $("#pending");
+  if (data.pending) {
+    p.hidden = false;
+    p.textContent = "Unbestätigter Rückgang: " + fmt(data.pending.parts) + " Teile / " + fmt(data.pending.total) +
+      " Stück seit vor " + ago(data.pending.ts) + " – der nächste Lauf bestätigt ihn, bis dahin bleibt der gespeicherte Stand.";
+  } else {
+    p.hidden = true;
+  }
+}
+
+/* ---------- Filter-Optionen ---------- */
+function fillSelect(sel, entries, current, allLabel) {
+  sel.replaceChildren();
+  const all = el("option", null, allLabel);
+  all.value = "";
+  sel.append(all);
+  for (const [value, label, count] of entries) {
+    const o = el("option", null, label + (count != null ? "  (" + count + ")" : ""));
+    o.value = value;
+    sel.append(o);
+  }
+  sel.value = entries.some(([v]) => v === current) ? current : "";
+  return sel.value;
+}
+function uniqueCounts(getter) {
+  const m = new Map();
+  for (const p of data.parts) {
+    const v = getter(p);
+    if (v === "" || v == null || v === 0) continue;
+    m.set(v, (m.get(v) || 0) + 1);
+  }
+  return m;
+}
+function renderFilters() {
+  // CPU-Reihe
+  const cpus = [...uniqueCounts(p => p.cpu_series).entries()]
+    .sort((a, b) => a[0].localeCompare(b[0], "de"));
+  F.cpu = fillSelect($("#fCpu"), cpus.map(([v, c]) => [v, v, c]), F.cpu, "CPU: alle");
+  // Generation: Intel zuerst (13., 12., …), dann Ryzen (7000, 5000, …).
+  const genNum = (v) => { const m = v.match(/(\d+)/); return m ? Number(m[1]) : -1; };
+  const gens = [...uniqueCounts(p => p.cpu_gen).entries()]
+    .sort((a, b) => (/^Ryzen/.test(a[0]) ? 1 : 0) - (/^Ryzen/.test(b[0]) ? 1 : 0)
+      || genNum(b[0]) - genNum(a[0]) || a[0].localeCompare(b[0], "de"));
+  F.gen = fillSelect($("#fGen"), gens.map(([v, c]) => [v, v, c]), F.gen, "Generation: alle");
+  // RAM (numerisch, 0 = ohne Angabe)
+  const ramMap = uniqueCounts(p => p.ram);
+  const ramEntries = [...ramMap.keys()].sort((a, b) => a - b)
+    .map(v => [String(v), v ? v + " GB" : "ohne Angabe", ramMap.get(v)]);
+  F.ram = fillSelect($("#fRam"), ramEntries, F.ram, "RAM: alle");
+  // GPU-Familie
+  const gpus = [...uniqueCounts(p => p.gpu_family).entries()]
+    .sort((a, b) => (GPU_ORDER.indexOf(a[0]) + 1 || 99) - (GPU_ORDER.indexOf(b[0]) + 1 || 99) || a[0].localeCompare(b[0], "de"));
+  F.gpu = fillSelect($("#fGpu"), gpus.map(([v, c]) => [v, v, c]), F.gpu, "GPU: alle");
+  // GPU-Typ
+  F.kind = fillSelect($("#fKind"),
+    [["diskret", "dediziert", uniqueCounts(p => p.gpu_kind).get("diskret")],
+     ["integriert", "integriert", uniqueCounts(p => p.gpu_kind).get("integriert")]],
+    F.kind, "GPU-Typ: alle");
+  $("#q").value = F.q;
+  $("#fSort").value = F.sort;
+  renderSegs();
+}
+
+/* Umschalter „Alle/Mail“ und „Karten/Tabelle“ inkl. Trefferzahlen */
+function renderSegs() {
+  const total = data.parts.length;
+  const mails = data.mail_count || 0;
+  const allBtn = document.querySelector('[data-scope="all"]');
+  const mailBtn = document.querySelector('[data-scope="mail"]');
+  allBtn.textContent = "Alle " + fmt(total);
+  mailBtn.textContent = "Mail " + fmt(mails);
+  // Ohne Keywords (oder wenn alles Mail ist) bringt der Umschalter nichts.
+  mailBtn.hidden = mails === 0 || mails === total;
+  document.querySelectorAll("#scopeSeg button").forEach(b => b.classList.toggle("on", b.dataset.scope === F.scope));
+  document.querySelectorAll(".seg.view button").forEach(b => b.classList.toggle("on", b.dataset.view === F.view));
+}
+
+/* ---------- Auswahl + Sortierung ---------- */
+function perfCmp(a, b) {
+  const x = a.perf || [0, 0, 0], y = b.perf || [0, 0, 0];
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i];
+  return b.stock - a.stock;
+}
+function selected() {
+  const q = F.q.trim().toLowerCase();
+  const rows = data.parts.filter(p => {
+    if (F.scope === "mail" && !p.mail) return false;
+    if (F.cpu && p.cpu_series !== F.cpu) return false;
+    if (F.gen && p.cpu_gen !== F.gen) return false;
+    if (F.ram !== "" && String(p.ram || 0) !== F.ram) return false;
+    if (F.gpu && p.gpu_family !== F.gpu) return false;
+    if (F.kind && p.gpu_kind !== F.kind) return false;
+    if (q && !((p.id + " " + p.name + " " + p.specs).toLowerCase().includes(q))) return false;
+    return true;
+  });
+  // Teile ohne Preis stehen beim Preissortieren immer am Ende.
+  const pa = (p) => (p.price == null ? Number.MAX_SAFE_INTEGER : p.price);
+  const cmp = {
+    stock: (a, b) => b.stock - a.stock || perfCmp(a, b),
+    stockAsc: (a, b) => a.stock - b.stock || perfCmp(a, b),
+    perf: perfCmp,
+    gpu: (a, b) => ((b.perf && b.perf[0]) || 0) - ((a.perf && a.perf[0]) || 0) || b.stock - a.stock,
+    cpu: (a, b) => ((b.perf && b.perf[1]) || 0) - ((a.perf && a.perf[1]) || 0) || b.stock - a.stock,
+    ram: (a, b) => (b.ram || 0) - (a.ram || 0) || b.stock - a.stock,
+    price: (a, b) => (b.price || 0) - (a.price || 0) || b.stock - a.stock,
+    priceAsc: (a, b) => pa(a) - pa(b) || b.stock - a.stock,
+    name: (a, b) => (a.name || "").localeCompare(b.name || "", "de"),
+    nameDesc: (a, b) => (b.name || "").localeCompare(a.name || "", "de")
+  }[F.sort];
+  return rows.sort(cmp);
+}
+
+/* ---------- Karten ---------- */
+function shortCpu(p) {
+  return (p.cpu || "").replace(/^Intel Core\s+/i, "").replace(/^Intel\s+/i, "").replace(/^AMD\s+/i, "");
+}
+/* Am Chip steht der iGPU-Kurzname; die Kategorie bleibt „integriert“. */
+function shortGpu(p) {
+  if (p.gpu_src === "igpu" && p.gpu_igpu_short) return p.gpu_igpu_short;
+  return (p.gpu || "").replace(/^NVIDIA\s+/i, "").replace(/\s*\((diskret|integriert)\)\s*$/i, "");
+}
+function gpuChipClass(family) {
+  if (family === "RTX 50" || family === "RTX 40" || family === "RTX 30" || family === "RTX 20" || family === "RTX" ||
+      family === "GTX 16" || family === "GTX 10" || family === "GTX") return "rtx";
+  if (family === "Quadro" || family === "Quadro T") return "quadro";
+  if (family === "MX") return "mx";
+  return "";
+}
+function thumb(p) {
+  const box = el("div", "thumb");
+  box.append(icon("ic-board", "ph"));
+  if (p.image) {
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.alt = p.name || p.id;
+    img.src = p.image;
+    img.addEventListener("error", () => img.remove());
+    box.append(img);
+  }
+  const badge = el("span", "stock-badge" + (p.stock > 0 ? "" : " zero"), p.stock + "×");
+  box.append(badge);
+  return box;
+}
+function card(p) {
+  const c = el("article", "card");
+  c.append(thumb(p));
+  const body = el("div", "body");
+  if (p.mail && data.mail_count < data.parts.length) body.append(el("span", "tag", "MAIL"));
+  body.append(el("div", "name", p.name || "–"));
+  body.append(el("div", "pid", p.id));
+  const chips = el("div", "chips");
+  if (p.cpu) {
+    const chip = el("span", "chip", shortCpu(p));
+    chip.title = !p.cpu_bench
+      ? "kein Messwert – aus Serie/Generation geschätzt"
+      : (BENCH_SRC[p.cpu_src] || BENCH_SRC.gb6) + ": "
+        + fmt(p.cpu_bench[0]) + " Single / " + fmt(p.cpu_bench[1]) + " Multi";
+    chips.append(chip);
+  }
+  if (p.ram) chips.append(el("span", "chip", p.ram + " GB"));
+  if (p.gpu) {
+    const gchip = el("span", "chip gpu " + gpuChipClass(p.gpu_family), shortGpu(p));
+    if (p.gpu_src === "igpu" && p.gpu_score) {
+      gchip.title = "iGPU laut CPU-Modell (abgeleitet, nicht am Board gemessen): " + p.gpu_igpu
+        + " · " + (IGPU_NOTE[p.gpu_igpu_note] || "3DMark Time Spy") + ": "
+        + fmt(p.gpu_score) + " Punkte";
+      if (p.gpu_igpu_note === "est") gchip.append(el("span", "assumed", " ≈"));
+    } else if (p.gpu_score) {
+      gchip.title = (GPU_SRC[p.gpu_src] || "3DMark Time Spy") + ": " + fmt(p.gpu_score) + " Punkte";
+    }
+    chips.append(gchip);
+  }
+  if (!chips.children.length) chips.append(el("span", "chip none", "keine Tech-Daten"));
+  body.append(chips);
+  const foot = el("div", "foot");
+  const pr = el("div");
+  pr.append(el("span", "price", money(p.price, data.currency)));
+  foot.append(pr);
+  if (p.delta != null && p.delta !== 0) {
+    foot.append(el("span", "delta" + (p.delta > 0 ? "" : " down"), (p.delta > 0 ? "+" : "") + p.delta));
+  } else if (p.back) {
+    foot.append(el("span", "delta back", "zurück"));
+  }
+  body.append(foot);
+  c.append(body);
+  return c;
+}
+
+/* ---------- Tabelle ---------- */
+function tableRow(p) {
+  const tr = el("tr");
+  const tdImg = el("td", "imgcell");
+  if (p.image) {
+    const img = document.createElement("img");
+    img.loading = "lazy"; img.alt = ""; img.src = p.image;
+    img.addEventListener("error", () => img.remove());
+    tdImg.append(img);
+  }
+  tr.append(tdImg);
+  tr.append(el("td", "num", fmt(p.stock)));
+  tr.append(el("td", "id", p.id));
+  tr.append(el("td", null, p.name || "–"));
+  tr.append(el("td", null, shortCpu(p) || "–"));
+  tr.append(el("td", "num", p.ram ? p.ram + " GB" : "–"));
+  tr.append(el("td", null, shortGpu(p) || "–"));
+  tr.append(el("td", "num money", money(p.price, data.currency)));
+  const d = el("td", "num");
+  if (p.delta) d.append(el("span", "delta" + (p.delta > 0 ? "" : " down"), (p.delta > 0 ? "+" : "") + p.delta));
+  tr.append(d);
+  return tr;
+}
+
+/* ---------- Zeichnen ---------- */
+function render() {
+  const rows = selected();
+  const stockSum = rows.reduce((n, p) => n + p.stock, 0);
+  $("#count").textContent = rows.length === data.parts.length
+    ? fmt(rows.length) + " Teile"
+    : fmt(rows.length) + " von " + fmt(data.parts.length) + " Teilen";
+  $("#sumline").textContent = "· " + fmt(stockSum) + " Stück";
+
+  const cards = $("#cards");
+  cards.replaceChildren();
+  const tbody = $("#rows");
+  tbody.replaceChildren();
+  if (!rows.length) {
+    const e = el("div", "empty");
+    e.append(el("b", null, "Keine Teile passen"));
+    e.append(document.createTextNode("Filter lockern oder zurücksetzen."));
+    cards.append(e);
+  } else if (F.view === "cards") {
+    for (const p of rows.slice(0, limit)) cards.append(card(p));
+  } else {
+    for (const p of rows) tbody.append(tableRow(p));
+  }
+  cards.hidden = F.view !== "cards";
+  $("#tablewrap").hidden = F.view !== "table";
+  const shown = F.view === "cards" ? Math.min(limit, rows.length) : rows.length;
+  const more = $("#more");
+  more.hidden = F.view !== "cards" || rows.length <= shown;
+  more.textContent = "Mehr anzeigen (" + fmt(rows.length - shown) + ")";
+  renderSegs();
+}
+
+function applyAll() {
+  limit = STEP;
+  renderFilters();
+  renderHead();
+  render();
+}
+
+/* ---------- Daten ---------- */
+async function loadState(silent) {
+  try {
+    const d = await get("/api/state");
+    Object.assign(data, d);
+    applyAll();
+  } catch (e) {
+    if (!silent) toast("State nicht lesbar: " + e.message, true);
+  }
+}
+async function laden() {
+  const btn = $("#live");
+  btn.disabled = true;
+  btn.classList.add("loading");
+  $("#liveLabel").textContent = "Lädt …";
+  document.body.classList.add("loading");
+  try {
+    const d = await post("/api/live");
+    Object.assign(data, d);
+    showTab("stock");
+    applyAll();
+    $("#stock").animate([{ transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: 280 });
+    toast("Live geladen: " + fmt(d.part_count) + " Teile, " + fmt(d.total_stock) + " Stück – keine Mail gesendet.");
+  } catch (e) {
+    toast("Laden fehlgeschlagen: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove("loading");
+    $("#liveLabel").textContent = "Laden";
+    document.body.classList.remove("loading");
+  }
+}
+
+/* ---------- Verlauf ---------- */
+async function loadHistory() {
+  try {
+    const d = await get("/api/history?limit=200");
+    const rows = d.rows || [];
+    const svg = $("#chart");
+    const W = 900, H = 210, P = 30;
+    svg.replaceChildren();
+    if (!rows.length) { $("#cmin").textContent = "noch keine Läufe"; $("#cmax").textContent = ""; return; }
+    const totals = rows.map(r => r.total);
+    const min = Math.min(...totals), max = Math.max(...totals);
+    const span = Math.max(1, max - min);
+    for (const frac of [0, 0.25, 0.5, 0.75, 1]) {
+      const y = H - P - (H - 2 * P) * frac;
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", P); line.setAttribute("x2", W - P);
+      line.setAttribute("y1", y.toFixed(1)); line.setAttribute("y2", y.toFixed(1));
+      line.setAttribute("class", "grid");
+      svg.append(line);
+    }
+    const pts = rows.map((r, i) => {
+      const x = P + (W - 2 * P) * (rows.length < 2 ? 1 : i / (rows.length - 1));
+      const y = H - P - (H - 2 * P) * (r.total - min) / span;
+      return [x, y];
+    });
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    poly.setAttribute("points", pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" "));
+    poly.setAttribute("class", "line");
+    svg.append(poly);
+    const area = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    area.setAttribute("points", (P + "," + (H - P) + " ") +
+      pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ") + " " + (W - P) + "," + (H - P));
+    area.setAttribute("class", "area");
+    svg.prepend(area);
+    for (const idx of [0, pts.length - 1]) {
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", pts[idx][0].toFixed(1));
+      dot.setAttribute("cy", pts[idx][1].toFixed(1));
+      dot.setAttribute("r", "3.5");
+      dot.setAttribute("class", "dot");
+      svg.append(dot);
+    }
+    $("#cmin").textContent = "Min " + fmt(min) + " Stück";
+    $("#cmax").textContent = "Max " + fmt(max) + " Stück · " + rows.length + " Läufe";
+    const body = $("#hrows");
+    body.replaceChildren();
+    for (const r of rows.slice(-18).reverse()) {
+      const tr = el("tr");
+      tr.append(el("td", null, new Date(r.t).toLocaleString("de-DE")));
+      tr.append(el("td", "num", fmt(r.total)));
+      tr.append(el("td", "num", fmt(r.count)));
+      body.append(tr);
+    }
+  } catch (e) {
+    toast("Verlauf nicht lesbar: " + e.message, true);
+  }
+}
+
+/* ---------- Config ---------- */
+async function loadConfig() {
+  try {
+    const d = await get("/api/config");
+    $("#ctext").value = d.text || "";
+    $("#cpath").textContent = d.path || "";
+  } catch (e) {
+    toast("Config nicht lesbar: " + e.message, true);
+  }
+}
+async function saveConfig() {
+  const btn = $("#save");
+  btn.disabled = true;
+  document.body.classList.add("loading");
+  try {
+    await post("/api/config", { text: $("#ctext").value });
+    toast("Config gespeichert – gilt ab dem nächsten Lauf (Backup: config.toml.bak).");
+  } catch (e) {
+    toast("Speichern fehlgeschlagen: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+    document.body.classList.remove("loading");
+  }
+}
+
+/* ---------- Tabs / Events ---------- */
+function showTab(name) {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
+  for (const id of ["stock", "history", "config"]) $("#tab-" + id).hidden = (id !== name);
+  if (name === "history") loadHistory();
+  if (name === "config") loadConfig();
+}
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+document.querySelectorAll(".seg.view button").forEach(b => b.addEventListener("click", () => {
+  F.view = b.dataset.view; saveF(); render();
+}));
+document.querySelectorAll("#scopeSeg button").forEach(b => b.addEventListener("click", () => {
+  F.scope = b.dataset.scope; limit = STEP; saveF(); render();
+}));
+$("#more").addEventListener("click", () => { limit += STEP; render(); });
+$("#q").addEventListener("input", () => { F.q = $("#q").value; limit = STEP; saveF(); render(); });
+for (const [id, key] of [["#fCpu", "cpu"], ["#fGen", "gen"], ["#fRam", "ram"], ["#fGpu", "gpu"], ["#fKind", "kind"]]) {
+  $(id).addEventListener("change", (e) => { F[key] = e.target.value; limit = STEP; saveF(); render(); });
+}
+$("#fSort").addEventListener("change", (e) => { F.sort = e.target.value; limit = STEP; saveF(); render(); });
+$("#reset").addEventListener("click", () => {
+  Object.assign(F, { q: "", cpu: "", gen: "", ram: "", gpu: "", kind: "", sort: "stock" });
+  limit = STEP;
+  saveF(); applyAll();
+  toast("Filter zurückgesetzt.");
+});
+$("#live").addEventListener("click", laden);
+$("#hreload").addEventListener("click", loadHistory);
+$("#creload").addEventListener("click", loadConfig);
+$("#save").addEventListener("click", saveConfig);
+
+showTab("stock");
+loadState();
+setInterval(() => { if (!document.hidden && data.source === "state") loadState(true); }, 60000);
+</script>
+</body>
+</html>

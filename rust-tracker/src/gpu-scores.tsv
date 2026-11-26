@@ -1,0 +1,2264 @@
+# GPU-Leistung: Schluessel<TAB>Name<TAB>Score (3DMark Time Spy Graphics)<TAB>Quelle
+# ts = gemessen (3DMark Time Spy), pm3d = aus PassMark-G3Dmark auf Time-Spy-Skala umgerechnet
+1000m	Quadro 1000M	335	pm3d
+1100m	Quadro 1100M	418	pm3d
+128ddr9700txwtvout	128 DDR Radeon 9700 TX w/TV-Out	28	pm3d
+128ddr9800	128 DDR Radeon 9800 Pro	39	pm3d
+128mbddr9800	128MB DDR Radeon 9800 Pro	41	pm3d
+128mbx600se	128MB RADEON X600 SE	31	pm3d
+15ff	15FF	4068	pm3d
+1xe3wildcatlakeigpu	Intel Graphics 1 Xe3 Wildcat Lake iGPU	753	ts
+2000	Quadro 2000	516	pm3d
+2000d	Quadro 2000 D	670	pm3d
+2000m	Quadro 2000M	428	pm3d
+205	GeForce 205	76	pm3d
+210	GeForce 210	59	pm3d
+2100	Radeon 2100	37	pm3d
+2100m	Quadro 2100M	598	pm3d
+2260	FirePro 2260	68	pm3d
+2270	FirePro 2270	88	pm3d
+240mgt	GeForce 240M GT	185	pm3d
+2450	FirePro 2450	32	pm3d
+2460	FirePro 2460	101	pm3d
+256	GeForce 256	4	pm3d
+256mbddr9800xt	256MB DDR Radeon 9800 XT	24	pm3d
+256mbx600	256MB RADEON X600	42	pm3d
+280nvspcie	Quadro 280 NVS PCIe	4	pm3d
+2ndsandybridgehd	Intel 2nd Generation SandyBridge HD	125	pm3d
+2ndsandybridgehd3000	Intel 2nd Generation SandyBridge HD 3000	121	pm3d
+2xe3wildcatlakeigpu	Intel Graphics 2 Xe3 Wildcat Lake iGPU	1383	ts
+3000	Radeon 3000	60	pm3d
+3000m	Quadro 3000M	559	pm3d
+305m	GeForce 305M	90	pm3d
+310	GeForce 310	74	pm3d
+3100	Radeon 3100	46	pm3d
+310m	GeForce 310M	67	pm3d
+315	GeForce 315	95	pm3d
+315m	GeForce 315M	70	pm3d
+320m	GeForce 320M	129	pm3d
+3dpedition	3DP Edition	456	pm3d
+3dv3700	FirePro 3D V3700	106	pm3d
+3dv3750	FirePro 3D V3750	196	pm3d
+3dv3800	FirePro 3D V3800	267	pm3d
+3dv4800	FirePro 3D V4800	470	pm3d
+3dv5700	FirePro 3D V5700	308	pm3d
+3dv5800	FirePro 3D V5800	667	pm3d
+3dv7750	FirePro 3D V7750	307	pm3d
+3dv7800	FirePro 3D V7800	990	pm3d
+3dv8700	FirePro 3D V8700	653	pm3d
+3dv8750	FirePro 3D V8750	687	pm3d
+3dv8800	FirePro 3D V8800	1277	pm3d
+3dv9800	FirePro 3D V9800	1463	pm3d
+400	Quadro 400	87	pm3d
+4000	Quadro 4000	798	pm3d
+4000m	Quadro 4000M	705	pm3d
+405	GeForce 405	74	pm3d
+410	Quadro 410	248	pm3d
+410m	GeForce 410M	146	pm3d
+450	Radeon Pro 450	1419	pm3d
+455	Radeon Pro 455	1612	pm3d
+45express	Mobile Intel 45 Express	27	pm3d
+45expresschipsatzfamilie	Mobile Intel 45 Express-Chipsatzfamilie	71	pm3d
+460	Radeon Pro 460	1779	pm3d
+465	Radeon Pro 465	2308	pm3d
+4coreigpu	Intel Graphics 4-Core iGPU (Meteor / Arrow Lake)	1902	ts
+4expresschipsatzfamilie	Mobile Intel 4 Express-Chipsatzfamilie	28	pm3d
+4thhaswellhd	Intel 4th Generation Haswell HD	239	pm3d
+4xe3	Intel Graphics 4 Xe3 (Panther Lake)	2883	ts
+5000	Quadro 5000	1048	pm3d
+5000m	Quadro 5000M	1088	pm3d
+500m	Quadro 500M	370	pm3d
+5010m	Quadro 5010M	1002	pm3d
+505	GeForce 505	111	pm3d
+510	GeForce 510	150	pm3d
+520	Radeon 520	459	pm3d
+530	Radeon 530	518	pm3d
+5300	Radeon Pro 5300	3734	pm3d
+5300m	Radeon Pro 5300M	2934	pm3d
+535	Radeon 535	571	pm3d
+535dx	Radeon 535DX	449	pm3d
+540	Radeon 540	688	pm3d
+540x	AMD Radeon 540X	797	ts
+550	Radeon 550	1037	pm3d
+5500m	AMD Radeon Pro 5500M	3364	ts
+5500xt	Radeon Pro 5500 XT	4100	pm3d
+550x	Radeon 550X	768	pm3d
+555	AMD Radeon Pro 555	1078	ts
+560	AMD Radeon Pro 560	1376	ts
+5600m	Radeon Pro 5600M	4991	pm3d
+560x	AMD Radeon Pro 560X	1614	ts
+570	Radeon Pro 570	3172	pm3d
+5700	Radeon Pro 5700	5755	pm3d
+5700xt	Radeon Pro 5700 XT	6075	pm3d
+580	Radeon Pro 580	3844	pm3d
+580x	Radeon Pro 580X	3743	pm3d
+600	Quadro 600	307	pm3d
+6000	Quadro 6000	1402	pm3d
+605	GeForce 605	176	pm3d
+6100	GeForce 6100	18	pm3d
+6100nforce400	GeForce 6100 nForce 400	16	pm3d
+6100nforce405	GeForce 6100 nForce 405	16	pm3d
+6100nforce420	GeForce 6100 nForce 420	16	pm3d
+6100nforce430	GeForce 6100 nForce 430	15	pm3d
+610m	AMD Radeon 610M	515	ts
+615	GeForce 615	310	pm3d
+6150	GeForce 6150	14	pm3d
+6150le	GeForce 6150 LE	21	pm3d
+6150se	GeForce 6150SE	16	pm3d
+6150senforce430	GeForce 6150SE nForce 430	19	pm3d
+620	Radeon 620	463	pm3d
+6200	GeForce 6200	22	pm3d
+6200a	GeForce 6200A	3	pm3d
+6200ale	GeForce 6200 A-LE	21	pm3d
+6200le	GeForce 6200 LE	20	pm3d
+6200seturbocache	GeForce 6200SE TurboCache	24	pm3d
+6200turbocache	GeForce 6200 TurboCache	29	pm3d
+625	Radeon 625	624	pm3d
+630	Radeon 630	673	pm3d
+64mbddrgeforce3ti200	64MB DDR GeForce3 Ti 200	4	pm3d
+64mbgeforce2mxtvout	64MB GeForce2 MX with TV Out	2	pm3d
+6500	GeForce 6500	24	pm3d
+6600	GeForce 6600	54	pm3d
+6600gt	GeForce 6600 GT	82	pm3d
+6600le	GeForce 6600 LE	32	pm3d
+6600m	Radeon 6600M	289	pm3d
+660m	AMD Radeon 660M	1535	ts
+6610xl	GeForce 6610 XL	55	pm3d
+6700xl	GeForce 6700 XL	58	pm3d
+6750m	Radeon 6750M	500	pm3d
+6800	GeForce 6800	68	pm3d
+6800gs	GeForce 6800 GS	115	pm3d
+6800gsxt	GeForce 6800 GS/XT	63	pm3d
+6800gt	GeForce 6800 GT	85	pm3d
+6800le	GeForce 6800 LE	67	pm3d
+6800ultra	GeForce 6800 Ultra	83	pm3d
+6800xe	GeForce 6800 XE	37	pm3d
+6800xt	GeForce 6800 XT	77	pm3d
+680m	AMD Radeon 680M	2298	ts
+7000	Quadro 7000	1804	pm3d
+7000m	GeForce 7000M	9	pm3d
+7000mnforce610m	GeForce 7000M / nForce 610M	9	pm3d
+7000ve	Radeon 7000 / Radeon VE	2	pm3d
+7000vefamily	RADEON 7000 / RADEON VE Family	3	pm3d
+7025nforce630a	GeForce 7025 / nForce 630a	22	pm3d
+7050nforce610i	GeForce 7050 / nForce 610i	16	pm3d
+7050nforce620i	GeForce 7050 / nForce 620i	25	pm3d
+7050nforce630i	GeForce 7050 / nForce 630i	24	pm3d
+7050pvnforce630a	GeForce 7050 PV / nForce 630a	20	pm3d
+705m	GeForce 705M	259	pm3d
+7100gs	GeForce 7100 GS	33	pm3d
+7100nforce620i	GeForce 7100 / nForce 620i	17	pm3d
+7100nforce630i	GeForce 7100 / nForce 630i	22	pm3d
+710a	GeForce 710A	256	pm3d
+710m	GeForce 710M	255	pm3d
+7150mnforce630m	GeForce 7150M / nForce 630M	12	pm3d
+7150nforce630i	GeForce 7150 / nForce 630i	21	pm3d
+7200	RADEON 7200	2	pm3d
+7200gs	GeForce 7200 GS	15	pm3d
+720a	GeForce 720A	402	pm3d
+7300gs	GeForce 7300 GS	50	pm3d
+7300gt	GeForce 7300 GT	81	pm3d
+7300le	GeForce 7300 LE	48	pm3d
+7300se	GeForce 7300 SE	25	pm3d
+7300se7200gs	GeForce 7300 SE/7200 GS	31	pm3d
+730a	GeForce 730A	425	pm3d
+7350le	GeForce 7350 LE	46	pm3d
+740m	AMD Radeon 740M	1527	ts
+7500	RADEON 7500	2	pm3d
+7500family	RADEON 7500 Family	4	pm3d
+7500le	GeForce 7500 LE	53	pm3d
+7600gs	GeForce 7600 GS	94	pm3d
+7600gt	GeForce 7600 GT	120	pm3d
+760m	AMD Radeon 760M	2281	ts
+7650gs	GeForce 7650 GS	81	pm3d
+770m	GeForce 770M	1677	pm3d
+7800gs	GeForce 7800 GS	105	pm3d
+7800gt	GeForce 7800 GT	143	pm3d
+7800gtx	GeForce 7800 GTX	169	pm3d
+780m	AMD Radeon 780M	2808	ts
+7900gs	GeForce 7900 GS	148	pm3d
+7900gt	GeForce 7900 GT	150	pm3d
+7900gtgto	GeForce 7900 GT/GTO	144	pm3d
+7900gtx	GeForce 7900 GTX	222	pm3d
+7900modhd6520g	7900 MOD - Radeon HD 6520G	341	pm3d
+7900modhd6550d	7900 MOD - Radeon HD 6550D	491	pm3d
+7950gt	GeForce 7950 GT	198	pm3d
+7950gx2	GeForce 7950 GX2	119	pm3d
+7950xtreme	GeForce 7950 Xtreme	167	pm3d
+800a	GeForce 800A	243	pm3d
+800m	GeForce 800M	265	pm3d
+8040s	AMD Radeon 8040S	4033	ts
+8050s	AMD Radeon 8050S	9502	ts
+8060s	AMD Radeon 8060S	11018	ts
+8100nforce720a	GeForce 8100 / nForce 720a	49	pm3d
+810a	GeForce 810A	348	pm3d
+810m	GeForce 810M	229	pm3d
+8200	GeForce 8200	91	pm3d
+8200mg	GeForce 8200M G	45	pm3d
+820a	GeForce 820A	319	pm3d
+820m	AMD Radeon 820M	848	ts
+825m	GeForce 825M	425	pm3d
+82845gcontroller	Intel 82845G Controller	1	pm3d
+82845gglcontroller	Intel 82845G/GL Controller	2	pm3d
+82845gglgepegvcontroller	Intel 82845G/GL/GE/PE/GV Controller	2	pm3d
+8285282855gmgmecontroller	Intel 82852/82855 GM/GME Controller	1	pm3d
+82865gcontroller	Intel 82865G Controller	4	pm3d
+82915g915gv910gl	Intel 82915G/915GV/910GL	3	pm3d
+82915gexpress	Intel 82915G Express	4	pm3d
+82915ggv910gladvancedv35	Intel 82915G/GV/910GL Advanced v3.5	2	pm3d
+82915ggv910glexpress	Intel 82915G/GV/910GL Express	2	pm3d
+82945gexpress	Intel 82945G Express	9	pm3d
+82945gexpresschipsatzfamilie	Intel 82945G Express-Chipsatzfamilie	5	pm3d
+8300	GeForce 8300	62	pm3d
+8300gs	GeForce 8300 GS	42	pm3d
+830a	GeForce 830A	549	pm3d
+830m	GeForce 830M	534	pm3d
+8400	GeForce 8400	50	pm3d
+8400gs	GeForce 8400 GS	77	pm3d
+8400mg	GeForce 8400M G	37	pm3d
+8400mgs	GeForce 8400M GS	60	pm3d
+8400mgt	GeForce 8400M GT	40	pm3d
+8400se	GeForce 8400 SE	42	pm3d
+840a	GeForce 840A	640	pm3d
+840m	AMD Radeon 840M	1415	ts
+845m	GeForce 845M	768	pm3d
+8500family	RADEON 8500 Family	5	pm3d
+8500gt	GeForce 8500 GT	70	pm3d
+8600gs	GeForce 8600 GS	56	pm3d
+8600gt	GeForce 8600 GT	71	pm3d
+8600gts	GeForce 8600 GTS	96	pm3d
+8600mgs	GeForce 8600M GS	45	pm3d
+8600mgt	GeForce 8600M GT	55	pm3d
+860m	AMD Radeon 860M	2565	ts
+865embeddedcontroller	Intel 865 Embedded Controller	3	pm3d
+8700mgt	GeForce 8700M GT	75	pm3d
+8800gs	GeForce 8800 GS	191	pm3d
+8800gt	GeForce 8800 GT	293	pm3d
+8800gts	GeForce 8800 GTS	250	pm3d
+8800gts512	GeForce 8800 GTS 512	331	pm3d
+8800gtx	GeForce 8800 GTX	334	pm3d
+8800mgts	GeForce 8800M GTS	218	pm3d
+8800mgtx	GeForce 8800M GTX	262	pm3d
+8800ultra	GeForce 8800 Ultra	357	pm3d
+880m	AMD Radeon 880M	3335	ts
+890m	AMD Radeon 890M	3421	ts
+9000	RADEON 9000	4	pm3d
+9000family	RADEON 9000 Family	3	pm3d
+9100	GeForce 9100	50	pm3d
+9100family	RADEON 9100 Family	4	pm3d
+9100igp	RADEON 9100 IGP	4	pm3d
+9100mg	GeForce 9100M G	43	pm3d
+910m	GeForce 910M	324	pm3d
+915g910gexpress	Intel 915G,910G Express	3	pm3d
+915g915gv910glembeddedcontrollerfunctio	Intel 915G/915GV/910GL Embedded Controller Functio	4	pm3d
+915gmgms910gmlexpress	Mobile Intel 915GM/GMS/910GML Express	1	pm3d
+9200	GeForce 9200	102	pm3d
+9200family	RADEON 9200 PRO Family	2	pm3d
+9200lefamily	RADEON 9200 LE Family	2	pm3d
+9200mge	GeForce 9200M GE	94	pm3d
+9200mgs	GeForce 9200M GS	67	pm3d
+9200se	RADEON 9200 SE	2	pm3d
+920a	GeForce 920A	480	pm3d
+920m	GeForce 920M	401	pm3d
+920mx	GeForce 920MX	592	pm3d
+9250	RADEON 9250	2	pm3d
+9300	GeForce 9300	77	pm3d
+9300ge	GeForce 9300GE	60	pm3d
+9300gs	GeForce 9300 GS	67	pm3d
+9300mg	GeForce 9300M G	52	pm3d
+9300mgs	GeForce 9300M GS	56	pm3d
+9300nforce730i	GeForce 9300 / nForce 730i	78	pm3d
+9300se	GeForce 9300 SE	50	pm3d
+930a	GeForce 930A	589	pm3d
+930m	GeForce 930M	552	pm3d
+930mx	GeForce 930MX	703	pm3d
+9400	GeForce 9400	68	pm3d
+9400gt	GeForce 9400 GT	64	pm3d
+9400m	GeForce 9400M	46	pm3d
+9400mg	GeForce 9400M G	42	pm3d
+940a	GeForce 940A	622	pm3d
+940m	GeForce 940M	601	pm3d
+940mx	GeForce 940MX	806	pm3d
+9450	GeForce 9450	64	pm3d
+945a	GeForce 945A	983	pm3d
+945express	Mobile Intel 945 Express	1	pm3d
+945gembeddedchipsetfunction0	Intel 945G Embedded Chipset Function 0	4	pm3d
+945gmexpress	Mobile Intel 945GM Express	4	pm3d
+945gmguexpress	Mobile Intel 945GM/GU Express	4	pm3d
+945m	GeForce 945M	1030	pm3d
+946gzembeddedchipsetfunction0	Intel 946GZ Embedded Chipset Function 0	2	pm3d
+946gzexpress	Intel 946GZ Express	2	pm3d
+9500	RADEON 9500	23	pm3d
+95009700	RADEON 9500 PRO / 9700	27	pm3d
+9500gs	GeForce 9500 GS	94	pm3d
+9500gt	GeForce 9500 GT	81	pm3d
+9500m	GeForce 9500M	63	pm3d
+9500mg	GeForce 9500M G	74	pm3d
+9500mgs	GeForce 9500M GS	63	pm3d
+9550	RADEON 9550	22	pm3d
+9550x1050	Radeon 9550 / X1050	19	pm3d
+9600	RADEON 9600 PRO	27	pm3d
+9600family	RADEON 9600 PRO Family	18	pm3d
+9600gs	GeForce 9600 GS	162	pm3d
+9600gso	GeForce 9600 GSO	201	pm3d
+9600gso512	GeForce 9600 GSO 512	198	pm3d
+9600gt	GeForce 9600 GT	285	pm3d
+9600mgs	GeForce 9600M GS	72	pm3d
+9600mgt	GeForce 9600M GT	79	pm3d
+9600mgtgt220m	GeForce 9600M GT / GeForce GT 220M	170	pm3d
+9600se	RADEON 9600SE	18	pm3d
+9600txfamily	RADEON 9600 TX Family	12	pm3d
+9600xt	RADEON 9600 XT	22	pm3d
+9650mgs	GeForce 9650M GS	157	pm3d
+9650mgt	GeForce 9650M GT	82	pm3d
+965express	Mobile Intel 965 Express	36	pm3d
+965expressbr09070461v1839	Mobile Intel 965 Express - BR-0907-0461 v1839	5	pm3d
+965expresschipsatzfamilie	Mobile Intel 965 Express-Chipsatzfamilie	16	pm3d
+9700	RADEON 9700 PRO	34	pm3d
+9700mgt	GeForce 9700M GT	127	pm3d
+9700mgts	GeForce 9700M GTS	188	pm3d
+9800	RADEON 9800 PRO	37	pm3d
+9800gt	GeForce 9800 GT	272	pm3d
+9800gt1024mb	GeForce 9800 GT 1024MB	81	pm3d
+9800gtx	GeForce 9800 GTX	425	pm3d
+9800gtx9800gtx	GeForce 9800 GTX/9800 GTX+	353	pm3d
+9800gx2	GeForce 9800 GX2	441	pm3d
+9800mgs	GeForce 9800M GS	261	pm3d
+9800mgt	GeForce 9800M GT	241	pm3d
+9800mgts	GeForce 9800M GTS	217	pm3d
+9800mgtx	GeForce 9800M GTX	262	pm3d
+9800s	GeForce 9800 S	355	pm3d
+9800se	RADEON 9800 SE	16	pm3d
+9800xt	RADEON 9800 XT	36	pm3d
+999gtx	GeForce 999 GTX	52	pm3d
+9xxsoldierssansfrontierssigma2	9xx Soldiers sans frontiers Sigma 2	14	pm3d
+a108700p	A10-8700P	290	pm3d
+a16	A16	2914	pm3d
+a4012q	A40-12Q	2806	pm3d
+a6micro6500tquadcoreapuradeonr4	A6 Micro-6500T Quad-Core APU with RadeonR4	129	pm3d
+a9800xt	RADEON A9800XT	15	pm3d
+abitsilurot400	ABIT Siluro T400	3	pm3d
+allinwonder8500dv	ALL-IN-WONDER RADEON 8500DV	4	pm3d
+allinwonder9000	ALL-IN-WONDER 9000	4	pm3d
+allinwonder9800	ALL-IN-WONDER 9800	15	pm3d
+allinwonderx1800xl	All-in-Wonder X1800XL	19	pm3d
+allinwonderx1900	All-in-Wonder X1900	77	pm3d
+allinwonderx800gt	ALL-IN-WONDER X800 GT	52	pm3d
+amigamerlin31r1forvoodoo44500pci	AMIGAMERLIN 3.1-R1 For Voodoo 4 4500 PCI	2	pm3d
+arc130t	Intel Arc Graphics 130T	2378	ts
+arc130v	Intel Arc Graphics 130V	3388	ts
+arc140t	Intel Arc Graphics 140T	3843	ts
+arc140v	Intel Arc Graphics 140V	4044	ts
+arc7coreigpu	Intel Arc 7-Core iGPU	2940	ts
+arc8coreigpu	Intel Arc 8-Core iGPU	3271	ts
+arca310	Intel Arc A310	3269	ts
+arca350m	Intel Arc A350M	3050	ts
+arca370m	Intel Arc A370M	3885	ts
+arca530m	Intel Arc A530M	5851	ts
+arca550m	Intel Arc A550M	5830	ts
+arca730m	Intel Arc A730M	8813	ts
+arca770m	Intel Arc A770M	10783	ts
+arcb370	Intel Arc B370	6050	ts
+arcb390	Intel Arc B390	6627	ts
+asusa7000	ASUS A7000	6	pm3d
+asusagpv3800prov3140h	ASUS AGP-V3800PRO v31.40H	4	pm3d
+asuseah4870x2	ASUS EAH4870x2	280	pm3d
+asusgtx650fmliiecegpu	Asus GTX 650 FML II EC-EGPU	400	pm3d
+asusv9520xv6211	ASUS V9520-X V62.11	5	pm3d
+b43expresschipset	Intel B43 Express Chipset	42	pm3d
+b8dkmdap	B8DKMDAP	2317	pm3d
+barcomxrt1450	Barco MXRT 1450	121	pm3d
+barcomxrt2600	Barco MXRT 2600	494	pm3d
+barcomxrt5400	Barco MXRT 5400	630	pm3d
+barcomxrt5450	Barco MXRT 5450	587	pm3d
+barcomxrt5500	Barco MXRT 5500	1408	pm3d
+barcomxrt7100	Barco MXRT 7100	107	pm3d
+barcomxrt7400	Barco MXRT 7400	495	pm3d
+barcomxrt7500	Barco MXRT 7500	2201	pm3d
+barcomxrt7600	Barco MXRT 7600	2504	pm3d
+basicdisplay	BASICDISPLAY	43	pm3d
+carrizo9874	CARRIZO 9874	144	pm3d
+citrixindirectdisplayadapter	Citrix Indirect Display Adapter	2264	pm3d
+coffeelakeuhd	Intel Coffee Lake UHD	628	pm3d
+connect3dx300	CONNECT 3D RADEON X300	23	pm3d
+custom0405	Custom GPU 0405	1473	pm3d
+cx	Quadro CX	519	pm3d
+dell8100	Dell 8100	1	pm3d
+dell8200	Dell 8200	3	pm3d
+diamondx1300pcie256mb	Diamond X1300-PCIE 256MB	43	pm3d
+duo	Radeon Pro Duo	4113	pm3d
+e2400	RADEON E2400	33	pm3d
+e4690	RADEON E4690	231	pm3d
+e6460	Radeon E6460	187	pm3d
+e6465	Radeon E6465	135	pm3d
+e6760	Radeon E6760	482	pm3d
+e8860	Radeon E8860	868	pm3d
+e8870pcie	Radeon E8870PCIe	1737	pm3d
+eah5450	EAH5450	81	pm3d
+egpark	EG PARK	85	pm3d
+eizomedx5000	EIZO MED-X5000	1575	pm3d
+eizomedxn51lp	EIZO Quadro MED-XN51LP	2509	pm3d
+embeddede9173	Embedded Radeon E9173	955	pm3d
+expresschipsetg41	Intel - Express Chipset G41	36	pm3d
+expresschipsetq45q43	Intel - Express Chipset Q45/Q43	36	pm3d
+extremeax850	Extreme AX850 PRO	73	pm3d
+extremecontroller	Intel Extreme Controller	1	pm3d
+famigliaexpresschipset45	Mobile Intel - famiglia Express Chipset 45	25	pm3d
+familiaq33expresschipset	Familia Intel Q33 Express Chipset	7	pm3d
+familledejeudepucesexpress946gz	Famille de jeu de puces Express Intel 946GZ	5	pm3d
+fireglt2128	FireGL T2-128	20	pm3d
+fireglv3100	FireGL V3100	33	pm3d
+fireglv3200	FireGL V3200	52	pm3d
+fireglv3300	FireGL V3300	44	pm3d
+fireglv3350	FireGL V3350	43	pm3d
+fireglv3400	FireGL V3400	63	pm3d
+fireglv3600	FireGL V3600	107	pm3d
+fireglv5100	FireGL V5100	57	pm3d
+fireglv5200	FireGL V5200	70	pm3d
+fireglv5600	FireGL V5600	196	pm3d
+fireglv7100	FireGL V7100	45	pm3d
+fireglv7200	FireGL V7200	70	pm3d
+fireglv7300	FireGL V7300	77	pm3d
+fireglv7350	FireGL V7350	67	pm3d
+fireglv7600	FireGL V7600	344	pm3d
+fireglv7700	FireGL V7700	368	pm3d
+fireglv8600	FireGL V8600	462	pm3d
+fireglv8650	FireGL V8650	309	pm3d
+fireglx1	FireGL X1	37	pm3d
+firemv2200pci	FireMV 2200 PCI	1	pm3d
+firemv2200pcie	FireMV 2200 PCIe	23	pm3d
+firemv2250	FireMV 2250	29	pm3d
+firemv2260	FireMV 2260	71	pm3d
+firemv2400pcie	FireMV 2400 PCIe	7	pm3d
+firemv2450	FireMV 2450	46	pm3d
+firestream9170	FireStream 9170	361	pm3d
+firestream9250	FireStream 9250	632	pm3d
+firestream9270	FireStream 9270	723	pm3d
+firestream9370	FireStream 9370	1322	pm3d
+fx1000	Quadro FX 1000	22	pm3d
+fx1100	Quadro FX 1100	23	pm3d
+fx1300	Quadro FX 1300	22	pm3d
+fx1400	Quadro FX 1400	75	pm3d
+fx1500	Quadro FX 1500	112	pm3d
+fx1500m	Quadro FX 1500M	102	pm3d
+fx1600m	Quadro FX 1600M	110	pm3d
+fx1700	Quadro FX 1700	71	pm3d
+fx1700m	Quadro FX 1700M	103	pm3d
+fx1800	Quadro FX 1800	231	pm3d
+fx1800m	Quadro FX 1800M	266	pm3d
+fx2000	Quadro FX 2000	12	pm3d
+fx2500m	Quadro FX 2500M	128	pm3d
+fx2700	Quadro FX 2700	305	pm3d
+fx2700m	Quadro FX 2700M	205	pm3d
+fx2800m	Quadro FX 2800M	246	pm3d
+fx3000	Quadro FX 3000	43	pm3d
+fx34004400	Quadro FX 3400/4400	63	pm3d
+fx3450	Quadro FX 3450	89	pm3d
+fx34504000sdi	Quadro FX 3450/4000 SDI	110	pm3d
+fx350	Quadro FX 350	53	pm3d
+fx3500	Quadro FX 3500	169	pm3d
+fx3500m	Quadro FX 3500M	177	pm3d
+fx350m	Quadro FX 350M	28	pm3d
+fx3600m	Quadro FX 3600M	265	pm3d
+fx360m	Quadro FX 360M	53	pm3d
+fx370	Quadro FX 370	52	pm3d
+fx3700	Quadro FX 3700	220	pm3d
+fx3700m	Quadro FX 3700M	265	pm3d
+fx370lowprofile	Quadro FX 370 Low Profile	63	pm3d
+fx370lp	Quadro FX 370 LP	66	pm3d
+fx370m	Quadro FX 370M	57	pm3d
+fx380	Quadro FX 380	110	pm3d
+fx3800	Quadro FX 3800	431	pm3d
+fx3800m	Quadro FX 3800M	351	pm3d
+fx380lp	Quadro FX 380 LP	82	pm3d
+fx380m	Quadro FX 380M	75	pm3d
+fx4000	Quadro FX 4000	62	pm3d
+fx4500	Quadro FX 4500	133	pm3d
+fx4500x2	Quadro FX 4500 X2	138	pm3d
+fx4600	Quadro FX 4600	248	pm3d
+fx4700x2	Quadro FX 4700 X2	376	pm3d
+fx4800	Quadro FX 4800	535	pm3d
+fx500600pci	Quadro FX 500/600 PCI	9	pm3d
+fx500fx600	Quadro FX 500/FX 600	5	pm3d
+fx5100	GeForce FX 5100	5	pm3d
+fx5200	GeForce FX 5200	5	pm3d
+fx5200le	GeForce FX 5200LE	5	pm3d
+fx5200se	GeForce FX 5200SE	8	pm3d
+fx5200ultra	GeForce FX 5200 Ultra	8	pm3d
+fx540	Quadro FX 540	50	pm3d
+fx550	Quadro FX 550	40	pm3d
+fx5500	Quadro FX 5500	141	pm3d
+fx560	Quadro FX 560	69	pm3d
+fx5600	Quadro FX 5600	316	pm3d
+fx5600ultra	GeForce FX 5600 Ultra	11	pm3d
+fx5600xt	GeForce FX 5600XT	6	pm3d
+fx570	Quadro FX 570	93	pm3d
+fx5700	GeForce FX 5700	26	pm3d
+fx5700le	GeForce FX 5700LE	16	pm3d
+fx5700ultra	GeForce FX 5700 Ultra	22	pm3d
+fx5700ve	GeForce FX 5700VE	21	pm3d
+fx570m	Quadro FX 570M	67	pm3d
+fx580	Quadro FX 580	93	pm3d
+fx5800	Quadro FX 5800	675	pm3d
+fx5900	GeForce FX 5900	22	pm3d
+fx5900ultra	GeForce FX 5900 Ultra	26	pm3d
+fx5900xt	GeForce FX 5900XT	25	pm3d
+fx5900zt	GeForce FX 5900ZT	21	pm3d
+fx5950ultra	GeForce FX 5950 Ultra	37	pm3d
+fx770m	Quadro FX 770M	117	pm3d
+fx880m	Quadro FX 880M	129	pm3d
+fxgo1400	Quadro FX Go1400	62	pm3d
+fxgo5200	GeForce FX Go 5200	5	pm3d
+fxgo5300	GeForce FX Go5300	9	pm3d
+fxgo5600	GeForce FX Go 5600	12	pm3d
+fxgo5650	GeForce FX Go5650	11	pm3d
+fxgo5700	GeForce FX Go5700	32	pm3d
+g100	GeForce G100	88	pm3d
+g102m	GeForce G102M	81	pm3d
+g103m	GeForce G 103M	38	pm3d
+g105m	GeForce G105M	66	pm3d
+g200	GeForce G200	118	pm3d
+g205m	GeForce G205M	56	pm3d
+g210	GeForce G210	63	pm3d
+g210m	GeForce G210M	74	pm3d
+g33g31express	Intel G33/G31 Express	53	pm3d
+g35express	Intel G35 Express	1600	pm3d
+g41expresschipsatz	Intel G41 Express-Chipsatz	36	pm3d
+g41expresschipset	Intel G41 Express Chipset	51	pm3d
+g45g43expresschipset	Intel G45/G43 Express Chipset	46	pm3d
+g45g43g41expresschipset	Intel G45/G43/G41 Express Chipset	42	pm3d
+g965express	Intel G965 Express	16	pm3d
+gecube7000	GeCube RADEON 7000	6	pm3d
+geforce2go	GeForce2 Go	3	pm3d
+geforce2gtsgeforce2	GeForce2 GTS/GeForce2 Pro	3	pm3d
+geforce2integrated	GeForce2 Integrated GPU	3	pm3d
+geforce2mx	GeForce2 MX	2	pm3d
+geforce2mx100200	GeForce2 MX 100/200	2	pm3d
+geforce2mxdvidandtvout	GeForce2 MX with DVI-D and TV-out	4	pm3d
+geforce2mxmx400	GeForce2 MX/MX 400	3	pm3d
+geforce2ti	GeForce2 Ti	4	pm3d
+geforce2ultra	GeForce2 Ultra	4	pm3d
+geforce3	GeForce3	4	pm3d
+geforce3ti200	GeForce3 Ti 200	3	pm3d
+geforce3ti500	GeForce3 Ti 500	2	pm3d
+geforce44200go	GeForce4 4200 Go	3	pm3d
+geforce4420go	GeForce4 420 Go	2	pm3d
+geforce4420go32m	GeForce4 420 Go 32M	4	pm3d
+geforce4440	GeForce4 440	4	pm3d
+geforce4440go	GeForce4 440 Go	3	pm3d
+geforce4440go64m	GeForce4 440 Go 64M	4	pm3d
+geforce4448go	GeForce4 448 Go	4	pm3d
+geforce4mx4000	GeForce4 MX 4000	4	pm3d
+geforce4mx420	GeForce4 MX 420	4	pm3d
+geforce4mx440	GeForce4 MX 440	4	pm3d
+geforce4mx440agp8x	GeForce4 MX 440 with AGP8X	4	pm3d
+geforce4mx440se	GeForce4 MX 440SE	4	pm3d
+geforce4mx460	GeForce4 MX 460	3	pm3d
+geforce4mxintegrated	GeForce4 MX Integrated GPU	5	pm3d
+geforce4ti4200	GeForce4 Ti 4200	4	pm3d
+geforce4ti4400	GeForce4 Ti 4400	5	pm3d
+geforce4ti4600	GeForce4 Ti 4600	4	pm3d
+geforce4ti4800	GeForce4 Ti 4800	4	pm3d
+geforce4ti4800se	GeForce4 Ti 4800 SE	5	pm3d
+gf117	GF117	311	pm3d
+gigabyte9600	GIGABYTE RADEON 9600 PRO	25	pm3d
+gigabytex300	Gigabyte RADEON X300	26	pm3d
+gma3150express	Intel GMA 3150 Express	2	pm3d
+go6100	GeForce Go 6100	12	pm3d
+go6150	GeForce Go 6150	13	pm3d
+go6200	GeForce Go 6200	10	pm3d
+go6400	GeForce Go 6400	16	pm3d
+go6600	GeForce Go 6600	43	pm3d
+go6600te6200te	GeForce Go 6600 TE/6200 TE	28	pm3d
+go6800	GeForce Go 6800	64	pm3d
+go6800ultra	GeForce Go 6800 Ultra	83	pm3d
+go7200	GeForce Go 7200	28	pm3d
+go7300	GeForce Go 7300	33	pm3d
+go7400	GeForce Go 7400	41	pm3d
+go7600	GeForce Go 7600	77	pm3d
+go7600gt	GeForce Go 7600 GT	124	pm3d
+go7700	GeForce Go 7700	89	pm3d
+go7800	GeForce Go 7800	70	pm3d
+go7800gtx	GeForce Go 7800 GTX	124	pm3d
+go7900gs	GeForce Go 7900 GS	104	pm3d
+go7900gtx	GeForce Go 7900 GTX	157	pm3d
+go7950gtx	GeForce Go 7950 GTX	154	pm3d
+gp100	Quadro GP100	7756	pm3d
+gridgtxp406	GRID GTX P40-6	2212	pm3d
+gridk1	GRID K1	448	pm3d
+gridk120q	GRID K120Q	170	pm3d
+gridk140q	GRID K140Q	404	pm3d
+gridk160q	GRID K160Q	351	pm3d
+gridk180q	GRID K180Q	301	pm3d
+gridk2	GRID K2	1426	pm3d
+gridk220q	GRID K220Q	501	pm3d
+gridk240q	GRID K240Q	1328	pm3d
+gridk260q	GRID K260Q	1531	pm3d
+gridk280q	GRID K280Q	1477	pm3d
+gridk520	GRID K520	1752	pm3d
+gridm100q	GRID M10-0Q	502	pm3d
+gridm101b	GRID M10-1B	1213	pm3d
+gridm101q	GRID M10-1Q	1729	pm3d
+gridm102b	GRID M10-2B	1224	pm3d
+gridm102q	GRID M10-2Q	1384	pm3d
+gridm104q	GRID M10-4Q	1666	pm3d
+gridm108q	GRID M10-8Q	1361	pm3d
+gridm600b	GRID M60-0B	976	pm3d
+gridm600q	GRID M60-0Q	456	pm3d
+gridm601b	GRID M60-1B	2268	pm3d
+gridm601q	GRID M60-1Q	2168	pm3d
+gridm602q	GRID M60-2Q	2200	pm3d
+gridm604q	GRID M60-4Q	1964	pm3d
+gridm608a	GRID M60-8A	2782	pm3d
+gridm608q	GRID M60-8Q	1990	pm3d
+gridm60b	GRID M6-0B	501	pm3d
+gridm61q	GRID M6-1Q	1092	pm3d
+gridm68q	GRID M6-8Q	1835	pm3d
+gridp10016q	GRID P100-16Q	2985	pm3d
+gridp1001b	GRID P100-1B	1169	pm3d
+gridp1008q	GRID P100-8Q	1969	pm3d
+gridp4024q	GRID P40-24Q	2400	pm3d
+gridp402b	GRID P40-2B	1730	pm3d
+gridp402q	GRID P40-2Q	2186	pm3d
+gridp403q	GRID P40-3Q	379	pm3d
+gridp404q	GRID P40-4Q	430	pm3d
+gridp62q	GRID P6-2Q	2010	pm3d
+gridp64a	GRID P6-4A	1377	pm3d
+gridp64q	GRID P6-4Q	2255	pm3d
+gridrtx6000p4q	GRID RTX6000P-4Q	2184	pm3d
+gridrtx6000p6q	GRID RTX6000P-6Q	2423	pm3d
+gridrtx80002q	GRID RTX8000-2Q	1838	pm3d
+gridrtx80004q	GRID RTX8000-4Q	2027	pm3d
+gridrtx8000p2q	GRID RTX8000P-2Q	1970	pm3d
+gridt41q	GRID T4-1Q	1409	pm3d
+gridt42b	GRID T4-2B	1358	pm3d
+gridt42q	GRID T4-2Q	1571	pm3d
+gridt44q	GRID T4-4Q	1646	pm3d
+gridt48q	GRID T4-8Q	2184	pm3d
+gridv1008q	GRID V100-8Q	11	pm3d
+gridv100d8q	GRID V100D-8Q	2122	pm3d
+gt1030	GeForce GT 1030	1330	pm3d
+gt120	GeForce GT 120	104	pm3d
+gt1209500gt	GeForce GT 120 / 9500 GT	187	pm3d
+gt120m	GeForce GT 120M	155	pm3d
+gt130	GeForce GT 130	199	pm3d
+gt130m	GeForce GT 130M	87	pm3d
+gt140	GeForce GT 140	367	pm3d
+gt220	GeForce GT 220	124	pm3d
+gt220m	GeForce GT 220M	73	pm3d
+gt230	GeForce GT 230	186	pm3d
+gt230m	GeForce GT 230M	119	pm3d
+gt240	GeForce GT 240	305	pm3d
+gt240m	GeForce GT 240M	121	pm3d
+gt320	GeForce GT 320	252	pm3d
+gt320m	GeForce GT 320M	65	pm3d
+gt325m	GeForce GT 325M	102	pm3d
+gt330	GeForce GT 330	240	pm3d
+gt330m	GeForce GT 330M	123	pm3d
+gt335m	GeForce GT 335M	228	pm3d
+gt340	GeForce GT 340	428	pm3d
+gt415	GeForce GT 415	145	pm3d
+gt415m	GeForce GT 415M	166	pm3d
+gt420	GeForce GT 420	234	pm3d
+gt420m	GeForce GT 420M	238	pm3d
+gt425m	GeForce GT 425M	291	pm3d
+gt430	GeForce GT 430	337	pm3d
+gt435m	GeForce GT 435M	294	pm3d
+gt440	GeForce GT 440	424	pm3d
+gt445m	GeForce GT 445M	484	pm3d
+gt520	GeForce GT 520	172	pm3d
+gt520m	GeForce GT 520M	167	pm3d
+gt520mx	GeForce GT 520MX	170	pm3d
+gt525m	GeForce GT 525M	261	pm3d
+gt530	GeForce GT 530	376	pm3d
+gt540m	GeForce GT 540M	279	pm3d
+gt545	GeForce GT 545	596	pm3d
+gt550m	GeForce GT 550M	325	pm3d
+gt555m	GeForce GT 555M	383	pm3d
+gt610	GeForce GT 610	175	pm3d
+gt610mgt620mgt710mgt720mgt	GeForce GT 610M / GT 620M / GT 710M / GT 720M / GT	211	pm3d
+gt620	GeForce GT 620	209	pm3d
+gt620m	GeForce GT 620M	245	pm3d
+gt625	GeForce GT 625	190	pm3d
+gt625m	GeForce GT625M	279	pm3d
+gt630	GeForce GT 630	380	pm3d
+gt630m	GeForce GT 630M	309	pm3d
+gt635	GeForce GT 635	469	pm3d
+gt635m	GeForce GT 635M	316	pm3d
+gt640	GeForce GT 640	641	pm3d
+gt640m	GeForce GT 640M	498	pm3d
+gt640mle	GeForce GT 640M LE	375	pm3d
+gt645	GeForce GT 645	1060	pm3d
+gt645m	GeForce GT 645M	525	pm3d
+gt650m	GeForce GT 650M	650	pm3d
+gt705	GeForce GT 705	204	pm3d
+gt710	GeForce GT 710	356	pm3d
+gt710m	GeForce GT 710M	252	pm3d
+gt720	GeForce GT 720	339	pm3d
+gt720a	GeForce GT 720A	336	pm3d
+gt720m	GeForce GT 720M	265	pm3d
+gt730	GeForce GT 730	448	pm3d
+gt730a	GeForce GT 730A	412	pm3d
+gt730m	GeForce GT 730M	450	pm3d
+gt735m	GeForce GT 735M	333	pm3d
+gt740	GeForce GT 740	819	pm3d
+gt740a	GeForce GT 740A	390	pm3d
+gt740m	GeForce GT 740M	431	pm3d
+gt745a	GeForce GT 745A	621	pm3d
+gt745m	GeForce GT 745M	575	pm3d
+gt750m	GeForce GT 750M	708	pm3d
+gt755m	GeForce GT 755M	860	pm3d
+gt820m	GeForce GT 820M	350	pm3d
+gts150m	GeForce GTS 150M	284	pm3d
+gts160m	GeForce GTS 160M	378	pm3d
+gts240	GeForce GTS 240	348	pm3d
+gts250	GeForce GTS 250	345	pm3d
+gts250m	GeForce GTS 250M	319	pm3d
+gts350m	GeForce GTS 350M	233	pm3d
+gts360m	GeForce GTS 360M	365	pm3d
+gts450	GeForce GTS 450	712	pm3d
+gtx1050	NVIDIA GeForce GTX 1050 Max-Q	1615	ts
+gtx1050ti	NVIDIA GeForce GTX 1050 Ti Mobile	2326	ts
+gtx1060	NVIDIA GeForce GTX 1060 Mobile	3580	ts
+gtx10603gb	GeForce GTX 1060 3GB	4771	pm3d
+gtx10605gb	GeForce GTX 1060 5GB	4291	pm3d
+gtx1070	NVIDIA GeForce GTX 1070 Mobile	5485	ts
+gtx1070ti	GeForce GTX 1070 Ti	6978	pm3d
+gtx1080	NVIDIA GeForce GTX 1080 Mobile	6917	ts
+gtx1080ti	GeForce GTX 1080 Ti	8702	pm3d
+gtx1650	NVIDIA GeForce GTX 1650 Mobile	3488	ts
+gtx1650super	GeForce GTX 1650 SUPER	4913	pm3d
+gtx1650ti	NVIDIA GeForce GTX 1650 Ti Mobile	3618	ts
+gtx1660	GeForce GTX 1660	5686	pm3d
+gtx1660super	GeForce GTX 1660 SUPER	6165	pm3d
+gtx1660ti	NVIDIA GeForce GTX 1660 Ti Mobile	5659	ts
+gtx260	GeForce GTX 260	661	pm3d
+gtx260m	GeForce GTX 260M	235	pm3d
+gtx275	GeForce GTX 275	753	pm3d
+gtx280	GeForce GTX 280	640	pm3d
+gtx280m	GeForce GTX 280M	347	pm3d
+gtx285	GeForce GTX 285	829	pm3d
+gtx285m	GeForce GTX 285M	376	pm3d
+gtx295	GeForce GTX 295	635	pm3d
+gtx460	GeForce GTX 460	1202	pm3d
+gtx460m	GeForce GTX 460M	649	pm3d
+gtx460se	GeForce GTX 460 SE	1044	pm3d
+gtx460v2	GeForce GTX 460 v2	1060	pm3d
+gtx465	GeForce GTX 465	1398	pm3d
+gtx470	GeForce GTX 470	1628	pm3d
+gtx470m	GeForce GTX 470M	1034	pm3d
+gtx480	GeForce GTX 480	2100	pm3d
+gtx480m	GeForce GTX 480M	1083	pm3d
+gtx485m	GeForce GTX 485M	1238	pm3d
+gtx550ti	GeForce GTX 550 Ti	833	pm3d
+gtx555	GeForce GTX 555	960	pm3d
+gtx560	GeForce GTX 560	1413	pm3d
+gtx560m	GeForce GTX 560M	684	pm3d
+gtx560se	GeForce GTX 560 SE	1101	pm3d
+gtx560ti	GeForce GTX 560 Ti	1584	pm3d
+gtx570	GeForce GTX 570	1999	pm3d
+gtx570m	GeForce GTX 570M	1012	pm3d
+gtx580	GeForce GTX 580	2308	pm3d
+gtx580m	GeForce GTX 580M	1244	pm3d
+gtx590	GeForce GTX 590	1707	pm3d
+gtx645	GeForce GTX 645	986	pm3d
+gtx650	GeForce GTX 650	941	pm3d
+gtx650ti	GeForce GTX 650 Ti	1321	pm3d
+gtx650tiboost	GeForce GTX 650 Ti BOOST	1718	pm3d
+gtx660	GeForce GTX 660	2048	pm3d
+gtx660m	GeForce GTX 660M	760	pm3d
+gtx660ti	GeForce GTX 660 Ti	2225	pm3d
+gtx670	GeForce GTX 670	2677	pm3d
+gtx670m	GeForce GTX 670M	944	pm3d
+gtx670mx	GeForce GTX 670MX	1010	pm3d
+gtx675m	GeForce GTX 675M	1024	pm3d
+gtx675mx	GeForce GTX 675MX	1227	pm3d
+gtx680	GeForce GTX 680	2788	pm3d
+gtx680m	GeForce GTX 680M	1594	pm3d
+gtx680mkybulletedition	GeForce GTX 680M KY_Bullet Edition	1836	pm3d
+gtx680mx	GeForce GTX 680MX	2178	pm3d
+gtx690	GeForce GTX 690	2845	pm3d
+gtx745	GeForce GTX 745	1145	pm3d
+gtx750	GeForce GTX 750	1752	pm3d
+gtx750ti	GeForce GTX 750 Ti	2007	pm3d
+gtx760	GeForce GTX 760	2422	pm3d
+gtx760a	GeForce GTX 760A	578	pm3d
+gtx760m	GeForce GTX 760M	901	pm3d
+gtx760ti	GeForce GTX 760 Ti	2630	pm3d
+gtx760tioem	GeForce GTX 760 Ti OEM	2736	pm3d
+gtx765m	GeForce GTX 765M	1043	pm3d
+gtx770	GeForce GTX 770	2959	pm3d
+gtx770m	GeForce GTX 770M	1450	pm3d
+gtx775m	GeForce GTX 775M	2148	pm3d
+gtx780	GeForce GTX 780	3970	pm3d
+gtx780m	GeForce GTX 780M	1927	pm3d
+gtx780ti	GeForce GTX 780 Ti	4576	pm3d
+gtx850a	GeForce GTX 850A	572	pm3d
+gtx850m	GeForce GTX 850M	1345	pm3d
+gtx850mmodded	GeForce GTX 850M - MODDED	594	pm3d
+gtx860m	GeForce GTX 860M	1578	pm3d
+gtx870m	GeForce GTX 870M	1743	pm3d
+gtx880m	GeForce GTX 880M	1986	pm3d
+gtx950	GeForce GTX 950	2720	pm3d
+gtx950a	GeForce GTX 950A	1299	pm3d
+gtx950m	GeForce GTX 950M	1359	pm3d
+gtx960	GeForce GTX 960	3031	pm3d
+gtx960a	GeForce GTX 960A	1263	pm3d
+gtx960m	GeForce GTX 960M	1762	pm3d
+gtx965m	GeForce GTX 965M	1960	pm3d
+gtx970	GeForce GTX 970	4752	pm3d
+gtx970m	GeForce GTX 970M	2897	pm3d
+gtx970xmforce	GeForce GTX 970XM FORCE	3348	pm3d
+gtx980	GeForce GTX 980	5473	pm3d
+gtx980m	GeForce GTX 980M	3637	pm3d
+gtx980ti	GeForce GTX 980 Ti	6686	pm3d
+gtxtitan	GeForce GTX Titan	4222	pm3d
+gtxtitanblack	GeForce GTX TITAN Black	4496	pm3d
+gtxtitanx	GeForce GTX TITAN X	6368	pm3d
+gtxtitanz	GeForce GTX TITAN Z	4519	pm3d
+gv100	Quadro GV100	8426	pm3d
+haswellhdgt1	Intel Haswell HD - GT1	74	pm3d
+haswellhdgt2	Intel Haswell HD - GT2	83	pm3d
+hd	Mobile Intel HD	165	pm3d
+hd2000	Intel HD 2000	125	pm3d
+hd2350	Radeon HD 2350	48	pm3d
+hd2400	Radeon HD 2400	73	pm3d
+hd2400pci	Radeon HD 2400 PCI	9	pm3d
+hd2400xt	Radeon HD 2400 XT	72	pm3d
+hd2600	Radeon HD 2600 PRO	124	pm3d
+hd2600agp	Radeon HD 2600 Pro AGP	67	pm3d
+hd2600xt	Radeon HD 2600 XT	164	pm3d
+hd2900	Radeon HD 2900 PRO	351	pm3d
+hd2900gt	Radeon HD 2900 GT	169	pm3d
+hd2900xt	Radeon HD 2900 XT	368	pm3d
+hd3000	Intel HD 3000	150	pm3d
+hd3200	Radeon HD 3200	50	pm3d
+hd3300	Radeon HD 3300	77	pm3d
+hd3450	Radeon HD 3450	71	pm3d
+hd3470	Radeon HD 3470	55	pm3d
+hd3650agp	Radeon HD 3650 AGP	90	pm3d
+hd3670	Radeon HD 3670	90	pm3d
+hd3850	Radeon HD 3850	234	pm3d
+hd3850agp	Radeon HD 3850 AGP	246	pm3d
+hd3850x2	Radeon HD 3850 X2	453	pm3d
+hd3870	Radeon HD 3870	323	pm3d
+hd3870x2	Radeon HD 3870 X2	394	pm3d
+hd4000	Intel HD 4000	192	pm3d
+hd4200	Radeon HD 4200	68	pm3d
+hd4250	Radeon HD 4250	74	pm3d
+hd4270	Radeon HD 4270	67	pm3d
+hd4290	Radeon HD 4290	85	pm3d
+hd43004500serisi	Radeon HD 4300/4500 Serisi	93	pm3d
+hd4330	Radeon HD 4330	66	pm3d
+hd4350	Radeon HD 4350	63	pm3d
+hd4400	Intel HD 4400	294	pm3d
+hd4550	Radeon HD 4550	138	pm3d
+hd4600	Intel HD 4600	350	pm3d
+hd4650	Radeon HD4650	140	pm3d
+hd4650agp	Radeon HD 4650 AGP	122	pm3d
+hd4670	Radeon HD 4670	220	pm3d
+hd4770	Radeon HD 4770	497	pm3d
+hd4810	Radeon HD 4810	425	pm3d
+hd4830	Radeon HD 4830	473	pm3d
+hd4850	Radeon HD 4850	522	pm3d
+hd4850x2	Radeon HD 4850 X2	615	pm3d
+hd4870	Radeon HD 4870	748	pm3d
+hd4870x2	Radeon HD 4870 X2	706	pm3d
+hd4890	Radeon HD 4890	821	pm3d
+hd500	Intel HD 500	170	pm3d
+hd5000	Intel HD 5000	316	pm3d
+hd505	Intel HD 505	195	pm3d
+hd510	Intel HD 510	346	pm3d
+hd515	Intel HD 515	348	pm3d
+hd520	Intel HD 520	476	pm3d
+hd5200	Intel HD 5200	458	pm3d
+hd530	Intel HD 530	538	pm3d
+hd5300	Intel HD 5300	222	pm3d
+hd5450	Radeon HD 5450	83	pm3d
+hd5470	Radeon HD 5470	156	pm3d
+hd5500	Intel HD 5500	326	pm3d
+hd5550	Radeon HD 5550	219	pm3d
+hd5570	Radeon HD 5570	268	pm3d
+hd5600	Intel HD 5600	395	pm3d
+hd56005700	Radeon HD 5600/5700	368	pm3d
+hd5670	Radeon HD 5670	433	pm3d
+hd5750	Radeon HD 5750	627	pm3d
+hd5770	Radeon HD 5770	728	pm3d
+hd5830	Radeon HD 5830	924	pm3d
+hd5850	Radeon HD 5850	1040	pm3d
+hd5870	Radeon HD 5870	1191	pm3d
+hd5970	Radeon HD 5970	1182	pm3d
+hd6000	Intel HD 6000	469	pm3d
+hd610	Intel HD 610	375	pm3d
+hd615	Intel HD 615	402	pm3d
+hd620	Intel HD Graphics 620	506	pm3d
+hd6230	Radeon HD 6230	106	pm3d
+hd6250	Radeon HD 6250	57	pm3d
+hd6290	Radeon HD 6290	66	pm3d
+hd6290m	Radeon HD 6290M	84	pm3d
+hd630	Intel HD 630	608	pm3d
+hd6300m	Radeon HD 6300M	85	pm3d
+hd6310	Radeon HD 6310	74	pm3d
+hd6320	Radeon HD 6320	89	pm3d
+hd6320graphic	Radeon HD 6320 Graphic	127	pm3d
+hd6320m	Radeon HD 6320M	117	pm3d
+hd6350	RADEON HD 6350	85	pm3d
+hd6370d	RADEON HD6370D	185	pm3d
+hd6370m	Radeon HD 6370M	160	pm3d
+hd6380g	Radeon HD 6380G	120	pm3d
+hd6410d	RADEON HD6410D	241	pm3d
+hd6430m	Radeon HD 6430M	114	pm3d
+hd6450	HD6450	130	pm3d
+hd64508470ddual	Radeon HD 6450 + 8470D Dual	422	pm3d
+hd6450a	Radeon HD 6450A	151	pm3d
+hd6470m	Radeon HD 6470M	134	pm3d
+hd6480g	Radeon HD 6480G	151	pm3d
+hd6480m	Radeon HD 6480M	203	pm3d
+hd6490m	Radeon HD 6490M	216	pm3d
+hd6520g	Radeon HD 6520G	174	pm3d
+hd6530d	RADEON HD6530D	300	pm3d
+hd6550a	Radeon HD 6550A	393	pm3d
+hd6550d	Radeon HD 6550D	238	pm3d
+hd6570	Radeon HD 6570	280	pm3d
+hd6610m	Radeon HD 6610M	317	pm3d
+hd6620g	Radeon HD 6620G	204	pm3d
+hd6630m	Radeon HD 6630M	381	pm3d
+hd6650a	Radeon HD 6650A	461	pm3d
+hd6650m	Radeon HD 6650M	416	pm3d
+hd6670	Radeon HD 6670	413	pm3d
+hd66706670dual	Radeon HD 6670 + 6670 Dual	361	pm3d
+hd66707660ddual	Radeon HD 6670 + 7660D Dual	800	pm3d
+hd66707670	Radeon HD 6670/7670	518	pm3d
+hd6700m	Radeon HD 6700M	555	pm3d
+hd6750	Radeon HD 6750	549	pm3d
+hd6750m	Radeon HD 6750M	514	pm3d
+hd6770	Radeon HD 6770	666	pm3d
+hd6770m	Radeon HD 6770M	528	pm3d
+hd6790	Radeon HD 6790	862	pm3d
+hd6800m	Radeon HD 6800M	403	pm3d
+hd6850	Radeon HD 6850	1047	pm3d
+hd6850x2	Radeon HD 6850 X2	1325	pm3d
+hd6870	Radeon HD 6870	1169	pm3d
+hd6900m	Radeon HD 6900M	911	pm3d
+hd6950	Radeon HD 6950	1382	pm3d
+hd6970	Radeon HD 6970	1488	pm3d
+hd6970m	Radeon HD 6970M	1193	pm3d
+hd6990	Radeon HD 6990	1562	pm3d
+hd7290	Radeon HD 7290	70	pm3d
+hd7290m	Radeon HD 7290M	74	pm3d
+hd7310	Radeon HD 7310	78	pm3d
+hd7310cartegraphique	Radeon HD 7310 - Carte graphique	103	pm3d
+hd7310g	Radeon HD 7310G	107	pm3d
+hd7310m	Radeon HD 7310M	99	pm3d
+hd7340	Radeon HD 7340	94	pm3d
+hd7340g	Radeon HD 7340G	116	pm3d
+hd7340m	Radeon HD 7340M	130	pm3d
+hd7350	Radeon HD 7350	114	pm3d
+hd7400g	Radeon HD 7400G	155	pm3d
+hd7420g	Radeon HD 7420G	180	pm3d
+hd7450	Radeon HD 7450	130	pm3d
+hd7450a	Radeon HD 7450A	167	pm3d
+hd7450m	Radeon HD 7450M	190	pm3d
+hd7470	Radeon HD 7470	182	pm3d
+hd7470m	Radeon HD 7470M	233	pm3d
+hd7480d	Radeon HD 7480D	165	pm3d
+hd7500g	Radeon HD 7500G	190	pm3d
+hd7500g7500m7600mdual	Radeon HD 7500G + 7500M/7600M Dual	345	pm3d
+hd7500g7550mdual	Radeon HD 7500G + 7550M Dual	281	pm3d
+hd7500ghd7500m7600mdual	Radeon HD 7500G + HD 7500M/7600M Dual	204	pm3d
+hd7520g	Radeon HD 7520G	180	pm3d
+hd7520g7400mdual	Radeon HD 7520G + 7400M Dual	275	pm3d
+hd7520g7470mdual	Radeon HD 7520G + 7470M Dual	305	pm3d
+hd7520g75007600dual	Radeon HD 7520G + 7500/7600 Dual	326	pm3d
+hd7520g7600mdual	Radeon HD 7520G + 7600M Dual	331	pm3d
+hd7520g7610mdual	Radeon HD 7520G + 7610M Dual	329	pm3d
+hd7520g7650mdual	Radeon HD 7520G + 7650M Dual	257	pm3d
+hd7520g7670mdual	Radeon HD 7520G + 7670M Dual	295	pm3d
+hd7520g7700mdual	Radeon HD 7520G + 7700M Dual	578	pm3d
+hd7520g86008700mdual	Radeon HD 7520G + 8600/8700M Dual	180	pm3d
+hd7520g8750mdual	Radeon HD 7520G + 8750M Dual	216	pm3d
+hd7520ghd7400mdual	Radeon HD 7520G + HD 7400M Dual	307	pm3d
+hd7520ghd75007600dual	Radeon HD 7520G + HD 7500/7600 Dual	459	pm3d
+hd7520ghd7600mdual	Radeon HD 7520G + HD 7600M Dual	254	pm3d
+hd7520ghd7670mdual	Radeon HD 7520G + HD 7670M Dual	280	pm3d
+hd7520ghd7700mdual	Radeon HD 7520G + HD 7700M Dual	323	pm3d
+hd7520ghd86008700mdual	Radeon HD 7520G + HD 8600/8700M Dual	349	pm3d
+hd7520ghd8750mdual	Radeon HD 7520G + HD 8750M Dual	363	pm3d
+hd7520gnhd7520ghd750076007500760	Radeon HD 7520G N HD 7520G + HD 7500/7600 7500/760	323	pm3d
+hd7520gnhd7520ghd7600mnhd7600md	Radeon HD 7520G N HD 7520G + HD 7600M N HD 7600M D	209	pm3d
+hd7540d	Radeon HD 7540D	193	pm3d
+hd7540d6570dual	Radeon HD 7540D + 6570 Dual	400	pm3d
+hd7540d7500dual	Radeon HD 7540D + 7500 Dual	453	pm3d
+hd7540dhd6450dual	Radeon HD 7540D + HD 6450 Dual	359	pm3d
+hd7550m	Radeon HD 7550M	263	pm3d
+hd7550m7650m	Radeon HD 7550M/7650M	404	pm3d
+hd7560d	Radeon HD 7560D	267	pm3d
+hd7560d6450dual	Radeon HD 7560D + 6450 Dual	319	pm3d
+hd7560d6570dual	Radeon HD 7560D + 6570 Dual	459	pm3d
+hd7560d6670dual	Radeon HD 7560D + 6670 Dual	614	pm3d
+hd7560d7560ddual	Radeon HD 7560D + 7560D Dual	538	pm3d
+hd7560d7570dual	Radeon HD 7560D + 7570 Dual	539	pm3d
+hd7560d7670dual	Radeon HD 7560D + 7670 Dual	766	pm3d
+hd7560d7700dual	Radeon HD 7560D + 7700 Dual	1017	pm3d
+hd7560dhd6570dual	Radeon HD 7560D + HD 6570 Dual	669	pm3d
+hd7560dhd6670dual	Radeon HD 7560D + HD 6670 Dual	832	pm3d
+hd7560dhd7000dual	Radeon HD 7560D + HD 7000 Dual	301	pm3d
+hd7560dhd7600dual	Radeon HD 7560D + HD 7600 Dual	680	pm3d
+hd7560dhd7670dual	Radeon HD 7560D + HD 7670 Dual	743	pm3d
+hd7560dhd7700dual	Radeon HD 7560D + HD 7700 Dual	726	pm3d
+hd7560dhd8570dual	Radeon HD 7560D + HD 8570 Dual	513	pm3d
+hd7560dr5235dual	Radeon HD 7560D + R5 235 Dual	316	pm3d
+hd7570	Radeon HD 7570	343	pm3d
+hd7570m	Radeon HD 7570M	253	pm3d
+hd7570mhd7670m	Radeon HD 7570M/HD 7670M	388	pm3d
+hd7580d	Radeon HD 7580D	202	pm3d
+hd7600g	Radeon HD 7600G	185	pm3d
+hd7600g6400mdual	Radeon HD 7600G + 6400M Dual	216	pm3d
+hd7600g7450mdual	Radeon HD 7600G + 7450M Dual	223	pm3d
+hd7600g7500m7600mdual	Radeon HD 7600G + 7500M/7600M Dual	232	pm3d
+hd7600g7550mdual	Radeon HD 7600G + 7550M Dual	241	pm3d
+hd7600g8500m8700mdual	Radeon HD 7600G + 8500M/8700M Dual	266	pm3d
+hd7600ghd7400mdual	Radeon HD 7600G + HD 7400M Dual	190	pm3d
+hd7600ghd7500m7600mdual	Radeon HD 7600G + HD 7500M/7600M Dual	312	pm3d
+hd7600ghd7550mdual	Radeon HD 7600G + HD 7550M Dual	287	pm3d
+hd7600ghd8670mdual	Radeon HD 7600G + HD 8670M Dual	306	pm3d
+hd7600ghddual	Radeon HD 7600G + HD Dual	247	pm3d
+hd7600gnhd7600ghdonhddual	Radeon HD 7600G N HD 7600G + HD ON HD Dual	296	pm3d
+hd7600m7600mdual	Radeon HD 7600M + 7600M Dual	428	pm3d
+hd7610m	Radeon HD 7610M	353	pm3d
+hd7620g	Radeon HD 7620G	210	pm3d
+hd7620g8600mdual	Radeon HD 7620G + 8600M Dual	287	pm3d
+hd7620g8670mdual	Radeon HD 7620G + 8670M Dual	324	pm3d
+hd7620ghd8600mdual	Radeon HD 7620G + HD 8600M Dual	252	pm3d
+hd7620ghd8670mdual	Radeon HD 7620G + HD 8670M Dual	286	pm3d
+hd7620gnhd7620ghd8600mnhd8600md	Radeon HD 7620G N HD 7620G + HD 8600M N HD 8600M D	256	pm3d
+hd7640g	Radeon HD 7640G	254	pm3d
+hd7640g6400mdual	Radeon HD 7640G + 6400M Dual	297	pm3d
+hd7640g7400mdual	Radeon HD 7640G + 7400M Dual	356	pm3d
+hd7640g7450mdual	Radeon HD 7640G + 7450M Dual	418	pm3d
+hd7640g7470mdual	Radeon HD 7640G + 7470M Dual	333	pm3d
+hd7640g75007600dual	Radeon HD 7640G + 7500/7600 Dual	350	pm3d
+hd7640g7500m7600mdual	Radeon HD 7640G + 7500M/7600M Dual	429	pm3d
+hd7640g7600mdual	Radeon HD 7640G + 7600M Dual	392	pm3d
+hd7640g7610mdual	Radeon HD 7640G + 7610M Dual	288	pm3d
+hd7640g7650mdual	Radeon HD 7640G + 7650M Dual	414	pm3d
+hd7640g7670mdual	Radeon HD 7640G + 7670M Dual	360	pm3d
+hd7640g7690mdual	Radeon HD 7640G + 7690M Dual	518	pm3d
+hd7640g7700mdual	Radeon HD 7640G + 7700M Dual	384	pm3d
+hd7640g8500mdual	Radeon HD 7640G + 8500M Dual	328	pm3d
+hd7640g8570mdual	Radeon HD 7640G + 8570M Dual	313	pm3d
+hd7640g86008700mdual	Radeon HD 7640G + 8600/8700M Dual	383	pm3d
+hd7640g8600mdual	Radeon HD 7640G + 8600M Dual	146	pm3d
+hd7640g8670mdual	Radeon HD 7640G + 8670M Dual	313	pm3d
+hd7640g8750mdual	Radeon HD 7640G + 8750M Dual	365	pm3d
+hd7640ghd7400mdual	Radeon HD 7640G + HD 7400M Dual	347	pm3d
+hd7640ghd75007600dual	Radeon HD 7640G + HD 7500/7600 Dual	241	pm3d
+hd7640ghd7600mdual	Radeon HD 7640G + HD 7600M Dual	391	pm3d
+hd7640ghd7600mnhd7600mdual	Radeon HD 7640G + HD 7600M N HD 7600M Dual	232	pm3d
+hd7640ghd7670mdual	Radeon HD 7640G + HD 7670M Dual	293	pm3d
+hd7640ghd7700mdual	Radeon HD 7640G + HD 7700M Dual	330	pm3d
+hd7640ghd7700mnhd7700mdual	Radeon HD 7640G + HD 7700M N HD 7700M Dual	352	pm3d
+hd7640ghd8500mdual	Radeon HD 7640G + HD 8500M Dual	340	pm3d
+hd7640ghd8500mnhd8500mdual	Radeon HD 7640G + HD 8500M N HD 8500M Dual	371	pm3d
+hd7640ghd8570mdual	Radeon HD 7640G + HD 8570M Dual	269	pm3d
+hd7640ghd86008700mdual	Radeon HD 7640G + HD 8600/8700M Dual	329	pm3d
+hd7640ghd8670mdual	Radeon HD 7640G + HD 8670M Dual	377	pm3d
+hd7640ghd8750mdual	Radeon HD 7640G + HD 8750M Dual	545	pm3d
+hd7640gnhd7640ghd7600mnhd7600md	Radeon HD 7640G N HD 7640G + HD 7600M N HD 7600M D	454	pm3d
+hd7640gnhd7640ghd7670mdual	Radeon HD 7640G N HD 7640G + HD 7670M Dual	378	pm3d
+hd7640gnhd7640ghd8570mdual	Radeon HD 7640G N HD 7640G + HD 8570M Dual	241	pm3d
+hd7640gr5m200dual	Radeon HD 7640G + R5 M200 Dual	314	pm3d
+hd7640gr5m230dual	Radeon HD 7640G + R5 M230 Dual	140	pm3d
+hd7650a	Radeon HD 7650A	317	pm3d
+hd7650m	Radeon HD 7650M	256	pm3d
+hd7660d	Radeon HD 7660D	284	pm3d
+hd7660d6570dual	Radeon HD 7660D + 6570 Dual	598	pm3d
+hd7660d6670dual	Radeon HD 7660D + 6670 Dual	670	pm3d
+hd7660d7470dual	Radeon HD 7660D + 7470 Dual	264	pm3d
+hd7660d7500dual	Radeon HD 7660D + 7500 Dual	609	pm3d
+hd7660d7540ddual	Radeon HD 7660D + 7540D Dual	652	pm3d
+hd7660d7670dual	Radeon HD 7660D + 7670 Dual	579	pm3d
+hd7660dhd6670dual	Radeon HD 7660D + HD 6670 Dual	796	pm3d
+hd7660dhd7000dual	Radeon HD 7660D + HD 7000 Dual	354	pm3d
+hd7660dhd7400dual	Radeon HD 7660D + HD 7400 Dual	196	pm3d
+hd7660dhd7700dual	Radeon HD 7660D + HD 7700 Dual	1036	pm3d
+hd7660dr5235dual	Radeon HD 7660D + R5 235 Dual	295	pm3d
+hd7660dr7240dual	Radeon HD 7660D + R7 240 Dual	516	pm3d
+hd7660g	Radeon HD 7660G	269	pm3d
+hd7660g7400mdual	Radeon HD 7660G + 7400M Dual	329	pm3d
+hd7660g7470mdual	Radeon HD 7660G + 7470M Dual	352	pm3d
+hd7660g7600mdual	Radeon HD 7660G + 7600M Dual	459	pm3d
+hd7660g7610mdual	Radeon HD 7660G + 7610M Dual	413	pm3d
+hd7660g7670mdual	Radeon HD 7660G + 7670M Dual	412	pm3d
+hd7660g7700mdual	Radeon HD 7660G + 7700M Dual	419	pm3d
+hd7660g7730mdual	Radeon HD 7660G + 7730M Dual	510	pm3d
+hd7660g8600mdual	Radeon HD 7660G + 8600M Dual	253	pm3d
+hd7660g8670mdual	Radeon HD 7660G + 8670M Dual	329	pm3d
+hd7660ghd7500760075007600dual	Radeon HD 7660G + HD 7500/7600 7500/7600 Dual	547	pm3d
+hd7660ghd75007600dual	Radeon HD 7660G + HD 7500/7600 Dual	421	pm3d
+hd7660ghd7500m7600mdual	Radeon HD 7660G + HD 7500M/7600M Dual	546	pm3d
+hd7660ghd7600mdual	Radeon HD 7660G + HD 7600M Dual	344	pm3d
+hd7660ghd7600mnhd7600mdual	Radeon HD 7660G + HD 7600M N HD 7600M Dual	261	pm3d
+hd7660ghd7670mdual	Radeon HD 7660G + HD 7670M Dual	393	pm3d
+hd7660ghd7700mdual	Radeon HD 7660G + HD 7700M Dual	430	pm3d
+hd7660ghd7730mdual	Radeon HD 7660G + HD 7730M Dual	485	pm3d
+hd7660ghd8500mdual	Radeon HD 7660G + HD 8500M Dual	420	pm3d
+hd7660ghd86008700mdual	Radeon HD 7660G + HD 8600/8700M Dual	414	pm3d
+hd7660ghd8600mdual	Radeon HD 7660G + HD 8600M Dual	209	pm3d
+hd7660ghd8670mdual	Radeon HD 7660G + HD 8670M Dual	395	pm3d
+hd7660gnhd7660ghd7600mnhd7600md	Radeon HD 7660G N HD 7660G + HD 7600M N HD 7600M D	401	pm3d
+hd7660gnhd7660ghd7670mdual	Radeon HD 7660G N HD 7660G + HD 7670M Dual	392	pm3d
+hd7660gnhd7660ghd7700mnhd7700md	Radeon HD 7660G N HD 7660G + HD 7700M N HD 7700M D	529	pm3d
+hd7670	Radeon HD 7670	449	pm3d
+hd7670a	Radeon HD 7670A	572	pm3d
+hd7670m	Radeon HD 7670M	274	pm3d
+hd7670m7670mdual	Radeon HD 7670M + 7670M Dual	409	pm3d
+hd7690m	Radeon HD 7690M	548	pm3d
+hd7690mxt	Radeon HD 7690M XT	551	pm3d
+hd7700serie	Radeon HD 7700-serie	1006	pm3d
+hd7730	Radeon HD 7730	659	pm3d
+hd7730m	Radeon. HD 7730M	509	pm3d
+hd7750	Radeon HD 7750	904	pm3d
+hd7750m	Radeon HD 7750M	645	pm3d
+hd7770	Radeon HD 7770	1160	pm3d
+hd7790	Radeon HD 7790	1600	pm3d
+hd7800serie	Radeon HD 7800-serie	2060	pm3d
+hd7850	Radeon HD 7850	1961	pm3d
+hd7850m	Radeon HD 7850M	739	pm3d
+hd7870	Radeon HD 7870	2367	pm3d
+hd7870m	Radeon HD 7870M	808	pm3d
+hd7870xt	Radeon HD 7870 XT	2275	pm3d
+hd7950r9280	Radeon HD 7950 / R9 280	2417	pm3d
+hd7970m	Radeon HD 7970M	1936	pm3d
+hd7970r9280x	Radeon HD 7970 / R9 280X	2650	pm3d
+hd7990	Radeon HD 7990	2803	pm3d
+hd8180	Radeon HD 8180	91	pm3d
+hd8210	Radeon HD 8210	113	pm3d
+hd8210e	Radeon HD 8210E	115	pm3d
+hd8240	Radeon HD 8240	141	pm3d
+hd8250	Radeon HD 8250	122	pm3d
+hd8280	Radeon HD 8280	184	pm3d
+hd8280e	Radeon HD 8280E	141	pm3d
+hd8280g	Radeon HD 8280G	157	pm3d
+hd8310e	Radeon HD 8310E	196	pm3d
+hd8330	Radeon HD 8330	147	pm3d
+hd8330e	Radeon HD 8330E	141	pm3d
+hd8350	Radeon HD 8350	98	pm3d
+hd8350g	Radeon HD 8350G	252	pm3d
+hd8370d	Radeon HD 8370D	180	pm3d
+hd8400	Radeon HD 8400	150	pm3d
+hd8400e	Radeon HD 8400E	159	pm3d
+hd8410g	Radeon HD 8410G	247	pm3d
+hd8450g	Radeon HD 8450G	207	pm3d
+hd8450g86008700mdual	Radeon HD 8450G + 8600/8700M Dual	583	pm3d
+hd8450g8600mdual	Radeon HD 8450G + 8600M Dual	307	pm3d
+hd8450g8670mdual	Radeon HD 8450G + 8670M Dual	269	pm3d
+hd8450g8750mdual	Radeon HD 8450G + 8750M Dual	356	pm3d
+hd8450ghd8600mdual	Radeon HD 8450G + HD 8600M Dual	256	pm3d
+hd8450ghd8670mdual	Radeon HD 8450G + HD 8670M Dual	323	pm3d
+hd8450ghd8750mdual	Radeon HD 8450G + HD 8750M Dual	284	pm3d
+hd8450gr5m230dual	Radeon HD 8450G + R5 M230 Dual	324	pm3d
+hd8470	Radeon HD 8470	150	pm3d
+hd8470d	Radeon HD 8470D	208	pm3d
+hd8470d6450dual	Radeon HD 8470D + 6450 Dual	398	pm3d
+hd8470d6570dual	Radeon HD 8470D + 6570 Dual	462	pm3d
+hd8470dhd6450dual	Radeon HD 8470D + HD 6450 Dual	475	pm3d
+hd8470dhd6670dual	Radeon HD 8470D + HD 6670 Dual	771	pm3d
+hd8470dhd7500dual	Radeon HD 8470D + HD 7500 Dual	827	pm3d
+hd8490	Radeon HD 8490	154	pm3d
+hd8500m	Radeon HD 8500M	227	pm3d
+hd8500m8700m	Radeon HD 8500M/8700M	470	pm3d
+hd8510g	Radeon HD 8510G	207	pm3d
+hd8510g8500mdual	Radeon HD 8510G + 8500M Dual	334	pm3d
+hd8510ghd8500mdual	Radeon HD 8510G + HD 8500M Dual	352	pm3d
+hd8530m	Radeon HD8530M	277	pm3d
+hd8550d	Radeon HD 8550D	381	pm3d
+hd8550g	Radeon HD 8550G	230	pm3d
+hd8550g7600mdual	Radeon HD 8550G + 7600M Dual	495	pm3d
+hd8550g8500mdual	Radeon HD 8550G + 8500M Dual	337	pm3d
+hd8550g8570mdual	Radeon HD 8550G + 8570M Dual	300	pm3d
+hd8550g86008700mdual	Radeon HD 8550G + 8600/8700M Dual	443	pm3d
+hd8550g8600mdual	Radeon HD 8550G + 8600M Dual	345	pm3d
+hd8550g8670mdual	Radeon HD 8550G + 8670M Dual	325	pm3d
+hd8550g8690mdual	Radeon HD 8550G + 8690M Dual	370	pm3d
+hd8550g8750mdual	Radeon HD 8550G + 8750M Dual	440	pm3d
+hd8550ghd7600mdual	Radeon HD 8550G + HD 7600M Dual	471	pm3d
+hd8550ghd8500mdual	Radeon HD 8550G + HD 8500M Dual	314	pm3d
+hd8550ghd8570mdual	Radeon HD 8550G + HD 8570M Dual	298	pm3d
+hd8550ghd86008700mdual	Radeon HD 8550G + HD 8600/8700M Dual	365	pm3d
+hd8550ghd8600mdual	Radeon HD 8550G + HD 8600M Dual	333	pm3d
+hd8550ghd8670mdual	Radeon HD 8550G + HD 8670M Dual	307	pm3d
+hd8550ghd8750mdual	Radeon HD 8550G + HD 8750M Dual	452	pm3d
+hd8550gnhd8550ghd8600mnhd8600md	Radeon HD 8550G N HD 8550G + HD 8600M N HD 8600M D	342	pm3d
+hd8550gr5m200dual	Radeon HD 8550G + R5 M200 Dual	346	pm3d
+hd8550gr5m230dual	Radeon HD 8550G + R5 M230 Dual	276	pm3d
+hd8570	Radeon HD 8570	542	pm3d
+hd85708670ddual	Radeon HD 8570 + 8670D Dual	347	pm3d
+hd8570d	Radeon HD 8570D	247	pm3d
+hd8570d6570dual	Radeon HD 8570D + 6570 Dual	670	pm3d
+hd8570d6670dual	Radeon HD 8570D + 6670 Dual	567	pm3d
+hd8570dhd6570dual	Radeon HD 8570D + HD 6570 Dual	477	pm3d
+hd8570dhd6670dual	Radeon HD 8570D + HD 6670 Dual	681	pm3d
+hd8570dhd7000dual	Radeon HD 8570D + HD 7000 Dual	417	pm3d
+hd8570dhd7700dual	Radeon HD 8570D + HD 7700 Dual	974	pm3d
+hd8570dhd8470dual	Radeon HD 8570D + HD 8470 Dual	194	pm3d
+hd8570dhd8490dual	Radeon HD 8570D + HD8490 Dual	214	pm3d
+hd8570dhd8570dual	Radeon HD 8570D + HD 8570 Dual	564	pm3d
+hd8570dr5235dual	Radeon HD 8570D + R5 235 Dual	267	pm3d
+hd8570dr7200dual	Radeon HD 8570D + R7 200 Dual	546	pm3d
+hd8570dr7240dual	Radeon HD 8570D + R7 240 Dual	528	pm3d
+hd8570hd7660ddual	Radeon HD 8570 + HD 7660D Dual	520	pm3d
+hd8570m	Radeon HD 8570M	240	pm3d
+hd86008700m	Radeon HD 8600/8700M	562	pm3d
+hd8610g	Radeon HD 8610G	236	pm3d
+hd8610g8500mdual	Radeon HD 8610G + 8500M Dual	341	pm3d
+hd8610g8600mdual	Radeon HD 8610G + 8600M Dual	330	pm3d
+hd8610g8670mdual	Radeon HD 8610G + 8670M Dual	336	pm3d
+hd8610ghd8500mdual	Radeon HD 8610G + HD 8500M Dual	360	pm3d
+hd8610ghd8600mdual	Radeon HD 8610G + HD 8600M Dual	272	pm3d
+hd8610ghd8670mdual	Radeon HD 8610G + HD 8670M Dual	324	pm3d
+hd8610gr5m200dual	Radeon HD 8610G + R5 M200 Dual	376	pm3d
+hd8650d	Radeon HD 8650D	296	pm3d
+hd8650g	Radeon HD 8650G	271	pm3d
+hd8650g7600mdual	Radeon HD 8650G + 7600M Dual	411	pm3d
+hd8650g7670mdual	Radeon HD 8650G + 7670M Dual	486	pm3d
+hd8650g7700mdual	Radeon HD 8650G + 7700M Dual	612	pm3d
+hd8650g8500mdual	Radeon HD 8650G + 8500M Dual	350	pm3d
+hd8650g8570mdual	Radeon HD 8650G + 8570M Dual	365	pm3d
+hd8650g86008700mdual	Radeon HD 8650G + 8600/8700M Dual	459	pm3d
+hd8650g8600mdual	Radeon HD 8650G + 8600M Dual	343	pm3d
+hd8650g8670mdual	Radeon HD 8650G + 8670M Dual	355	pm3d
+hd8650g8750mdual	Radeon HD 8650G + 8750M Dual	435	pm3d
+hd8650ghd7600mdual	Radeon HD 8650G + HD 7600M Dual	452	pm3d
+hd8650ghd7670mdual	Radeon HD 8650G + HD 7670M Dual	354	pm3d
+hd8650ghd8570mdual	Radeon HD 8650G + HD 8570M Dual	397	pm3d
+hd8650ghd86008700mdual	Radeon HD 8650G + HD 8600/8700M Dual	423	pm3d
+hd8650ghd8600mdual	Radeon HD 8650G + HD 8600M Dual	339	pm3d
+hd8650ghd8600mnhd8600mdual	Radeon HD 8650G + HD 8600M N HD 8600M Dual	420	pm3d
+hd8650ghd8670mdual	Radeon HD 8650G + HD 8670M Dual	328	pm3d
+hd8650ghd8750mdual	Radeon HD 8650G + HD 8750M Dual	431	pm3d
+hd8650ghd8790mdual	Radeon HD 8650G + HD 8790M Dual	442	pm3d
+hd8650gnhd8650ghd8570mdual	Radeon HD 8650G N HD 8650G + HD 8570M Dual	428	pm3d
+hd8650gnhd8650ghd86008700mdual	Radeon HD 8650G N HD 8650G + HD 8600/8700M Dual	440	pm3d
+hd8650gnhd8650ghd8600mnhd8600md	Radeon HD 8650G N HD 8650G + HD 8600M N HD 8600M D	378	pm3d
+hd8650gr5m200dual	Radeon HD 8650G + R5 M200 Dual	401	pm3d
+hd8650gr5m230dual	Radeon HD 8650G + R5 M230 Dual	382	pm3d
+hd8670d	Radeon HD 8670D	308	pm3d
+hd8670d6670dual	Radeon HD 8670D + 6670 Dual	733	pm3d
+hd8670d7000dual	Radeon HD 8670D + 7000 Dual	448	pm3d
+hd8670d7700dual	Radeon HD 8670D + 7700 Dual	951	pm3d
+hd8670d8570dual	Radeon HD 8670D + 8570 Dual	533	pm3d
+hd8670dhd6670dual	Radeon HD 8670D + HD 6670 Dual	661	pm3d
+hd8670dhd7000dual	Radeon HD 8670D + HD 7000 Dual	399	pm3d
+hd8670dhd7600dual	Radeon HD 8670D + HD 7600 Dual	711	pm3d
+hd8670dhd7700dual	Radeon HD 8670D + HD 7700 Dual	1003	pm3d
+hd8670dnhd8670dhd8670ddual	Radeon HD 8670D N HD 8670D + HD 8670D Dual	276	pm3d
+hd8670dr5235dual	Radeon HD 8670D + R5 235 Dual	461	pm3d
+hd8670dr5330dual	Radeon HD 8670D + R5 330 Dual	413	pm3d
+hd8670dr7200dual	Radeon HD 8670D + R7 200 Dual	520	pm3d
+hd8670dr7240dual	Radeon HD 8670D + R7 240 Dual	557	pm3d
+hd8670m	Radeon HD 8670M	293	pm3d
+hd8690a	Radeon HD 8690A	264	pm3d
+hd8690m	Radeon HD 8690M	538	pm3d
+hd8730m	Radeon HD 8730M	367	pm3d
+hd8750m	Radeon HD 8750M	473	pm3d
+hd8790m	Radeon HD 8790M	705	pm3d
+hd8790mr9m290x	Radeon HD 8790M / R9 M290X	656	pm3d
+hd8850m	Radeon HD 8850M	532	pm3d
+hd8850mr9m265x	Radeon HD 8850M / R9 M265X	619	pm3d
+hd8870m	Radeon HD 8870M	874	pm3d
+hd8870mr9m270xm370x	Radeon HD 8870M / R9 M270X / M370X	956	pm3d
+hd8950	Radeon HD 8950	1191	pm3d
+hd8970m	Radeon HD 8970M	1986	pm3d
+hd8990	Radeon HD 8990	2634	pm3d
+hdfamily	Intel HD Family	256	pm3d
+hdg4670	Radeon HDG 4670	101	pm3d
+hdhd7850m	Radeon HD HD7850M	881	pm3d
+hdmanual15281861	Intel HD manual-15.28-1861	39	pm3d
+hdmanualgen92015133271	Intel HD manual-gen9_2015-133271	98	pm3d
+hdmodded	Intel HD Modded	68	pm3d
+hdp3000	Intel HD P3000	172	pm3d
+hdp4000	Intel HD P4000	291	pm3d
+hdp4600	Intel HD P4600	339	pm3d
+hdp4600p4700	Intel HD P4600/P4700	349	pm3d
+hdp530	Intel HD P530	651	pm3d
+hdp630	Intel HD P630	669	pm3d
+hisdigitalhd4650agp	HIS DIGITAL HD 4650 AGP	256	pm3d
+igfxdrivercimaster9938	Intel i gfx-driver-ci-master-9938	121	pm3d
+igfxdrivercimaster9938dchi	Intel i gfx-driver-ci-master-9938 DCH-I	321	pm3d
+igp320	RADEON IGP 320	3	pm3d
+igp320m	Radeon IGP 320M	3	pm3d
+igp340m	Radeon IGP 340M	2	pm3d
+igp345m	RADEON IGP 345M	2	pm3d
+igp34xm	RADEON IGP 34xM	1	pm3d
+igp350m	RADEON IGP 350M	4	pm3d
+incrediblehd	IncrediblE HD	222	pm3d
+incrediblehd3000	IncrediblE HD 3000	169	pm3d
+incrediblehd4000	IncrediblE HD 4000	291	pm3d
+incrediblehd4600	IncrediblE HD 4600	415	pm3d
+infoshock3000	Radeon Infoshock 3000	65	pm3d
+infoshockhd	Intel Infoshock HD	115	pm3d
+instinctmi25mxgpu	Radeon Instinct MI25 MxGPU	5115	pm3d
+ion	ION	53	pm3d
+ionle	ION LE	60	pm3d
+iris5100	Intel Iris 5100	420	pm3d
+iris5200	Intel Iris Pro 5200	557	pm3d
+iris540	Intel Iris 540	679	pm3d
+iris550	Intel Iris 550	724	pm3d
+iris580	Intel Iris Pro 580	1054	pm3d
+iris6100	Intel Iris Pro 6100	507	pm3d
+iris6200	Intel Iris Pro Graphics 6200	768	pm3d
+iris650	Intel Iris 650	954	pm3d
+irisp580	Intel Iris Pro P580	1142	pm3d
+irisp6300	Intel Iris Pro P6300	882	pm3d
+irisplus	Intel Iris Plus Graphics G7 (64 EU, Ice Lake)	982	pm3d
+irisplus640	Intel Iris Plus 640	718	pm3d
+irisplus645	Intel Iris Plus 645	927	pm3d
+irisplus650	Intel Iris Plus 650	842	pm3d
+irisplus655	Intel Iris Plus 655	942	pm3d
+irisxe	Intel Iris Xe	1448	pm3d
+irisxeg780eus	Intel Iris Xe Graphics G7 80EUs	1181	ts
+irisxeg796eus	Intel Iris Xe Graphics G7 96EUs	1560	ts
+irisxemax	Intel Iris Xe MAX Graphics	1743	ts
+k1000m	Quadro K1000M	428	pm3d
+k1100m	Quadro K1100M	589	pm3d
+k1200	Quadro K1200	1494	pm3d
+k2000	Quadro K2000	838	pm3d
+k2000d	Quadro K2000D	862	pm3d
+k2000m	Quadro K2000M	560	pm3d
+k2100m	Quadro K2100M	726	pm3d
+k2200	Quadro K2200	1822	pm3d
+k2200m	Quadro K2200M	1986	pm3d
+k3000m	Quadro K3000M	868	pm3d
+k3100m	Quadro K3100M	1189	pm3d
+k4000	Quadro K4000	1407	pm3d
+k4000m	Quadro K4000M	1032	pm3d
+k4100m	Quadro K4100M	1435	pm3d
+k420	Quadro K420	429	pm3d
+k4200	Quadro K4200	2210	pm3d
+k5000	Quadro K5000	1998	pm3d
+k5000m	Quadro K5000M	1434	pm3d
+k500m	Quadro K500M	272	pm3d
+k5100m	Quadro K5100M	1687	pm3d
+k510m	Quadro K510M	341	pm3d
+k5200	Quadro K5200	2906	pm3d
+k600	Quadro K600	425	pm3d
+k6000	Quadro K6000	4011	pm3d
+k610m	Quadro K610M	393	pm3d
+k620	Quadro K620	1181	pm3d
+k620m	Quadro K620M	628	pm3d
+kvspectrelite25w	KV SPECTRE LITE MOBILE 25W	303	pm3d
+lmimirr	LMIMIRR	481	pm3d
+m1000m	Quadro M1000M	1549	pm3d
+m1200	Quadro M1200	1724	pm3d
+m2000	Quadro M2000	2018	pm3d
+m2000m	Quadro M2000M	1821	pm3d
+m2200	Quadro M2200	2213	pm3d
+m3000m	Quadro M3000M	2857	pm3d
+m4000	Quadro M4000	3318	pm3d
+m40003	FirePro M40003	734	pm3d
+m4000m	Quadro M4000M	3264	pm3d
+m4000mobility	FirePro M4000 Mobility Pro	850	pm3d
+m4100	Firepro M4100	577	pm3d
+m4150	FirePro M4150	546	pm3d
+m4170	FirePro M4170	581	pm3d
+m5000	Quadro M5000	4553	pm3d
+m5000m	Quadro M5000M	3395	pm3d
+m500m	Quadro M500M	597	pm3d
+m5100	FirePro M5100	1109	pm3d
+m5100fireglv	FirePro M5100 FireGL V	976	pm3d
+m520	Quadro M520	1048	pm3d
+m535dx	Radeon M535DX	415	pm3d
+m5500	Quadro M5500	3920	pm3d
+m5950	FirePro M5950	709	pm3d
+m6000	Quadro M6000	5548	pm3d
+m600024gb	Quadro M6000 24GB	5949	pm3d
+m6000mobility	FirePro M6000 Mobility Pro	910	pm3d
+m600m	Quadro M600M	1061	pm3d
+m6100	FirePro M6100	1030	pm3d
+m6100fireglv	FirePro M6100 FireGL V	1385	pm3d
+m620	Quadro M620	1479	pm3d
+m71m	M71-M	40	pm3d
+m76m	M76M	75	pm3d
+m7740	FirePro M7740	370	pm3d
+m860gmobility4100	M860G with Mobility Radeon 4100	47	pm3d
+m880gmobilityhd4200	M880G with Mobility Radeon HD 4200	57	pm3d
+m880gmobilityhd4225	M880G with Mobility Radeon HD 4225	45	pm3d
+m880gmobilityhd4250	M880G with Mobility Radeon HD 4250	63	pm3d
+masterx3100driver	Master X3100 Driver	7	pm3d
+matroxc420lppciex16	Matrox C420 LP PCIe x16	355	pm3d
+matroxc680pciex16	Matrox C680 PCIe x16	1009	pm3d
+matroxc900pciex16	Matrox C900 PCIe x16	963	pm3d
+matroxg200eh	Matrox G200eh	26	pm3d
+matroxg200ehwddm12	Matrox G200eh WDDM 1.2	33	pm3d
+matroxg200ehwddm20	Matrox G200eh WDDM 2.0	28	pm3d
+matroxg200er	Matrox G200eR	24	pm3d
+matroxg200erwddm12	Matrox G200eR WDDM 1.2	28	pm3d
+matroxg200erwddm20	Matrox G200eR WDDM 2.0	42	pm3d
+matroxg200ew	Matrox G200eW	25	pm3d
+matroxg200ew3wddm20	Matrox G200eW3 WDDM 2.0	57	pm3d
+matroxg200ewddm12	Matrox G200e WDDM 1.2	37	pm3d
+matroxg200ewddm20	Matrox G200e WDDM 2.0	74	pm3d
+matroxg200ewwddm12	Matrox G200eW WDDM 1.2	31	pm3d
+matroxm9120pciex16	Matrox M9120 PCIe x16	13	pm3d
+matroxm9120pluslppciex16	Matrox M9120 Plus LP PCIe x16	17	pm3d
+matroxm9125pciex16	Matrox M9125 PCIe x16	17	pm3d
+matroxm9128lppciex16	Matrox M9128 LP PCIe x16	19	pm3d
+matroxm9138lppciex16	Matrox M9138 LP PCIe x16	27	pm3d
+matroxm9140lppciex16	Matrox M9140 LP PCIe x16	15	pm3d
+matroxm9148lppciex16	Matrox M9148 LP PCIe x16	21	pm3d
+matroxmillenniump650pcie128	Matrox Millennium P650 PCIe 128	4	pm3d
+matroxmillenniump690pciex16	Matrox Millennium P690 PCIe x16	210	pm3d
+matroxmillenniump690pluslppciex16	Matrox Millennium P690 Plus LP PCIe x16	5	pm3d
+matroxparhelia128mb	Matrox Parhelia 128MB	2	pm3d
+matroxparhelia256mb	Matrox Parhelia 256MB	6	pm3d
+matroxparheliaapve	Matrox Parhelia APVe	4	pm3d
+mctusb30externaldevice	MCT USB3.0 External Device	293	pm3d
+mediaaccelerator	Intel Media Accelerator	21	pm3d
+mediaaccelerator3150	Intel Media Accelerator 3150	2	pm3d
+mediaaccelerator500	Intel Media Accelerator 500	2	pm3d
+mediaaccelerator600	Intel Media Accelerator 600	5	pm3d
+mediaacceleratorhd	Intel Media Accelerator HD	60	pm3d
+medion9800xxl	MEDION RADEON 9800 XXL	45	pm3d
+medionx740xl	MEDION RADEON X740XL	58	pm3d
+miracastdisplayportdriverv3	Miracast display port driver V3	7623	pm3d
+mirrorv3	MIRRORV3	588	pm3d
+mobility4100	Mobility Radeon 4100	50	pm3d
+mobility7000igp	MOBILITY RADEON 7000 IGP	4	pm3d
+mobility7500	MOBILITY RADEON 7500	3	pm3d
+mobility9000	MOBILITY/RADEON 9000	3	pm3d
+mobility90009100igp	MOBILITY RADEON 9000/9100 IGP	4	pm3d
+mobility9000igp	MOBILITY RADEON 9000 IGP	5	pm3d
+mobility9100igp	MOBILITY RADEON 9100 IGP	2	pm3d
+mobility9200	MOBILITY RADEON 9200	2	pm3d
+mobility9550	MOBILITY RADEON 9550	19	pm3d
+mobility9600	MOBILITY RADEON 9600	23	pm3d
+mobility96009700	MOBILITY RADEON 9600/9700	25	pm3d
+mobility9600turbo	MOBILITY RADEON 9600 PRO TURBO	16	pm3d
+mobility9700	MOBILITY RADEON 9700	18	pm3d
+mobility9800	MOBILITY RADEON 9800	29	pm3d
+mobilityfiregl7800	MOBILITY FIREGL 7800	4	pm3d
+mobilityfireglt2	MOBILITY FIREGL T2	26	pm3d
+mobilityfireglt2t2e	MOBILITY FIREGL T2/T2e	22	pm3d
+mobilityfireglv3200	MOBILITY FireGL V3200	39	pm3d
+mobilityfireglv5000	MOBILITY FireGL V5000	50	pm3d
+mobilityfireglv5200	MOBILITY FireGL V5200	28	pm3d
+mobilityfireglv5250	MOBILITY FireGL V5250	18	pm3d
+mobilityfireglv5725	Mobility FireGL V5725	129	pm3d
+mobilityhd2300	Mobility Radeon HD 2300	32	pm3d
+mobilityhd2400	Mobility Radeon HD 2400	55	pm3d
+mobilityhd2400xt	Mobility Radeon HD 2400 XT	62	pm3d
+mobilityhd2600	Mobility Radeon HD 2600	100	pm3d
+mobilityhd2600xt	Mobility Radeon HD 2600 XT	113	pm3d
+mobilityhd3400serisi	Mobility Radeon HD 3400 Serisi	67	pm3d
+mobilityhd3410	Mobility Radeon HD 3410	39	pm3d
+mobilityhd3430	Mobility Radeon HD 3430	60	pm3d
+mobilityhd3450	Mobility Radeon HD 3450	56	pm3d
+mobilityhd3470	Mobility Radeon HD 3470	57	pm3d
+mobilityhd3470hybridx2	Mobility Radeon HD 3470 Hybrid X2	57	pm3d
+mobilityhd3650	Mobility Radeon HD 3650	78	pm3d
+mobilityhd3670	Mobility Radeon HD 3670	136	pm3d
+mobilityhd3850	Mobility Radeon HD 3850	210	pm3d
+mobilityhd3870	Mobility Radeon HD 3870	308	pm3d
+mobilityhd3870x2	Mobility Radeon HD 3870 X2	271	pm3d
+mobilityhd4200	Mobility Radeon HD 4200	56	pm3d
+mobilityhd4225	Mobility Radeon HD 4225	41	pm3d
+mobilityhd4250	Mobility Radeon HD 4250	60	pm3d
+mobilityhd4270	Mobility Radeon HD 4270	57	pm3d
+mobilityhd4300serisi	Mobility Radeon HD 4300 Serisi	45	pm3d
+mobilityhd4330	Mobility Radeon HD 4330	81	pm3d
+mobilityhd4350	Mobility Radeon HD 4350	89	pm3d
+mobilityhd4550	Mobility Radeon HD 4550	113	pm3d
+mobilityhd4570	Mobility Radeon HD 4570	81	pm3d
+mobilityhd4650	Mobility Radeon HD 4650	229	pm3d
+mobilityhd4670	Mobility Radeon HD 4670	262	pm3d
+mobilityhd4830	Mobility Radeon HD 4830	289	pm3d
+mobilityhd4850	Mobility Radeon HD 4850	476	pm3d
+mobilityhd4870	Mobility Radeon HD 4870	400	pm3d
+mobilityhd5000	Mobility Radeon HD 5000	428	pm3d
+mobilityhd5000serisi	Mobility Radeon HD 5000 Serisi	271	pm3d
+mobilityhd5165	Mobility Radeon HD 5165	165	pm3d
+mobilityhd530v	Mobility Radeon HD 530v	104	pm3d
+mobilityhd540v	Mobility Radeon HD 540v	111	pm3d
+mobilityhd5430	Mobility Radeon HD 5430	107	pm3d
+mobilityhd5450	Mobility Radeon HD 5450	126	pm3d
+mobilityhd545v	Mobility Radeon HD 545v	118	pm3d
+mobilityhd5470	Mobility Radeon HD 5470	138	pm3d
+mobilityhd550v	Mobility Radeon HD 550v	155	pm3d
+mobilityhd5570	Mobility Radeon HD 5570	306	pm3d
+mobilityhd560v	Mobility Radeon HD 560v	183	pm3d
+mobilityhd5650	Mobility Radeon HD 5650	256	pm3d
+mobilityhd565v	Mobility Radeon HD 565v	203	pm3d
+mobilityhd5730	Mobility Radeon HD 5730	275	pm3d
+mobilityhd5850	Mobility Radeon HD 5850	422	pm3d
+mobilityhd5870	Mobility Radeon HD 5870	579	pm3d
+mobilityhdserie4200	Mobility Radeon HD serie 4200	59	pm3d
+mobilityigp90009100	MOBILITY IGP 9000/9100	7	pm3d
+mobilityx1300	Mobility Radeon X1300	25	pm3d
+mobilityx1350	Mobility Radeon X1350	25	pm3d
+mobilityx1400	Mobility Radeon X1400	27	pm3d
+mobilityx1450	Mobility Radeon X1450	21	pm3d
+mobilityx1600	Mobility Radeon X1600	56	pm3d
+mobilityx1700	Mobility Radeon X1700	64	pm3d
+mobilityx1800	MOBILITY RADEON X1800	78	pm3d
+mobilityx1900	Mobility Radeon X1900	81	pm3d
+mobilityx2300	Mobility Radeon X2300	30	pm3d
+mobilityx2300hd	Mobility Radeon X2300 HD	31	pm3d
+mobilityx2500	Mobility Radeon X2500	50	pm3d
+mobilityx300	MOBILITY RADEON X300	22	pm3d
+mobilityx600	MOBILITY RADEON X600	31	pm3d
+mobilityx600se	MOBILITY RADEON X600 SE	31	pm3d
+mobilityx700	MOBILITY RADEON X700	42	pm3d
+mobilityx700xl	MOBILITY RADEON X700 XL	37	pm3d
+mobilityxpress200	MOBILITY RADEON XPRESS 200	18	pm3d
+monstergtx675m	MONSTER GeForce GTX 675M	1376	pm3d
+mx110	NVIDIA GeForce MX110	450	ts
+mx130	NVIDIA GeForce MX130	644	ts
+mx150	NVIDIA GeForce MX150	1046	ts
+mx230	NVIDIA GeForce MX230	748	ts
+mx250	NVIDIA GeForce MX250	1103	ts
+mx330	NVIDIA GeForce MX330	1160	ts
+mx350	NVIDIA GeForce MX350	1336	ts
+mx450	NVIDIA GeForce MX450	1900	ts
+mx550	NVIDIA GeForce MX550	2470	ts
+mx570	NVIDIA GeForce MX570	3127	ts
+mxgpu	MxGPU	970	pm3d
+n16pgx	N16P-GX	653	pm3d
+n18eq1	N18E-Q1	1320	pm3d
+nforce750asli	nForce 750a SLI	51	pm3d
+nforce760isli	nForce 760i SLI	84	pm3d
+nforce780asli	nForce 780a SLI	56	pm3d
+nforce980a780asli	nForce 980a/780a SLI	50	pm3d
+nv44	NV44	10	pm3d
+nvs110m	Quadro NVS 110M	30	pm3d
+nvs120m	Quadro NVS 120M	30	pm3d
+nvs130m	Quadro NVS 130M	59	pm3d
+nvs135m	Quadro NVS 135M	42	pm3d
+nvs140m	Quadro NVS 140M	31	pm3d
+nvs150m	Quadro NVS 150M	57	pm3d
+nvs160m	Quadro NVS 160M	47	pm3d
+nvs2100m	NVS 2100M	83	pm3d
+nvs210s	Quadro NVS 210S	16	pm3d
+nvs210s6150le	Quadro NVS 210S / GeForce 6150LE	14	pm3d
+nvs280pci	Quadro NVS 280 PCI	5	pm3d
+nvs280sd	Quadro NVS 280 SD	1	pm3d
+nvs285	Quadro NVS 285	25	pm3d
+nvs285128mb	Quadro NVS 285 128MB	24	pm3d
+nvs290	Quadro NVS 290	121	pm3d
+nvs295	Quadro NVS 295	46	pm3d
+nvs300	NVS 300	69	pm3d
+nvs310	NVS 310	141	pm3d
+nvs3100m	NVS 3100M	70	pm3d
+nvs315	NVS 315	166	pm3d
+nvs320m	Quadro NVS 320M	77	pm3d
+nvs420	Quadro NVS 420	43	pm3d
+nvs4200m	NVS 4200M	150	pm3d
+nvs440	Quadro NVS 440	24	pm3d
+nvs450	Quadro NVS 450	40	pm3d
+nvs510	NVS 510	405	pm3d
+nvs5100m	NVS 5100M	112	pm3d
+nvs510m	Quadro NVS 510M	148	pm3d
+nvs5200m	NVS 5200M	301	pm3d
+nvs5400m	NVS 5400M	355	pm3d
+nvs55280pci	Quadro NVS 55/280 PCI	4	pm3d
+nvs810	NVS 810	620	pm3d
+opalxtgl	OPAL XT/GL	574	pm3d
+openxtdisplaydriver	OpenXT Display Driver	20	pm3d
+p1000	Quadro P1000	2273	pm3d
+p104100	P104-100	2265	pm3d
+p106090	P106-090	1259	pm3d
+p106100	P106-100	2995	pm3d
+p2000	Quadro P2000	3533	pm3d
+p2200	Quadro P2200	4658	pm3d
+p3000	Quadro P3000	3284	pm3d
+p3200	Quadro P3200 with Max-Q Design	4544	pm3d
+p400	Quadro P400	862	pm3d
+p4000	Quadro P4000	5559	pm3d
+p4200	Quadro P4200 with Max-Q Design	5766	pm3d
+p500	Quadro P500	808	pm3d
+p5000	Quadro P5000	5816	pm3d
+p520	NVIDIA Quadro P520	1010	ts
+p5200	Quadro P5200 with Max-Q Design	5976	pm3d
+p600	Quadro P600	1716	pm3d
+p6000	Quadro P6000	7577	pm3d
+p620	NVIDIA Quadro P620	1388	ts
+pcx5300	GeForce PCX 5300	4	pm3d
+pcx5750	GeForce PCX 5750	22	pm3d
+pcx5900	GeForce PCX 5900	22	pm3d
+phdgdivy4	PHDGD Ivy 4	214	pm3d
+phdgdivy5	PHDGD Ivy 5	253	pm3d
+phdgdquanticc3	PHDGD Quantic C3	71	pm3d
+phdgdsapphiregrfor965	PHDGD Sapphire GR for Mobile Intel 965	17	pm3d
+phdgdsolo120x86	PHDGD Solo 1.2.0 x86	7	pm3d
+phdgdsolo2x64	PHDGD Solo 2 x64	13	pm3d
+poisonivy	Intel Poison Ivy	410	pm3d
+professionalhddriver	Professional HD Driver	365	pm3d
+q12u1	Q12U-1	2610	pm3d
+q33express	Intel Q33 Express	4	pm3d
+q35embedded	Intel Q35 Embedded	5	pm3d
+q35express	Intel Q35 Express	86	pm3d
+q45q43expresschipsatz	Intel Q45/Q43 Express-Chipsatz	36	pm3d
+q45q43expresschipset	Intel Q45/Q43 Express Chipset	85	pm3d
+q965q963express	Intel Q965/Q963 Express	174	pm3d
+quadro2	Quadro2 Pro	1	pm3d
+quadro2mxrex	Quadro2 MXR/EX	4	pm3d
+quadro4380xgl	Quadro4 380 XGL	5	pm3d
+quadro4900xgl	Quadro4 900 XGL	4	pm3d
+quadro4980xgl	Quadro4 980 XGL	4	pm3d
+qualcommadreno540	Qualcomm Adreno 540 GPU	73	pm3d
+qualcommadreno618	Qualcomm Adreno 618 GPU	73	pm3d
+qualcommadreno630	Qualcomm Adreno 630 GPU	156	pm3d
+qualcommadreno680	Qualcomm Adreno 680 GPU	255	pm3d
+qualcommadreno690	Qualcomm Adreno 690	811	ts
+qualcommadreno8cxgen3	Qualcomm Adreno 8cx Gen 3	891	pm3d
+qualcommadrenox285	Qualcomm Adreno X2-85	2633	ts
+qualcommadrenox290	Qualcomm Adreno X2-90	3666	ts
+qualcommsdx2adrenox245	Qualcomm SD X2 Adreno X2-45	1377	ts
+qualcommsdxadrenox14517tflops	Qualcomm SD X Adreno X1-45 1.7 TFLOPS	932	ts
+qualcommsdxadrenox18538tflops	Qualcomm SD X Adreno X1-85 3.8 TFLOPS	1706	ts
+qualcommsdxadrenox18546tflops	Qualcomm SD X Adreno X1-85 4.6 TFLOPS	1989	ts
+qxlkmdod	QXL KMDOD	13	pm3d
+r1e	Radeon R1E	174	pm3d
+r2	Radeon R2	140	pm3d
+r2e	Radeon R2E	134	pm3d
+r3	Radeon R3	176	pm3d
+r3e	Radeon R3E	121	pm3d
+r4	Radeon R4	191	pm3d
+r4e	Radeon R4E	275	pm3d
+r5000	FirePro R5000	1381	pm3d
+r5220	Radeon R5 220	81	pm3d
+r5230	Radeon R5 230	130	pm3d
+r5235	Radeon R5 235	190	pm3d
+r5235hd7560ddual	Radeon R5 235 + HD 7560D Dual	412	pm3d
+r5235hd8570ddual	Radeon R5 235 + HD 8570D Dual	409	pm3d
+r5235x	Radeon R5 235X	163	pm3d
+r5240	Radeon R5 240	293	pm3d
+r5310	Radeon R5 310	191	pm3d
+r5330	Radeon R5 330	289	pm3d
+r5340	Radeon R5 340	544	pm3d
+r5420	Radeon R5 420	323	pm3d
+r5430	Radeon R5 430	515	pm3d
+r5435	Radeon R5 435	463	pm3d
+r5a108730b4c6g	Radeon R5 PRO A10-8730B 4C+6G	386	pm3d
+r5a108730br510computecores4c6g	Radeon R5 PRO A10-8730B R5, 10 COMPUTE CORES 4C+6G	335	pm3d
+r5a109600p4c6g	Radeon R5 A10-9600P 4C+6G	346	pm3d
+r5a109600pr510computecores4c	Radeon R5 A10-9600P RADEON R5, 10 COMPUTE CORES 4C	397	pm3d
+r5a109620p4c6g	Radeon R5 A10-9620P 4C+6G	406	pm3d
+r5a109620pr510computecores4c	Radeon R5 A10-9620P RADEON R5, 10 COMPUTE CORES 4C	350	pm3d
+r5a109630p4c6g	Radeon R5 A10-9630P 4C+6G	534	pm3d
+r5a109630pr510computecores4c	Radeon R5 A10-9630P RADEON R5, 10 COMPUTE CORES 4C	325	pm3d
+r5a240	Radeon R5 A240	323	pm3d
+r5a67480	Radeon R5 A6-7480	448	pm3d
+r5a68500b2c4g	Radeon R5 PRO A6-8500B 2C+4G	287	pm3d
+r5a68500p	Radeon R5 A6-8500P	349	pm3d
+r5a68530b2c4g	Radeon R5 PRO A6-8530B 2C+4G	384	pm3d
+r5a685702c6g	Radeon R5 PRO A6-8570 2C+6G	466	pm3d
+r5a68570e2c4g	Radeon R5 PRO A6-8570E 2C+4G	356	pm3d
+r5a68570er56computecores2c4g	Radeon R5 PRO A6-8570E R5, 6 COMPUTE CORES 2C+4G	476	pm3d
+r5a68570r58computecores2c6g	Radeon R5 PRO A6-8570 R5, 8 COMPUTE CORES 2C+6G	580	pm3d
+r5a69400r56computecores2c4g	Radeon R5 A6-9400 RADEON R5, 6 COMPUTE CORES 2C+4G	339	pm3d
+r5a695002c6g	Radeon R5 PRO A6-9500 2C+6G	596	pm3d
+r5a69500b2c4g	Radeon R5 PRO A6-9500B 2C+4G	385	pm3d
+r5a69500br56computecores2c4g	Radeon R5 PRO A6-9500B R5, 6 COMPUTE CORES 2C+4G	268	pm3d
+r5a69500e2c4g	Radeon R5 A6-9500E 2C+4G	554	pm3d
+r5a69500r58computecores2c6g	Radeon R5 PRO A6-9500 R5, 8 COMPUTE CORES 2C+6G	546	pm3d
+r5a89600b4c6g	Radeon R5 PRO A8-9600B 4C+6G	367	pm3d
+r5a89600br510computecores4c6g	Radeon R5 PRO A8-9600B R5, 10 COMPUTE CORES 4C+6G	399	pm3d
+r5e	Radeon R5E	174	pm3d
+r5m230	Radeon R5 M230	223	pm3d
+r5m240	Radeon R5 M240	246	pm3d
+r5m255	Radeon R5 M255	280	pm3d
+r5m315	Radeon R5 M315	269	pm3d
+r5m320	Radeon R5 M320	238	pm3d
+r5m330	Radeon R5 M330	334	pm3d
+r5m335	Radeon R5 M335	309	pm3d
+r5m420	Radeon R5 M420	266	pm3d
+r5m430	Radeon R5 M430	362	pm3d
+r5m435	Radeon R5 M435	440	pm3d
+r5opteronx3216	Radeon R5 Opteron X3216	225	pm3d
+r6	Radeon R6	366	pm3d
+r6a108700b4c6g	Radeon R6 PRO A10-8700B 4C+6G	303	pm3d
+r6a108700br610computecores4c6g	Radeon R6 PRO A10-8700B R6, 10 Compute Cores 4C+6G	296	pm3d
+r6a108700p	Radeon R6 A10-8700P	304	pm3d
+r6a109600p4c6g	Radeon R6 A10-9600P 4C+6G	531	pm3d
+r6a88600b4c6g	Radeon R6 PRO A8-8600B 4C+6G	300	pm3d
+r6a88600br610computecores4c6g	Radeon R6 PRO A8-8600B R6, 10 Compute Cores 4C+6G	321	pm3d
+r6a88600p	Radeon R6 A8-8600P	269	pm3d
+r6m255dx	Radeon R6 M255DX	321	pm3d
+r6opteronx3418	Radeon R6 Opteron X3418	523	pm3d
+r6r7m265dxdual	Radeon R6 + R7 M265DX Dual	320	pm3d
+r7240	Radeon R7 240	475	pm3d
+r7240hd8570ddual	Radeon R7 240 + HD 8570D Dual	504	pm3d
+r7240hd8670ddual	Radeon R7 240 + HD 8670D Dual	510	pm3d
+r7250	Radeon R7 250	625	pm3d
+r7250x	Radeon R7 250X	1192	pm3d
+r7260	Radeon R7 260	1502	pm3d
+r7260x	Radeon R7 260X	1628	pm3d
+r7340	Radeon R7 340	510	pm3d
+r7360	Radeon R7 360	1573	pm3d
+r7370	Radeon R7 370	2279	pm3d
+r7430	Radeon R7 430	604	pm3d
+r7450	Radeon R7 450	1040	pm3d
+r77850a107850k	Radeon R7 7850A10-7850K	310	pm3d
+r78g	Radeon R7 +8G	645	pm3d
+r7a107700k	Radeon R7 A10-7700K	415	pm3d
+r7a107800	Radeon R7 A10-7800	384	pm3d
+r7a107800b	Radeon R7 A10 PRO-7800B	316	pm3d
+r7a107850b	Radeon R7 A10 PRO-7850B	525	pm3d
+r7a107850k	Radeon R7 A10-7850K	537	pm3d
+r7a107860k	Radeon R7 A10-7860K	501	pm3d
+r7a107870k	Radeon R7 A10-7870K	691	pm3d
+r7a107890k	Radeon R7 A10-7890K	432	pm3d
+r7a108750	Radeon R7 A10-8750	486	pm3d
+r7a108750b	Radeon R7 PRO A10-8750B	420	pm3d
+r7a108770	Radeon R7 PRO A10-8770	510	pm3d
+r7a108770e	Radeon R7 PRO A10-8770E	493	pm3d
+r7a108850	Radeon R7 A10-8850	428	pm3d
+r7a108850b	Radeon R7 PRO A10-8850B	518	pm3d
+r7a109700	Radeon R7 A10-9700 RADEON	533	pm3d
+r7a109700b	Radeon R7 PRO A10-9700B	420	pm3d
+r7a109700e	Radeon R7 A10-9700E RADEON	618	pm3d
+r7a10extremeedition	Radeon R7 A10 Extreme Edition	450	pm3d
+r7a128800b	Radeon R7 PRO A12-8800B	358	pm3d
+r7a128830b	Radeon R7 PRO A12-8830B	485	pm3d
+r7a128870	Radeon R7 PRO A12-8870	741	pm3d
+r7a128870e	Radeon R7 PRO A12-8870E	527	pm3d
+r7a129700p	Radeon R7 A12-9700P RADEON	391	pm3d
+r7a129720p	Radeon R7 A12-9720P RADEON	420	pm3d
+r7a129730p	Radeon R7 A12-9730P RADEON	571	pm3d
+r7a129800	Radeon R7 PRO A12-9800	607	pm3d
+r7a129800b	Radeon R7 PRO A12-9800B	401	pm3d
+r7a129800e	Radeon R7 A12-9800E RADEON	516	pm3d
+r7a265	Radeon R7 A265	523	pm3d
+r7a360	Radeon R7 A360	376	pm3d
+r7a365	Radeon R7 A365	432	pm3d
+r7a370	Radeon R7 A370	692	pm3d
+r7a695002c6g	Radeon R7 PRO A6-9500 2C+6G	432	pm3d
+r7a87500	Radeon R7 A8-7500	519	pm3d
+r7a875004c6g	Radeon R7 A8-7500 4C+6G	470	pm3d
+r7a87600	Radeon R7 A8-7600	432	pm3d
+r7a87600b	Radeon R7 A8 PRO-7600B	350	pm3d
+r7a87650k	Radeon R7 A8-7650K	391	pm3d
+r7a87670k	Radeon R7 A8-7670K	476	pm3d
+r7a87680	Radeon R7 A8-7680	416	pm3d
+r7a88650	Radeon R7 A8-8650	501	pm3d
+r7a88650b	Radeon R7 PRO A8-8650B	410	pm3d
+r7a88670e	Radeon R7 PRO A8-8670E	707	pm3d
+r7a89600	Radeon R7 PRO A8-9600	572	pm3d
+r7e	Radeon R7E	384	pm3d
+r7fx8800p	Radeon R7 FX-8800P	429	pm3d
+r7fx9800p	Radeon R7 FX-9800P RADEON	403	pm3d
+r7fx9830p	Radeon R7 FX-9830P RADEON	612	pm3d
+r7g	Radeon R7 G	479	pm3d
+r7hd7700dual	Radeon R7 + HD 7700 Dual	1038	pm3d
+r7m260	Radeon R7 M260	256	pm3d
+r7m260dx	Radeon R7 M260DX	453	pm3d
+r7m260x	Radeon R7 M260X	519	pm3d
+r7m265	Radeon R7 M265	323	pm3d
+r7m265dx	Radeon R7 M265DX	282	pm3d
+r7m270	Radeon R7 M270	407	pm3d
+r7m270dx	Radeon R7 M270DX	527	pm3d
+r7m340	Radeon R7 M340	360	pm3d
+r7m350	Radeon R7 M350	560	pm3d
+r7m360	Radeon R7 M360	310	pm3d
+r7m365x	Radeon R7 M365X	486	pm3d
+r7m370	Radeon R7 M370	762	pm3d
+r7m380	Radeon R7 M380	890	pm3d
+r7m440	Radeon R7 M440	474	pm3d
+r7m445	Radeon R7 M445	501	pm3d
+r7m460	Radeon R7 M460	566	pm3d
+r7m465	Radeon R7 M465	528	pm3d
+r7m465x	Radeon R7 M465X	867	pm3d
+r7opteronx3421	Radeon R7 Opteron X3421	634	pm3d
+r7r5330dual	Radeon R7 + R5 330 Dual	561	pm3d
+r7r5340dual	Radeon R7 + R5 340 Dual	668	pm3d
+r7r5435duala109700	Radeon R7 + R5 435 Dual A10-9700 RADEON	487	pm3d
+r7r5dual	Radeon R7 + R5 Dual	493	pm3d
+r7r7200dual	Radeon R7 + R7 200 Dual	613	pm3d
+r7r7240dual	Radeon R7 + R7 240 Dual	570	pm3d
+r7r7250dual	Radeon R7 + R7 250 Dual	667	pm3d
+r7r7350dual	Radeon R7 + R7 350 Dual	1048	pm3d
+r8m365dx	Radeon R8 M365DX	411	pm3d
+r8m445dx	Radeon R8 M445DX	445	pm3d
+r8m535dx	Radeon R8 M535DX	373	pm3d
+r9255	Radeon R9 255	796	pm3d
+r9260	Radeon R9 260	1565	pm3d
+r9270	Radeon R9 270	2195	pm3d
+r9270r7370	Radeon R9 270 / R7 370	2173	pm3d
+r9270x	Radeon R9 270X	2494	pm3d
+r9280	Radeon R9 280	2852	pm3d
+r9280x	Radeon R9 280X	3147	pm3d
+r9285	Radeon R9 285	3335	pm3d
+r9285380	Radeon R9 285 / 380	2795	pm3d
+r9290	Radeon R9 290	4153	pm3d
+r9290390	Radeon R9 290 / 390	4031	pm3d
+r9290x	Radeon R9 290X	4334	pm3d
+r9290x390x	Radeon R9 290X / 390X	4143	pm3d
+r9295x2	Radeon R9 295X2	4251	pm3d
+r9350	Radeon R9 350	1061	pm3d
+r9360	Radeon R9 360	1572	pm3d
+r9370	Radeon R9 370	2397	pm3d
+r9380	Radeon R9 380	3142	pm3d
+r9380x	Radeon R9 380X	3101	pm3d
+r9390	Radeon R9 390	4434	pm3d
+r9390x	Radeon R9 390X	4666	pm3d
+r9a375	Radeon R9 A375	559	pm3d
+r9fury	Radeon R9 Fury	4688	pm3d
+r9furyfuryx	Radeon R9 Fury + Fury X	4777	pm3d
+r9furyx	Radeon R9 Fury X	4939	pm3d
+r9m265x	Radeon R9 M265X	509	pm3d
+r9m270x	Radeon R9 M270X	652	pm3d
+r9m275	Radeon R9 M275	606	pm3d
+r9m275x	Radeon R9 M275X	1039	pm3d
+r9m275xm375	Radeon R9 M275X / M375	842	pm3d
+r9m280x	Radeon R9 M280X	506	pm3d
+r9m290x	Radeon R9 M290X	1741	pm3d
+r9m295x	Radeon R9 M295X	2603	pm3d
+r9m360	Radeon R9 M360	933	pm3d
+r9m365x	Radeon R9 M365X	795	pm3d
+r9m370x	Radeon R9 M370X	740	pm3d
+r9m375	Radeon R9 M375	422	pm3d
+r9m375x	Radeon R9 M375X	978	pm3d
+r9m380	Radeon R9 M380	1522	pm3d
+r9m385	Radeon R9 M385	1066	pm3d
+r9m385x	Radeon R9 M385X	1022	pm3d
+r9m390x	Radeon R9 M390X	1566	pm3d
+r9m395	Radeon R9 M395	2527	pm3d
+r9m395x	Radeon R9 M395X	2422	pm3d
+r9m470	Radeon R9 M470	1202	pm3d
+r9m470x	Radeon R9 M470X	1753	pm3d
+r9m485x	Radeon R9 M485X	1656	pm3d
+radeont	RadeonT	79	pm3d
+radeont540x	RadeonT 540X	958	pm3d
+radeontr5430	RadeonT R5 430	555	pm3d
+radeontr7450	RadeonT R7 450	1150	pm3d
+radeontrx5300	RadeonT RX 5300	3639	pm3d
+radeontrx5500m	RadeonT RX 5500M	1638	pm3d
+radeontrx560x	RadeonT RX 560X	962	pm3d
+radeontrx640	RadeonT RX 640	837	pm3d
+radeontrx6850m	RadeonT RX 6850M	7617	pm3d
+radeontvega3	RadeonT Vega 3	429	pm3d
+rage128	Rage 128 Pro	1	pm3d
+rage128agp4xtmds	RAGE 128 PRO AGP 4X TMDS	1	pm3d
+ragefuryxpert2000	Rage Fury Pro/Xpert 2000 Pro	2	pm3d
+redhatqxlcontroller	Red Hat QXL controller	21	pm3d
+rg220	FirePro RG220	193	pm3d
+rghdriversv3	RGH Drivers v3	7	pm3d
+rivatnt2model64model64	RIVA TNT2 Model 64/Model 64 Pro	3	pm3d
+rivatnt2tnt2	RIVA TNT2/TNT2 Pro	2	pm3d
+rtx2000ada	NVIDIA RTX 2000 Ada Generation Laptop	8094	ts
+rtx2000blackwell	NVIDIA RTX PRO 2000 Blackwell Generation Laptop	9120	ts
+rtx2050	NVIDIA GeForce RTX 2050 Mobile	3220	ts
+rtx2060	NVIDIA GeForce RTX 2060 Mobile	6141	ts
+rtx2060super	GeForce RTX 2060 SUPER	7898	pm3d
+rtx2070	NVIDIA GeForce RTX 2070 Mobile	7738	ts
+rtx2070super	NVIDIA GeForce RTX 2070 Super Mobile	8272	ts
+rtx2080	NVIDIA GeForce RTX 2080 Mobile	9854	ts
+rtx2080super	NVIDIA GeForce RTX 2080 Super Mobile	10313	ts
+rtx2080ti	GeForce RTX 2080 Ti	10288	pm3d
+rtx3000	NVIDIA Quadro RTX 3000 (Laptop)	5589	ts
+rtx3000ada	NVIDIA RTX 3000 Ada Generation Laptop	8351	ts
+rtx3000blackwell	NVIDIA RTX PRO 3000 Blackwell Generation Laptop	14875	ts
+rtx3050	GeForce RTX 3050	6158	pm3d
+rtx30504gb	NVIDIA GeForce RTX 3050 4GB Laptop GPU	4497	ts
+rtx30506gb	NVIDIA GeForce RTX 3050 6GB Laptop GPU	4571	ts
+rtx3050ti	NVIDIA GeForce RTX 3050 Ti Laptop GPU	5170	ts
+rtx3060	NVIDIA GeForce RTX 3060 Laptop GPU	8222	ts
+rtx3060ti	GeForce RTX 3060 Ti	9571	pm3d
+rtx3070	NVIDIA GeForce RTX 3070 Laptop GPU	9619	ts
+rtx3070ti	NVIDIA GeForce RTX 3070 Ti Laptop GPU	10462	ts
+rtx3080	NVIDIA GeForce RTX 3080 Laptop GPU	10752	ts
+rtx3080ti	NVIDIA GeForce RTX 3080 Ti Laptop GPU	12269	ts
+rtx3090	GeForce RTX 3090	12345	pm3d
+rtx3090ti	GeForce RTX 3090 Ti	13545	pm3d
+rtx3500ada	NVIDIA RTX 3500 Ada Generation Laptop	12806	ts
+rtx4000	NVIDIA Quadro RTX 4000 (Laptop)	7284	ts
+rtx4000ada	NVIDIA RTX 4000 Ada Generation Laptop	16308	ts
+rtx4050	NVIDIA GeForce RTX 4050 Laptop GPU	8125	ts
+rtx4060	NVIDIA GeForce RTX 4060 Laptop GPU	10338	ts
+rtx4070	NVIDIA GeForce RTX 4070 Laptop GPU	11960	ts
+rtx4080	NVIDIA GeForce RTX 4080 Laptop GPU	18441	ts
+rtx4090	NVIDIA GeForce RTX 4090 Laptop GPU	21251	ts
+rtx5000	NVIDIA Quadro RTX 5000 (Laptop)	9332	ts
+rtx5000ada	NVIDIA RTX 5000 Ada Generation Laptop	14861	ts
+rtx5000blackwell	NVIDIA RTX PRO 5000 Blackwell Generation Laptop	23742	ts
+rtx500ada	NVIDIA RTX 500 Ada Generation Laptop	5448	ts
+rtx500blackwell	NVIDIA RTX PRO 500 Blackwell Generation Laptop	6121	ts
+rtx5050	NVIDIA GeForce RTX 5050 Laptop	8941	ts
+rtx5060	NVIDIA GeForce RTX 5060 Laptop	12052	ts
+rtx5070	NVIDIA GeForce RTX 5070 Laptop	13562	ts
+rtx5070ti	NVIDIA GeForce RTX 5070 Ti Laptop	17021	ts
+rtx5080	NVIDIA GeForce RTX 5080 Laptop	21453	ts
+rtx5090	NVIDIA GeForce RTX 5090 Laptop	24521	ts
+rtx6000	Quadro RTX 6000	9339	pm3d
+rtx8000	Quadro RTX 8000	9084	pm3d
+rtxa1000	NVIDIA RTX A1000 Laptop GPU	4256	ts
+rtxa2000	NVIDIA RTX A2000 Laptop GPU	5016	ts
+rtxa200012gb	RTX A2000 12GB	6605	pm3d
+rtxa3000	NVIDIA RTX A3000 Laptop GPU	7320	ts
+rtxa300012gb	RTX A3000 12GB Laptop GPU	4886	pm3d
+rtxa4000	RTX A4000	9021	pm3d
+rtxa4500	RTX A4500	10175	pm3d
+rtxa500	NVIDIA RTX A500 Laptop GPU	2994	ts
+rtxa5000	NVIDIA RTX A5000 Laptop GPU	10307	ts
+rtxa5500	NVIDIA RTX A5500 Laptop GPU	9568	ts
+rtxa6000	RTX A6000	10434	pm3d
+rtxsparkn1x5120coreblackwell	NVIDIA RTX Spark N1X 5120-Core Blackwell GPU	12791	ts
+rtxsparkn1x6144coreblackwell	NVIDIA RTX Spark N1X 6144-Core Blackwell GPU	12634	ts
+rv530	RV530 PRO	72	pm3d
+rx460	Radeon RX 460	2102	pm3d
+rx470570	Radeon RX 470/570	3993	pm3d
+rx480	Radeon RX 480	4277	pm3d
+rx5300	Radeon RX 5300	3776	pm3d
+rx5300m	AMD Radeon RX 5300M	3566	ts
+rx540	Radeon RX 540	953	pm3d
+rx550	Radeon RX 550	1416	pm3d
+rx5500	Radeon RX 5500	4344	pm3d
+rx5500m	AMD Radeon RX 5500M	4298	ts
+rx5500xt	Radeon RX 5500 XT	4518	pm3d
+rx550x	AMD Radeon RX 550X (Laptop)	1050	ts
+rx560	Radeon RX 560	1848	pm3d
+rx5600	Radeon RX 5600	5377	pm3d
+rx5600m	AMD Radeon RX 5600M	5934	ts
+rx5600xt	Radeon RX 5600 XT	6673	pm3d
+rx560x	Radeon RX 560X	1645	pm3d
+rx5700	Radeon RX 5700	7083	pm3d
+rx5700xt	Radeon RX 5700 XT	8070	pm3d
+rx5700xt50thanniversary	Radeon RX 5700 XT 50th Anniversary	7960	pm3d
+rx570x	Radeon RX 570X	1019	pm3d
+rx580	Radeon RX 580	4387	pm3d
+rx5802048sp	Radeon RX 580 2048SP	3851	pm3d
+rx580x	Radeon RX 580X	3865	pm3d
+rx590	Radeon RX 590	4741	pm3d
+rx590gme	Radeon RX590 GME	4256	pm3d
+rx640	AMD Radeon RX 640	1008	ts
+rx6400	Radeon RX 6400	3467	pm3d
+rx6500m	AMD Radeon RX 6500M	4372	ts
+rx6500xt	Radeon RX 6500 XT	4639	pm3d
+rx6550m	AMD Radeon RX 6550M	4546	ts
+rx6600	Radeon RX 6600	6694	pm3d
+rx6600m	AMD Radeon RX 6600M	7840	ts
+rx6600s	AMD Radeon RX 6600S	7494	ts
+rx6600xt	Radeon RX 6600 XT	7597	pm3d
+rx6650m	AMD Radeon RX 6650M	8700	ts
+rx6700m	AMD Radeon RX 6700M	8988	ts
+rx6700s	AMD Radeon RX 6700S	8316	ts
+rx6700xt	Radeon RX 6700 XT	9023	pm3d
+rx6800	Radeon RX 6800	9779	pm3d
+rx6800m	AMD Radeon RX 6800M	11256	ts
+rx6800s	AMD Radeon RX 6800S	9033	ts
+rx6800xt	Radeon RX 6800 XT	10991	pm3d
+rx6850mxt	AMD Radeon RX 6850M XT	11837	ts
+rx6900xt	Radeon RX 6900 XT	11928	pm3d
+rx7600m	AMD Radeon RX 7600M	9097	ts
+rx7600mxt	AMD Radeon RX 7600M XT	9856	ts
+rx7600s	AMD Radeon RX 7600S	9203	ts
+rx7700s	AMD Radeon RX 7700S	10206	ts
+rx7900m	AMD Radeon RX 7900M	19434	ts
+rxvega10	AMD Radeon RX Vega 10 (Ryzen 2000/3000)	737	ts
+rxvega11	AMD Radeon RX Vega 11	936	ts
+rxvega11prd	Radeon RX Vega 11 PRD	1259	pm3d
+rxvega11processor	Radeon RX Vega 11 Processor	956	pm3d
+rxvega3	AMD Radeon RX Vega 3	393	ts
+rxvega5	AMD Radeon RX Vega 5 (Ryzen 4000/5000)	733	ts
+rxvega56	Radeon RX Vega 56	6581	pm3d
+rxvega6	AMD Radeon RX Vega 6 (Ryzen 4000/5000)	852	ts
+rxvega64	Radeon RX Vega 64	7040	pm3d
+rxvega7	AMD Radeon RX Vega 7 (Ryzen 4000/5000)	1017	ts
+rxvega8	AMD Radeon RX Vega 8 (Ryzen 4000/5000)	1163	ts
+rxvega9	AMD Radeon RX Vega 9	872	ts
+rxvegamgh	Radeon RX Vega M GH	3361	pm3d
+rxvegamgl	Radeon RX Vega M GL	1711	pm3d
+ryzen34200g	Ryzen 3 PRO 4200G with Radeon Graphics	956	pm3d
+ryzen34200ge	Ryzen 3 PRO 4200GE with Radeon Graphics	948	pm3d
+ryzen34300g	Ryzen 3 4300G with Radeon Graphics	1009	pm3d
+ryzen34300ge	Ryzen 3 4300GE with Radeon Graphics	1259	pm3d
+ryzen34300u	Ryzen 3 PRO 4300U with Radeon Graphics	826	pm3d
+ryzen34350g	Ryzen 3 Pro 4350G with Radeon Graphics	1153	pm3d
+ryzen34350ge	Ryzen 3 PRO 4350GE with Radeon Graphics	1148	pm3d
+ryzen34450u	Ryzen 3 PRO 4450U with Radeon Graphics	823	pm3d
+ryzen35300g	Ryzen 3 5300G with Radeon Graphics	1169	pm3d
+ryzen35300ge	Ryzen 3 5300GE with Radeon Graphics	1251	pm3d
+ryzen35300u	Ryzen 3 5300U with Radeon Graphics	868	pm3d
+ryzen35350g	Ryzen 3 PRO 5350G with Radeon Graphics	1228	pm3d
+ryzen35350ge	Ryzen 3 PRO 5350GE with Radeon Graphics	1228	pm3d
+ryzen35400u	Ryzen 3 5400U with Radeon Graphics	923	pm3d
+ryzen35450u	Ryzen 3 PRO 5450U with Radeon Graphics	833	pm3d
+ryzen52500uvega	Ryzen 5 2500U with Radeon Vega	806	pm3d
+ryzen54400g	Ryzen 5 PRO 4400G with Radeon Graphics	1211	pm3d
+ryzen54400ge	Ryzen 5 PRO 4400GE with Radeon Graphics	774	pm3d
+ryzen54500u	Ryzen 5 PRO 4500U with Radeon Graphics	1061	pm3d
+ryzen54600g	Radeon Ryzen 5 4600G	1151	pm3d
+ryzen54600ge	Radeon Ryzen 5 4600GE	759	pm3d
+ryzen54600h	Radeon Ryzen 5 4600H	1431	pm3d
+ryzen54600hs	Radeon Ryzen 5 4600HS	3933	pm3d
+ryzen54600u	Ryzen 5 4600U with Radeon Graphics	1033	pm3d
+ryzen54650g	Radeon Ryzen 5 PRO 4650G	1267	pm3d
+ryzen54650ge	Radeon Ryzen 5 PRO 4650GE	1077	pm3d
+ryzen54650u	Radeon Ryzen 5 PRO 4650U	905	pm3d
+ryzen55500u	Ryzen 5 5500U with Radeon Graphics	1058	pm3d
+ryzen55600g	Ryzen 5 5600G with Radeon Graphics	1355	pm3d
+ryzen55600ge	Ryzen 5 5600GE with Radeon Graphics	1359	pm3d
+ryzen55600h	Radeon Ryzen 5 5600H	1405	pm3d
+ryzen55600u	Ryzen 5 5600U with Radeon Graphics	1138	pm3d
+ryzen55650g	Ryzen 5 PRO 5650G with Radeon Graphics	1314	pm3d
+ryzen55650ge	Ryzen 5 PRO 5650GE with Radeon Graphics	1311	pm3d
+ryzen55650u	Ryzen 5 PRO 5650U with Radeon Graphics	1150	pm3d
+ryzen5microsoftsurfaceedition	Radeon Ryzen 5 Microsoft Surface Edition	1104	pm3d
+ryzen72700uvega	Ryzen 7 2700U with Radeon Vega	864	pm3d
+ryzen74700g	Ryzen 7 PRO 4700G with Radeon Graphics	1497	pm3d
+ryzen74700ge	Radeon Ryzen 7 4700GE	1312	pm3d
+ryzen74700u	Radeon Ryzen 7 4700U	1080	pm3d
+ryzen74750g	Ryzen 7 Pro 4750G with Radeon Graphics	1398	pm3d
+ryzen74750ge	Ryzen 7 PRO 4750GE with Radeon Graphics	1333	pm3d
+ryzen74750u	Ryzen 7 PRO 4750U with Radeon Graphics	1072	pm3d
+ryzen74800h	Radeon Ryzen 7 4800H	2617	pm3d
+ryzen74800hs	Radeon Ryzen 7 4800HS	4356	pm3d
+ryzen74800u	Ryzen 7 4800U with Radeon Graphics	1230	pm3d
+ryzen74850u	Radeon Ryzen 7 4850U Mobile	1127	pm3d
+ryzen75700g	Radeon Ryzen 7 5700G	1448	pm3d
+ryzen75700ge	Ryzen 7 5700GE with Radeon Graphics	1395	pm3d
+ryzen75700u	Ryzen 7 5700U with Radeon Graphics	1202	pm3d
+ryzen75750g	Ryzen 7 PRO 5750G with Radeon Graphics	1353	pm3d
+ryzen75750ge	Radeon Ryzen 7 PRO 5750GE	1443	pm3d
+ryzen75800h	Ryzen 7 5800H with Radeon Graphics	1473	pm3d
+ryzen75800hs	Ryzen 7 5800HS with Radeon Graphics	3672	pm3d
+ryzen75800u	Ryzen 7 5800U with Radeon Graphics	1291	pm3d
+ryzen75850u	Ryzen 7 PRO 5850U with Radeon Graphics	1278	pm3d
+ryzen7extremeedition	Ryzen 7 Extreme Edition	1137	pm3d
+ryzen7microsoftsurfaceedition	Radeon Ryzen 7 Microsoft Surface Edition	1207	pm3d
+ryzen94900h	Ryzen 9 4900H with Radeon Graphics	1414	pm3d
+ryzen94900hs	Radeon Ryzen 9 4900HS	4229	pm3d
+ryzen94900hss	Radeon Ryzen 9 4900HSS	4646	pm3d
+ryzen95900h	Radeon Ryzen 9 5900H	1435	pm3d
+ryzen95900hs	Radeon Ryzen 9 5900HS	4162	pm3d
+ryzen95900hx	Radeon Ryzen 9 5900HX	1618	pm3d
+ryzen95980hs	Ryzen 9 5980HS with Radeon Graphics	1325	pm3d
+ryzenembeddedv2718	Radeon Ryzen Embedded V2718	1132	pm3d
+ryzenembeddedv2748	Radeon Ryzen Embedded V2748	699	pm3d
+s10000	FirePro S10000	2683	pm3d
+s35400ew	S3 5400EW	87	pm3d
+s3chrome430ulp	S3 Chrome 430 ULP	25	pm3d
+s3chromes25ddr2	S3 Chrome S25 DDR2	12	pm3d
+s3chromes27ddr3	S3 Chrome S27 DDR3	21	pm3d
+s3incsavage4	S3 Inc. Savage4	2	pm3d
+s3prosavageddr	S3 ProSavageDDR	1	pm3d
+s3supersavageixc1014	S3 SuperSavage/IXC 1014	1	pm3d
+s7000	FirePro S7000	2127	pm3d
+s7150	FirePro S7150	3143	pm3d
+s9000	FirePro S9000	2559	pm3d
+s9050	FirePro S9050	2483	pm3d
+sapphire9000atlantis	SAPPHIRE RADEON 9000 ATLANTIS PRO	4	pm3d
+sapphire9600atlantis	SAPPHIRE RADEON 9600 ATLANTIS	30	pm3d
+sapphirex1550	SAPPHIRE Radeon X1550	38	pm3d
+sapphirex800gt	Sapphire RADEON X800 GT	68	pm3d
+seriahd7700	Seria Radeon HD 7700	857	pm3d
+seriamobilityhd3400	Seria Mobility Radeon HD 3400	75	pm3d
+serie4express	Mobile Intel serie 4 Express	28	pm3d
+sky500	Radeon Sky 500	2403	pm3d
+skylakehddtgt2	Intel Skylake HD DT GT2	324	pm3d
+ssg	Radeon Pro SSG	5130	pm3d
+steamdeck8cu	AMD Radeon Steam Deck 8CU	1769	ts
+sumo9640	SUMO 9640	363	pm3d
+sumo9644	SUMO 9644	264	pm3d
+sumo964a	SUMO 964A	281	pm3d
+t1000	T1000	3879	pm3d
+t10008gb	T1000 8GB	3847	pm3d
+t1200	NVIDIA T1200 Laptop GPU	3595	ts
+t2000	Quadro T2000	3567	pm3d
+t400	T400	1864	pm3d
+t4004gb	T400 4GB	1991	pm3d
+t500	NVIDIA T500 Laptop GPU	1788	ts
+t550	NVIDIA T550 Laptop GPU	1928	ts
+t600	NVIDIA T600 Laptop GPU	2766	ts
+tensor10driverhd630	TENSOR 1.0 Driver Intel HD 630	702	pm3d
+teslac2050	Tesla C2050	1809	pm3d
+teslac2050c2070	Tesla C2050 / C2070	1767	pm3d
+teslac2070	Tesla C2070	1606	pm3d
+teslac2075	Tesla C2075	1614	pm3d
+teslak20m	Tesla K20m	2855	pm3d
+teslak20xm	Tesla K20Xm	2737	pm3d
+teslak40m	Tesla K40m	392	pm3d
+teslam10	Tesla M10	1797	pm3d
+teslam2070q	Tesla M2070-Q	705	pm3d
+teslam40	Tesla M40	4952	pm3d
+teslam4024gb	Tesla M40 24GB	5668	pm3d
+teslam6	Tesla M6	3728	pm3d
+teslam60	Tesla M60	3852	pm3d
+teslap100pcie16gb	Tesla P100-PCIE-16GB	3594	pm3d
+teslat10	Tesla T10	6410	pm3d
+teslat4	Tesla T4	5416	pm3d
+teslav100sxm216gb	Tesla V100-SXM2-16GB	7771	pm3d
+titanrtx	TITAN RTX	9555	pm3d
+titanv	TITAN V	8943	pm3d
+titanvceoedition	TITAN V CEO Edition	8114	pm3d
+titanx	NVIDIA TITAN X	6592	pm3d
+titanxp	TITAN Xp	9256	pm3d
+titanxpcollectorsedition	TITAN Xp COLLECTORS EDITION	8900	pm3d
+tmr9a360	Radeon TM R9 A360	1110	pm3d
+trinitydevastator	TRINITY DEVASTATOR MOBILE	388	pm3d
+trinityscrapper	TRINITY SCRAPPER MOBILE	281	pm3d
+uhd	Intel UHD Graphics (Jasper Lake 32 EU)	330	ts
+uhd24eus	Intel UHD Graphics 24EUs (Alder Lake-N)	321	ts
+uhd600	Intel UHD Graphics 600	109	ts
+uhd605	Intel UHD 605	212	pm3d
+uhd610	Intel UHD Graphics 610	194	ts
+uhd615	Intel UHD Graphics 615	242	ts
+uhd617	Intel UHD Graphics 617	300	ts
+uhd620	Intel UHD Graphics 620	566	pm3d
+uhd630	Intel UHD 630	698	pm3d
+uhd64eus	Intel UHD Graphics 64EUs (Alder Lake 12th Gen)	1110	ts
+uhd710	Intel UHD 710	602	pm3d
+uhd730	Intel UHD 730	831	pm3d
+uhd750	Intel UHD 750	944	pm3d
+uhd770	Intel UHD Graphics 770	2655	ts
+uhdp630	Intel UHD P630	1328	pm3d
+uhdp750	Intel UHD P750	928	pm3d
+uhdreleaseinternal	Intel UHD ReleaseInternal	1037	pm3d
+uhdxe16eus	Intel UHD Graphics Xe 16EUs	348	ts
+uhdxe32eus	Intel UHD Graphics Xe 32EUs (Tiger Lake-H)	658	ts
+uhdxe75032eus	Intel UHD Graphics Xe 750 32EUs (Rocket Lake)	634	ts
+uhdxeg448eus	Intel UHD Graphics Xe G4 48EUs	801	ts
+us15embeddedmediaandcontroller	Intel US15 Embedded Media and Controller	5	pm3d
+v340mxgpu	Radeon Pro V340 MxGPU	1483	pm3d
+v3800	FirePro V3800	191	pm3d
+v3900	FirePro V3900	369	pm3d
+v4900	FirePro V4900	533	pm3d
+v520mxgpu	Radeon Pro V520 MxGPU	6221	pm3d
+v5700	FirePro V5700	263	pm3d
+v5800	FirePro V5800	643	pm3d
+v5900	FirePro V5900	687	pm3d
+v7000	FirePro V7000	1636	pm3d
+v7800	FirePro V7800	1075	pm3d
+v7900	FirePro V7900	1213	pm3d
+v8700	FirePro V8700	824	pm3d
+v8800	FirePro V8800	1169	pm3d
+v9560xtv6211	V9560XT V62.11	4	pm3d
+v9800	FirePro V9800	1421	pm3d
+vantavantalt	Vanta/Vanta LT	2	pm3d
+ve	Radeon VE	1	pm3d
+vega10	Radeon Vega 10 (Ryzen 2000/3000)	833	pm3d
+vega11	Radeon Vega 11	980	pm3d
+vega16	AMD Radeon Pro Vega 16	2198	ts
+vega2	Radeon Vega 2	278	pm3d
+vega20	AMD Radeon Pro Vega 20	2600	ts
+vega3	Radeon Vega 3 Mobile (Ryzen 2000/3000)	561	pm3d
+vega48	Radeon Pro Vega 48	5597	pm3d
+vega56	Radeon Pro Vega 56	6005	pm3d
+vega6	Radeon Vega 6 (Ryzen 2000/3000)	699	pm3d
+vega64	Radeon Pro Vega 64	6013	pm3d
+vega64x	Radeon Pro Vega 64X	7037	pm3d
+vega8	Radeon Vega 8 (Ryzen 2000/3000)	851	pm3d
+vega9	Radeon Vega 9	890	pm3d
+vegafrontieredition	Radeon Vega Frontier Edition	6633	pm3d
+vegaii	Radeon Pro Vega II	7087	pm3d
+viachrome9hc3igp	VIA Chrome9 HC3 IGP	2	pm3d
+viachrome9hcigp	VIA Chrome9 HC IGP	3	pm3d
+viachrome9hcigpfamily	VIA Chrome9 HC IGP Family	3	pm3d
+viachrome9hcigpfamilywddm	VIA Chrome9 HC IGP Family WDDM	3	pm3d
+viachrome9hcigpprereleasewddm11	VIA Chrome9 HC IGP Prerelease WDDM 1.1	1	pm3d
+viachrome9hcigpwddm	VIA Chrome9 HC IGP WDDM	2	pm3d
+viachrome9hcigpwddm11	VIA Chrome9 HC IGP WDDM 1.1	2	pm3d
+viachrome9hcmigp	VIA Chrome9 HCM IGP	1	pm3d
+viachrome9hdigp	VIA Chrome9 HD IGP	6	pm3d
+vias3gc645640	VIA/S3G C-645/640 GPU	97	pm3d
+vias3gchrome645640	VIA/S3G Chrome 645/640 GPU	67	pm3d
+vias3gdeltachromeigp	VIA/S3G DeltaChrome IGP	2	pm3d
+vias3gkm400kn400	VIA/S3G KM400/KN400	3	pm3d
+vias3gunichromeigp	VIA/S3G UniChrome Pro IGP	4	pm3d
+vias3gunichromeii	VIA/S3G UniChromeII	4	pm3d
+vii	Radeon Pro VII	8052	pm3d
+visiontek7000	VisionTek Radeon 7000	1	pm3d
+w2100	FirePro W2100	489	pm3d
+w4100	FirePro W4100	825	pm3d
+w4170m	FirePro W4170M	522	pm3d
+w4190m	Firepro W4190M	591	pm3d
+w4300	FirePro W4300	1488	pm3d
+w5000	FirePro W5000	1584	pm3d
+w5100	FirePro W5100	1535	pm3d
+w5130m	FirePro W5130M	723	pm3d
+w5170m	Firepro W5170M	832	pm3d
+w5500	Radeon Pro W5500	4556	pm3d
+w5500m	Radeon Pro W5500M	1062	pm3d
+w5700	Radeon Pro W5700	7246	pm3d
+w600	FirePro W600	932	pm3d
+w6150m	FirePro W6150M	812	pm3d
+w6400	Radeon PRO W6400	2971	pm3d
+w6600	Radeon PRO W6600	6846	pm3d
+w6800	Radeon PRO W6800	8937	pm3d
+w7000	FirePro W7000	2181	pm3d
+w7000adapter	FirePro W7000 Adapter	2212	pm3d
+w7100	FirePro W7100	2615	pm3d
+w7170m	FirePro W7170M	1636	pm3d
+w8000	FirePro W8000	2114	pm3d
+w8100	FirePro W8100	3642	pm3d
+w9000	FirePro W9000	3077	pm3d
+w9100	FirePro W9100	3827	pm3d
+winfasta250le	WinFast A250 LE	4	pm3d
+winfastgt610	WinFast GT 610	125	pm3d
+wx2100	Radeon Pro WX 2100	934	pm3d
+wx3100	Radeon Pro WX 3100	1371	pm3d
+wx3200	AMD Radeon Pro WX 3200	956	ts
+wx4100	Radeon Pro WX 4100	1932	pm3d
+wx4130	Radeon Pro WX 4130	997	pm3d
+wx4150	Radeon Pro WX 4150	1025	pm3d
+wx4170	Radeon Pro WX 4170	757	pm3d
+wx5100	Radeon Pro WX 5100	2777	pm3d
+wx7100	Radeon Pro WX 7100	3876	pm3d
+wx7130	Radeon Pro WX 7130	2878	pm3d
+wx8200	Radeon Pro WX 8200	6799	pm3d
+wx9100	Radeon Pro WX 9100	6399	pm3d
+wxvegamgl	Radeon Pro WX Vega M GL	3034	pm3d
+x1050	Radeon X1050	31	pm3d
+x1200	Radeon X1200	21	pm3d
+x1250	Radeon X1250	24	pm3d
+x1270	Radeon X1270	20	pm3d
+x1300	Radeon X1300 PRO	52	pm3d
+x1550	Radeon X1550	42	pm3d
+x155064bit	Radeon X1550 64-bit	30	pm3d
+x1600	Radeon X1600 Pro	60	pm3d
+x1600x1300xt	Radeon X1600 Pro / X1300XT	43	pm3d
+x1600xt	Radeon X1600 XT	70	pm3d
+x1650	Radeon X1650 Pro	52	pm3d
+x1650gto	Radeon X1650 GTO	46	pm3d
+x1650se	Radeon X1650 SE	44	pm3d
+x1700targaedition	Radeon X1700 Targa Edition	71	pm3d
+x1800gto	Radeon X1800 GTO	85	pm3d
+x1900crossfireedition	Radeon X1900 CrossFire Edition	82	pm3d
+x1900gt	Radeon X1900 GT	87	pm3d
+x1950	Radeon X1950 Pro	68	pm3d
+x1950crossfireedition	Radeon X1950 CrossFire Edition	90	pm3d
+x1950gt	Radeon X1950 GT	64	pm3d
+x300se	RADEON X300SE	24	pm3d
+x550	RADEON X550	32	pm3d
+x550xt	RADEON X550XT	35	pm3d
+x550xtx	Radeon X550XTX	44	pm3d
+x600256mbhypermemory	RADEON X600 256MB HyperMemory	36	pm3d
+x600xt	RADEON X600XT	56	pm3d
+x700	RADEON X700 PRO	47	pm3d
+x700se	RADEON X700 SE	44	pm3d
+x800	RADEON X800 PRO	40	pm3d
+x800gt	RADEON X800 GT	52	pm3d
+x800gto	RADEON X800 GTO	70	pm3d
+x800se	RADEON X800 SE	78	pm3d
+x800xl	RADEON X800 XL	43	pm3d
+x800xt	RADEON X800 XT	60	pm3d
+x800xtplatinumedition	RADEON X800 XT Platinum Edition	50	pm3d
+x850	RADEON X850 PRO	45	pm3d
+x850xt	RADEON X850 XT	50	pm3d
+x850xtplatinumedition	RADEON X850 XT Platinum Edition	50	pm3d
+xabre	Xabre	4	pm3d
+xfxhd4650agp	XFX Radeon HD 4650 AGP	67	pm3d
+xgivolarifamilyv11323dv	XGI Volari Family v1.13.23.D_V	4	pm3d
+xpress1100	Radeon Xpress 1100	22	pm3d
+xpress1150	Radeon Xpress 1150	19	pm3d
+xpress1200	Radeon Xpress 1200	23	pm3d
+xpress1250	Radeon Xpress 1250	27	pm3d
+xpress1270	Radeon Xpress 1270	18	pm3d
+xpress1300	Radeon Xpress 1300	33	pm3d
+xpress1300m	Radeon Xpress 1300M	25	pm3d
+xpress200	RADEON XPRESS 200	19	pm3d
+xpress200crossfire	RADEON XPRESS 200 CROSSFIRE	12	pm3d
+xpress200m	RADEON XPRESS 200M	15	pm3d
+zxchrome645640	ZX Chrome 645/640 GPU	88	pm3d
+zxcvintelhd620	zxcvIntel HD 620	517	pm3d

@@ -1,0 +1,32 @@
+[package]
+name = "lenovo-tracker"
+version = "1.0.0"
+edition = "2021"
+description = "Lenovo Clearance-Sale Mainboard-Tracker (Rust, minimal RAM)"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+basic-toml = "0.1"
+anyhow = "1"
+memchr = "2"
+# Nur der MIME-Builder: den SMTP-Transport (inkl. STARTTLS/AUTH) macht curl,
+# das im Container ohnehin liegt – das spart rustls+ring+Root-Store (~900 KB).
+lettre = { version = "0.11", default-features = false, features = ["builder"] }
+
+[profile.release]
+# "s" statt 3: gemessen gleiche Parse-Zeit (3,55 ms Minimum am 3,26-MB-Body),
+# aber 467 KB (20 %) kleinere Binärdatei – kleinerer Code passt besser in den
+# i-Cache. "z" wäre weitere 106 KB kleiner, kostet aber 33 % Parse-Zeit.
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+# Kalte Crates (Mail/Adressparsing) nur auf Größe optimieren – der Parser-Crate
+# und serde_json bleiben bei "s"/Standard, damit die Parse-Zeit unberührt bleibt.
+[profile.release.package.lettre]
+opt-level = "z"
+[profile.release.package.email_address]
+opt-level = "z"
