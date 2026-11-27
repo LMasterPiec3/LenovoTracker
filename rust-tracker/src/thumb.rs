@@ -18,18 +18,45 @@ fn cache_path(state_dir: &str, id: &str, width: u32) -> PathBuf {
         .join(format!("{}_{}w.jpg", id, width))
 }
 
-fn image_url(id: &str) -> String {
-    format!("https://download.lenovo.com/Images/Parts/{id}/{id}_A.jpg")
+/// Mögliche Bild-URLs eines Teils. Neuere Teile heißen `<ID>_A.jpg`, ältere
+/// (z. B. 00XK218) liegen als `1.jpg` … `3.jpg` daneben – beide Schemata
+/// prüfen, sonst bleibt jede fünfte Karte ohne Foto. Reihenfolge = Vorrang.
+fn image_urls(id: &str) -> Vec<String> {
+    let base = format!("https://download.lenovo.com/Images/Parts/{id}");
+    let mut urls = vec![format!("{base}/{id}_A.jpg")];
+    for n in 1..=3 {
+        urls.push(format!("{base}/{n}.jpg"));
+    }
+    urls
 }
 
-/// True, wenn die Datei existiert und jünger als eine Woche ist.
-fn recent(path: &Path) -> bool {
-    const WEEK: std::time::Duration = std::time::Duration::from_secs(7 * 86_400);
+/// Kandidaten der Reihe nach holen; das erste echte Bild gewinnt. `NoImage`
+/// nur, wenn jeder Kandidat 404 liefert – ein Aussetzer bleibt wiederholbar.
+fn fetch_first(cfg: &Config, urls: &[String]) -> Fetch {
+    let mut failed = false;
+    for url in urls {
+        match fetch(cfg, url) {
+            Fetch::Ok(raw) => return Fetch::Ok(raw),
+            Fetch::NoImage => continue,
+            Fetch::Failed => failed = true,
+        }
+    }
+    if failed {
+        Fetch::Failed
+    } else {
+        Fetch::NoImage
+    }
+}
+
+/// Marker „Teil ohne Bild“ nur einen Tag gelten lassen: ein einzelner
+/// Aussetzer bei Lenovo soll die Karte nicht tagelang leer lassen.
+fn recent_miss(path: &Path) -> bool {
+    const DAY: std::time::Duration = std::time::Duration::from_secs(86_400);
     path.metadata()
         .and_then(|m| m.modified())
         .ok()
         .and_then(|t| t.elapsed().ok())
-        .is_some_and(|age| age < WEEK)
+        .is_some_and(|age| age < DAY)
 }
 
 /// Vorschau als JPEG-Bytes: aus dem Cache, sonst frisch gebaut.
@@ -45,34 +72,101 @@ pub fn thumb(cfg: &Config, id: &str, width: u32) -> Option<Vec<u8>> {
         }
     }
     // Teile ohne Bild: Lenovo antwortet dann 404. Der Marker neben dem Cache
-    // gilt eine Woche und verhindert, dass jeder Seitenaufbau neu fragt.
+    // gilt einen Tag und verhindert, dass jeder Seitenaufbau neu fragt.
     let miss = path.with_extension("missing");
-    if recent(&miss) {
+    if recent_miss(&miss) {
         return None;
     }
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    let Some(raw) = download(cfg, &image_url(id)) else {
-        let _ = std::fs::write(&miss, b"");
-        return None;
+    let raw = match fetch_first(cfg, &image_urls(id)) {
+        Fetch::Ok(raw) => raw,
+        // 404: das Teil hat wirklich kein Bild – einen Tag lang merken.
+        Fetch::NoImage => {
+            let _ = std::fs::write(&miss, b"");
+            return None;
+        }
+        // Netz- oder curl-Fehler: kein Marker, der nächste Aufruf versucht es
+        // erneut. Sonst blendet ein kurzer Aussetzer die Bilder eine Woche aus.
+        Fetch::Failed => return None,
     };
     let small = shrink(&raw, width)?;
     let _ = std::fs::write(&path, &small);
     Some(small)
 }
 
-/// Original holen: eigener curl-Pfad, weil die Bild-URLs ohne Bot-Schutz
-/// direkt ausgeliefert werden (kein Impersonation-Binary nötig).
-fn download(cfg: &Config, url: &str) -> Option<Vec<u8>> {
-    let out = Command::new(&cfg.api.image_curl_path)
-        .args(["-sS", "-f", "--max-time", "25", url])
-        .output()
-        .ok()?;
-    if !out.status.success() || out.stdout.is_empty() {
-        return None;
+/// Fehlende Vorschauen nacheinander bauen, mit Pause zwischen zwei Teilen –
+/// die Seite zeigt bis zu 100 Karten, ein kaltes Bild kostet ~0,7 s (Original
+/// holen + 5-MP-JPEG dekodieren), warm sind es Millisekunden. Liefert die Zahl
+/// der neu gebauten Bilder.
+pub fn warm(cfg: &Config, ids: &[String], gap: std::time::Duration) -> usize {
+    let mut built = 0;
+    for id in ids {
+        if !crate::api::safe_part_id(id) {
+            continue;
+        }
+        let path = cache_path(&cfg.paths.state_dir, id, THUMB_WIDTH);
+        let miss = path.with_extension("missing");
+        if path.exists() || recent_miss(&miss) {
+            continue;
+        }
+        if thumb(cfg, id, THUMB_WIDTH).is_some() {
+            built += 1;
+        }
+        std::thread::sleep(gap);
     }
-    Some(out.stdout)
+    built
+}
+
+/// Ergebnis eines Bild-Abrufs: Bild, „gibt es nicht“ (HTTP 4xx/5xx) oder ein
+/// Fehler, der beim nächsten Versuch wiederholt werden darf.
+enum Fetch {
+    Ok(Vec<u8>),
+    NoImage,
+    Failed,
+}
+
+/// Nur ein echtes 404 heißt „dieses Teil hat kein Bild“. 403, 429 oder 503
+/// (Bot-Schutz, Drosselung bei schnellem Abruf) sind Aussetzer und werden
+/// beim nächsten Aufruf wiederholt – sonst bleibt die Karte tagelang leer.
+fn is_missing_code(code: &str) -> bool {
+    code == "404"
+}
+
+/// Original holen: eigener curl-Pfad, weil die Bild-URLs ohne Bot-Schutz
+/// direkt ausgeliefert werden (kein Impersonation-Binary nötig). Der Rumpf
+/// landet in einer temporären Datei, damit `-w` den Statuscode sauber auf
+/// stdout ausgeben kann (er entscheidet über „kein Bild“ gegen „nochmal“).
+fn fetch(cfg: &Config, url: &str) -> Fetch {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SEQ: AtomicU64 = AtomicU64::new(0);
+    let n = SEQ.fetch_add(1, Ordering::Relaxed);
+    let part = std::env::temp_dir().join(format!("lt-img-{}-{}.part", std::process::id(), n));
+    let out = match Command::new(&cfg.api.image_curl_path)
+        .args(["-sS", "--max-time", "25", "-o"])
+        .arg(&part)
+        .arg("-w")
+        .arg("%{http_code}")
+        .arg(url)
+        .output()
+    {
+        Ok(out) => out,
+        Err(_) => return Fetch::Failed,
+    };
+    let code = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    let result = if is_missing_code(&code) {
+        Fetch::NoImage
+    } else if !out.status.success() || code != "200" {
+        Fetch::Failed
+    } else {
+        match std::fs::read(&part) {
+            Ok(bytes) if !bytes.is_empty() => Fetch::Ok(bytes),
+            _ => Fetch::Failed,
+        }
+    };
+    let _ = std::fs::remove_file(&part);
+    result
 }
 
 /// JPEG auf `width` px einpassen und kompakt neu kodieren.
@@ -103,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn marker_liegt_neben_dem_cache_und_gilt_eine_woche() {
+    fn marker_liegt_neben_dem_cache_und_gilt_einen_tag() {
         let marker = cache_path("/tmp/lt-thumb", "5B21K93288", 320).with_extension("missing");
         assert!(
             marker.ends_with("thumbs/5B21K93288_320w.missing"),
@@ -114,10 +208,27 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("Temp-Verzeichnis");
         let marker = dir.join("A_320w.missing");
         let _ = std::fs::remove_file(&marker);
-        assert!(!recent(&marker), "fehlender Marker gilt nicht");
+        assert!(!recent_miss(&marker), "fehlender Marker gilt nicht");
         std::fs::write(&marker, b"").expect("Marker");
-        assert!(recent(&marker), "frischer Marker gilt");
+        assert!(recent_miss(&marker), "frischer Marker gilt");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn kandidaten_decken_beide_namensschemata() {
+        let urls = image_urls("00XK218");
+        assert_eq!(urls.len(), 4);
+        assert!(urls[0].ends_with("00XK218/00XK218_A.jpg"), "{}", urls[0]);
+        assert!(urls[1].ends_with("00XK218/1.jpg"), "{}", urls[1]);
+        assert!(urls[3].ends_with("00XK218/3.jpg"), "{}", urls[3]);
+    }
+
+    #[test]
+    fn nur_404_gilt_als_kein_bild() {
+        assert!(is_missing_code("404"));
+        for code in ["200", "403", "429", "500", "503", "000", ""] {
+            assert!(!is_missing_code(code), "{} ist ein Aussetzer", code);
+        }
     }
 
     #[test]

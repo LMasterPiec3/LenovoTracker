@@ -304,9 +304,17 @@ zusätzlicher Dienst, kein zusätzlicher Port nach außen im Standard):
   `config.toml`; Kommentare und unbekannte Schlüssel bleiben stehen, vorher wird
   geprüft, die alte Datei bleibt als `config.toml.bak`. SMTP- und Admin-Passwort
   erscheinen nie (leeres Feld = unverändert). Darunter liegt „Rohdatei (TOML)
-  bearbeiten“ für Sonderfälle. Alles andere – Bestand, Verlauf, Laden,
-  Live-Abruf – ist ohne Anmeldung erreichbar; die Zugangsdaten liegen nur im
-  Speicher des Tabs und sind nach einem Neuladen wieder weg.
+  bearbeiten“ für Sonderfälle.
+
+- **Anmeldung** – sobald `[webui] admin_pass` gesetzt ist oder Benutzer in
+  `users.toml` (neben der Config) stehen, verlangt jede Daten-API eine Sitzung:
+  Formular-Login mit Benutzername/Passwort, Cookie `lt_sid` (HttpOnly,
+  SameSite=Lax, 12 Stunden). Passwörter liegen als PBKDF2-HMAC-SHA256
+  (120 000 Runden, eigenes Salt) in `users.toml` (Modus 600). Rollen: `user`
+  sieht Bestand und Verlauf, `admin` zusätzlich Einstellungen und den
+  Benutzer-Tab (anlegen, Passwort/Rolle ändern, löschen). Der letzte Admin
+  lässt sich weder löschen noch degradieren. Solange kein Benutzer angelegt
+  ist, gilt der Config-Admin als Startzugang.
 
 Die Stückpreise legt der Tracker im State ab (Anzeige only – ein Preiswechsel
 schreibt `state.json` neu, löst aber keine Mail aus). `tracked.json` wird bei

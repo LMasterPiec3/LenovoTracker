@@ -17,6 +17,7 @@ use std::time::Duration;
 mod auth;
 mod live;
 mod settings;
+mod users;
 mod view;
 
 // Die Untermodule teilen sich die Anfrage-/Antwort-Typen aus diesem Modul; die
@@ -24,6 +25,7 @@ mod view;
 pub(crate) use auth::*;
 pub(crate) use live::*;
 pub(crate) use settings::*;
+pub(crate) use users::*;
 pub(crate) use view::*;
 
 #[cfg(test)]
@@ -84,6 +86,7 @@ pub fn run(config_path: &str) -> i32 {
         config_path
     );
     spawn_live_refresher(config_path.to_string());
+    spawn_thumb_warmer(config_path.to_string());
     for conn in listener.incoming() {
         match conn {
             Ok(stream) => {
@@ -94,6 +97,32 @@ pub fn run(config_path: &str) -> i32 {
         }
     }
     0
+}
+
+/// Vorschaubilder im Hintergrund vorbereiten: kalt kostet ein Bild ~0,7 s
+/// (Original holen + 5-MP-JPEG dekodieren), aus dem Cache ~80 ms. Die Seite
+/// zeigt bis zu 100 Karten gleichzeitig, deshalb baut der Warmer die fehlenden
+/// Bilder nacheinander vor – größter Bestand zuerst, das sind die oberen Karten.
+/// Ein Durchlauf ohne Lücke heißt: alles da, dann reicht ein seltener Blick.
+fn spawn_thumb_warmer(config_path: String) {
+    std::thread::spawn(move || loop {
+        let Ok(cfg) = load_config(&config_path) else {
+            std::thread::sleep(Duration::from_secs(60));
+            continue;
+        };
+        let mut parts = tracked_view(&cfg).parts;
+        if parts.is_empty() {
+            parts = state_view(&cfg).parts;
+        }
+        let mut rows: Vec<(String, i64)> = parts.into_iter().map(|(id, p)| (id, p.s)).collect();
+        rows.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        let ids: Vec<String> = rows.into_iter().map(|(id, _)| id).collect();
+        let built = crate::thumb::warm(&cfg, &ids, Duration::from_millis(400));
+        if built > 0 {
+            log_info!("Web-UI: {} Vorschaubilder vorbereitet", built);
+        }
+        std::thread::sleep(Duration::from_secs(if built > 0 { 30 } else { 600 }));
+    });
 }
 
 fn handle(mut stream: TcpStream, config_path: &str) {
@@ -283,6 +312,7 @@ fn send(stream: &mut TcpStream, resp: &Response) {
         304 => "Not Modified",
         403 => "Forbidden",
         404 => "Not Found",
+        405 => "Method Not Allowed",
         500 => "Internal Server Error",
         502 => "Bad Gateway",
         _ => "OK",
@@ -307,6 +337,10 @@ fn send(stream: &mut TcpStream, resp: &Response) {
 // ---------------------------------------------------------------------------
 
 fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
+    // Anmeldung zuerst: alles außer Seite, Login und /api/me braucht eine Sitzung.
+    if let Some(denied) = data_gate(cfg, config_path, req) {
+        return denied;
+    }
     if req.method == "GET" {
         if let Some(rest) = req.path.strip_prefix("/api/thumb/") {
             return thumb_response(cfg, rest);
@@ -324,6 +358,11 @@ fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
                 .into(),
             cache: None,
         },
+        // Anmeldung: offen, damit die Seite den Login zeigen kann.
+        ("POST", "/api/login") => login(cfg, config_path, &req.body),
+        ("POST", "/api/logout") => logout(req),
+        ("GET", "/api/me") => me_json(cfg, req),
+        (_, "/api/users") => users_route(cfg, config_path, req),
         ("GET", "/api/state") => state_json(cfg, req),
         ("GET", "/api/history") => history_json(cfg, query_limit(&req.query)),
         ("POST", "/api/live") => live_json(cfg, req),
@@ -370,9 +409,9 @@ fn thumb_response(cfg: &Config, raw: &str) -> Response {
             extra: String::new(),
             cache: Some("public, max-age=604800"),
         },
-        // Auch das „kein Bild“ kurz cachen – sonst fragt der Browser die
-        // fehlenden Teile bei jedem Seitenaufbau erneut an.
-        None => Response::error(404, "kein Bild").with_cache("public, max-age=3600"),
+        // „kein Bild“ nur eine Minute cachen: kommt das Foto später doch noch
+        // (Vorwärmen, Aussetzer bei Lenovo), ist der Platzhalter schnell weg.
+        None => Response::error(404, "kein Bild").with_cache("public, max-age=60"),
     }
 }
 
@@ -412,9 +451,13 @@ fn login_brake(cfg: &Config) -> Option<Response> {
 /// Antwort für abgelehnte Admin-Anfragen: 401 mit Anmelde-Hinweis (die Seite
 /// blendet dann das Login ein), 403 wenn gar kein Admin eingerichtet ist.
 fn admin_gate(cfg: &Config, req: &Request) -> Option<Response> {
-    if admin_ok(cfg, &req.headers) {
+    if is_admin(cfg, req) {
         note_ok();
         return None;
+    }
+    // Angemeldet, aber kein Admin: das ist ein Recht, kein Login-Problem.
+    if session_user(&req.headers).is_some() {
+        return Some(Response::error(403, "nur für Admins"));
     }
     // Ohne Admin in der Config hilft auch Warten nicht.
     if cfg.webui.admin_pass.is_empty() {
@@ -424,6 +467,30 @@ fn admin_gate(cfg: &Config, req: &Request) -> Option<Response> {
         ));
     }
     Some(login_brake(cfg).unwrap_or_else(|| Response::error(401, "Anmeldung erforderlich.")))
+}
+
+/// Alle Daten-Endpunkte hinter der Anmeldung: Sitzung, Admin-Basic oder das
+/// Site-Token (falls gesetzt). Die Seite selbst bleibt ladbar, sonst gäbe es
+/// keinen Login.
+fn data_gate(cfg: &Config, config_path: &str, req: &Request) -> Option<Response> {
+    if !login_required(cfg, config_path, req) {
+        return None;
+    }
+    if is_admin(cfg, req)
+        || session_user(&req.headers).is_some()
+        || (!cfg.webui.token.is_empty() && authorized(cfg, &req.headers))
+    {
+        return None;
+    }
+    // Mit Basic-Kopf wird geraten: zählen wie ein Login-Versuch, damit die
+    // Bremse greift – und ohne gültige Zugangsdaten keine Daten liefern.
+    if req.headers.contains_key("authorization") {
+        return Some(
+            login_brake(cfg).unwrap_or_else(|| Response::error(401, "Anmeldung erforderlich.")),
+        );
+    }
+    // Ohne Kopf ist es der normale „noch nicht angemeldet“-Fall: kein Fehlversuch.
+    Some(Response::error(401, "Bitte anmelden."))
 }
 
 /// 429 plus `Retry-After`, damit die Seite einen Countdown zeigen kann.

@@ -9,6 +9,7 @@ referer = "https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
 timeout_seconds = 60
 retries = 3                # Retry-Backoff: 5s, 15s, 45s (kein Retry bei HTTP 403)
 curl_path = "/opt/lenovo-tracker/curl-impersonate"
+image_curl_path = "/opt/lenovo-tracker/curl-impersonate"  # für Teilbilder; muss existieren (kein nacktes "curl" in Minimal-Containern)
 impersonate_target = "chrome124"
 specs_gap_ms = 250         # Startabstand zwischen Specs-Batches (ms);
                            # im CT z. B. 100 testen und Rate-Limit beobachten

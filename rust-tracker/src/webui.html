@@ -185,6 +185,27 @@
   #cbar .hint { margin-right: auto; }
   #cbar .hint.warn { color: var(--amber); font-weight: 600; }
   #cerr[hidden] { display: none; }
+  /* Login-Bildschirm: liegt über allem, bis eine Sitzung besteht. */
+  #login { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center;
+           justify-content: center; padding: 20px; background: var(--bg); }
+  #login[hidden] { display: none; }
+  .loginbox { width: min(92vw, 380px); background: var(--surface); border: 1px solid var(--line);
+              border-radius: var(--radius); padding: 22px; display: flex; flex-direction: column; gap: 10px;
+              box-shadow: var(--shadow-lg); }
+  .loginbox .brand { margin-bottom: 4px; }
+  .loginbox input { font: inherit; padding: 10px 12px; border: 1px solid var(--line);
+                    border-radius: 10px; background: var(--surface-2); color: var(--ink); }
+  .loginbox .err { color: var(--accent); margin: 0; font-size: 13px; }
+  .who { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .who b { color: var(--ink); }
+  body.locked { overflow: hidden; }
+  /* Benutzerliste */
+  .ulist { display: flex; flex-direction: column; gap: 8px; }
+  .urow { display: flex; align-items: center; gap: 10px; background: var(--surface);
+          border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .urow .uname { font-weight: 650; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .urow .btn { margin-left: auto; }
+  .urow .btn + .btn { margin-left: 0; }
   .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 2px 2px 14px; color: var(--muted); font-size: 13px; }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-left: auto; }
   .seg button { border: 0; background: var(--surface); font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; color: var(--muted); }
@@ -449,6 +470,8 @@
       <button type="button" data-theme-opt="dark" title="Dunkles Design" aria-label="Dunkles Design">☾</button>
       <button type="button" data-theme-opt="oled" title="OLED-Schwarz" aria-label="OLED-Schwarz">◼</button>
     </div>
+    <span class="who" id="who" hidden></span>
+    <button id="logout" class="btn ghost" hidden>Abmelden</button>
     <span class="src" id="source">STATE</span>
     <button id="live" class="btn primary big" title="Lenovo-API jetzt abfragen – ohne Mail">
       <svg class="i ico"><use href="#ic-refresh"/></svg>
@@ -461,7 +484,8 @@
 <nav>
   <button data-tab="stock" class="active">Bestand</button>
   <button data-tab="history">Verlauf</button>
-  <button data-tab="config">Einstellungen</button>
+  <button data-tab="config" id="tabConfig">Einstellungen</button>
+  <button data-tab="users" id="tabUsers" hidden>Benutzer</button>
 </nav>
 
 <main>
@@ -604,7 +628,51 @@
       <textarea id="ctext" spellcheck="false"></textarea>
     </details>
   </section>
+
+  <section id="tab-users" hidden>
+    <p class="hint" style="margin-top:0">
+      Wer sich anmelden darf. Admins sehen zusätzlich Einstellungen und diese Liste;
+      Benutzer sehen nur Bestand und Verlauf.
+    </p>
+    <div id="ulist" class="ulist"></div>
+    <fieldset class="set" style="margin-top:14px">
+      <legend id="utitle">Benutzer anlegen</legend>
+      <label class="row">
+        <span class="k">Benutzer</span>
+        <input id="uname" spellcheck="false" autocomplete="off">
+        <span class="hint">a–z, 0–9, Punkt, Unterstrich, Minus</span>
+      </label>
+      <label class="row">
+        <span class="k">Passwort</span>
+        <input id="upass" type="password" autocomplete="new-password">
+        <span class="hint" id="uhint">mindestens 8 Zeichen</span>
+      </label>
+      <label class="row">
+        <span class="k">Rolle</span>
+        <select id="urole">
+          <option value="user">Benutzer</option>
+          <option value="admin">Admin</option>
+        </select>
+        <span class="hint"></span>
+      </label>
+    </fieldset>
+    <div class="meta">
+      <button id="usave" class="btn primary">Speichern</button>
+      <button id="ureset" class="btn ghost">Neu</button>
+    </div>
+  </section>
 </main>
+
+<div id="login" hidden>
+  <form class="loginbox" id="loginForm">
+    <div class="brand"><span class="len">LENOVO</span><span class="trk">CLEARANCE-TRACKER</span></div>
+    <p class="hint" style="margin:0">Bitte anmelden.</p>
+    <input id="luser" placeholder="Benutzer" autocomplete="username" spellcheck="false">
+    <input id="lpass" type="password" placeholder="Passwort" autocomplete="current-password">
+    <button id="lgo" class="btn primary big" type="submit">Anmelden</button>
+    <p class="err" id="lerr" hidden></p>
+  </form>
+</div>
 
 <div id="toast"></div>
 <div id="lb" class="lb" hidden></div>
@@ -1051,10 +1119,13 @@ function laptopLine(p) {
   return wrap;
 }
 
-/// Lenovo-Bilder sind deterministisch: <id>_A … <id>_E (fehlende liefern 404).
+/// Lenovo-Bilder sind deterministisch: <id>_A … <id>_E für neuere Teile,
+/// 1 … 3 für ältere (fehlende Varianten liefern 404 und werden übersprungen).
 function imageSet(p) {
-  return ["A", "B", "C", "D", "E"].map(s =>
-    "https://download.lenovo.com/Images/Parts/" + p.id + "/" + p.id + "_" + s + ".jpg");
+  const base = "https://download.lenovo.com/Images/Parts/" + p.id + "/";
+  const named = ["A", "B", "C", "D", "E"].map(s => base + p.id + "_" + s + ".jpg");
+  const numbered = [1, 2, 3].map(n => base + n + ".jpg");
+  return named.concat(numbered);
 }
 
 /// Zustand des offenen Dialogs: Bildliste, aktueller Index, fehlende Varianten.
@@ -1544,12 +1615,119 @@ for (const b of document.querySelectorAll("[data-theme-opt]")) {
 }
 applyTheme(document.documentElement.dataset.theme);
 
+/* ---------- Anmeldung ---------- */
+let me = null;
+
+function showLogin(message) {
+  document.body.classList.add("locked");
+  $("#login").hidden = false;
+  if (message) {
+    $("#lerr").hidden = false;
+    $("#lerr").textContent = message;
+  }
+  $("#luser").focus();
+}
+
+async function doLogin(event) {
+  event.preventDefault();
+  $("#lgo").disabled = true;
+  $("#lerr").hidden = true;
+  try {
+    me = await post("/api/login", { user: $("#luser").value, pass: $("#lpass").value });
+    location.reload();
+  } catch (e) {
+    $("#lerr").hidden = false;
+    $("#lerr").textContent = e.status === 429 ? e.message : "Benutzer oder Passwort falsch.";
+  } finally {
+    $("#lgo").disabled = false;
+  }
+}
+
+/* ---------- Benutzer (nur Admin) ---------- */
+async function send(method, url, body) {
+  const r = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json", "X-Requested-With": "lenovo-tracker" },
+    body: JSON.stringify(body || {})
+  });
+  if (!r.ok) throw await fail(r);
+  return r.json();
+}
+
+function resetUserForm() {
+  $("#uname").value = "";
+  $("#upass").value = "";
+  $("#urole").value = "user";
+  $("#utitle").textContent = "Benutzer anlegen";
+  $("#uhint").textContent = "mindestens 8 Zeichen";
+}
+
+async function loadUsers() {
+  const box = $("#ulist");
+  try {
+    const d = await get("/api/users");
+    box.textContent = "";
+    for (const u of d.users) {
+      const row = el("div", "urow");
+      row.append(el("span", "uname", u.user));
+      row.append(el("span", "chip" + (u.role === "admin" ? " gpu" : ""), u.role === "admin" ? "Admin" : "Benutzer"));
+      const edit = el("button", "btn ghost", "Bearbeiten");
+      edit.addEventListener("click", () => {
+        $("#uname").value = u.user;
+        $("#upass").value = "";
+        $("#urole").value = u.role;
+        $("#utitle").textContent = "Benutzer bearbeiten";
+        $("#uhint").textContent = "leer = unverändert";
+        $("#upass").focus();
+      });
+      const del = el("button", "btn ghost", "Löschen");
+      del.addEventListener("click", async () => {
+        if (!confirm("Benutzer „" + u.user + "“ löschen?")) return;
+        try {
+          await send("DELETE", "/api/users", { user: u.user });
+          toast("Benutzer gelöscht.");
+          loadUsers();
+        } catch (e) {
+          toast(e.message, true);
+        }
+      });
+      row.append(edit, del);
+      box.append(row);
+    }
+    if (!d.users.length) box.append(el("p", "hint", "Noch keine Benutzer – der Admin aus der Config gilt weiterhin."));
+  } catch (e) {
+    box.textContent = "";
+    box.append(el("p", "hint", e.message));
+  }
+}
+
+async function saveUser() {
+  const user = $("#uname").value.trim().toLowerCase();
+  if (!user) {
+    toast("Bitte einen Benutzernamen eintragen.", true);
+    $("#uname").focus();
+    return;
+  }
+  $("#usave").disabled = true;
+  try {
+    await post("/api/users", { user, pass: $("#upass").value, role: $("#urole").value });
+    toast("Benutzer gespeichert.");
+    resetUserForm();
+    loadUsers();
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    $("#usave").disabled = false;
+  }
+}
+
 /* ---------- Tabs / Events ---------- */
 function showTab(name) {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
-  for (const id of ["stock", "history", "config"]) $("#tab-" + id).hidden = (id !== name);
+  for (const id of ["stock", "history", "config", "users"]) $("#tab-" + id).hidden = (id !== name);
   if (name === "history") loadHistory();
   if (name === "config") loadSettings();
+  if (name === "users") loadUsers();
 }
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 document.querySelectorAll(".seg.view button").forEach(b => b.addEventListener("click", () => {
@@ -1587,26 +1765,52 @@ $("#cgo").addEventListener("click", adminLogin);
 $("#cuser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#cpass").focus(); });
 $("#cpass").addEventListener("keydown", (e) => { if (e.key === "Enter") adminLogin(); });
 
-showTab("stock");
-// Beim Start genau ein Abruf: der Live-Stand aus dem Speicher des Servers
-// (Millisekunden). Nur wenn er fehlt oder scheitert, kommt der gespeicherte
-// Stand zum Zug.
-document.body.classList.add("loading");
-refreshLive(true).then((ok) => {
-  document.body.classList.remove("loading");
-  if (!ok) loadState();
+$("#loginForm").addEventListener("submit", doLogin);
+$("#logout").addEventListener("click", async () => {
+  try { await send("POST", "/api/logout"); } catch (e) { /* egal */ }
+  location.reload();
 });
-// Jede Minute den Stand nachziehen – der Server hält ihn währenddessen aktuell,
-// ein Abruf zu Lenovo ist damit nicht mehr nötig.
-setInterval(() => {
-  if (document.hidden) return;
-  if (data.source !== "live") loadState(true);
-  else refreshLive(true);
-}, 60000);
-// Zurück im Tab sofort nachziehen, statt bis zur nächsten Minute zu warten.
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && data.source === "live") refreshLive(true);
-});
+$("#usave").addEventListener("click", saveUser);
+$("#ureset").addEventListener("click", resetUserForm);
+
+// Erst die Sitzung prüfen: ohne Anmeldung bleibt die Seite hinter dem Login.
+async function start() {
+  try {
+    me = await get("/api/me");
+  } catch (e) {
+    showLogin(e.status === 401 ? "" : e.message);
+    return;
+  }
+  $("#who").hidden = false;
+  $("#who").innerHTML = "";
+  $("#who").append("Angemeldet als ", el("b", null, me.user));
+  $("#logout").hidden = false;
+  $("#tabUsers").hidden = me.role !== "admin";
+  // Einstellungen sind Admin-Sache – für Benutzer gar nicht erst anbieten.
+  $("#tabConfig").hidden = me.role !== "admin";
+  showTab("stock");
+  // Beim Start genau ein Abruf: der Live-Stand aus dem Speicher des Servers
+  // (Millisekunden). Nur wenn er fehlt oder scheitert, kommt der gespeicherte
+  // Stand zum Zug.
+  document.body.classList.add("loading");
+  refreshLive(true).then((ok) => {
+    document.body.classList.remove("loading");
+    if (!ok) loadState();
+  });
+  // Jede Minute den Stand nachziehen – der Server hält ihn währenddessen aktuell,
+  // ein Abruf zu Lenovo ist damit nicht mehr nötig.
+  setInterval(() => {
+    if (document.hidden) return;
+    if (data.source !== "live") loadState(true);
+    else refreshLive(true);
+  }, 60000);
+  // Zurück im Tab sofort nachziehen, statt bis zur nächsten Minute zu warten.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && data.source === "live") refreshLive(true);
+  });
+}
+
+start();
 </script>
 </body>
 </html>

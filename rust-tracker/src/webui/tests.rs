@@ -77,6 +77,27 @@ fn admin_request(method: &str, path: &str) -> Request {
     basic_request(method, path, "YWRtaW46c3RyZW5n")
 }
 
+/// Anmeldung per Formular; liefert den Wert des Sitzungs-Cookies.
+fn login_cookie(cfg: &Config, path: &str, user: &str, pass: &str) -> String {
+    let mut req = request("POST", "/api/login");
+    req.body = serde_json::to_vec(&json!({ "user": user, "pass": pass })).unwrap();
+    let resp = route(cfg, path, &req);
+    assert_eq!(resp.status, 200, "{}", String::from_utf8_lossy(&resp.body));
+    resp.extra
+        .split("Set-Cookie: ")
+        .nth(1)
+        .and_then(|v| v.split(';').next())
+        .and_then(|v| v.split_once('='))
+        .map(|(_, token)| token.to_string())
+        .expect("Sitzungs-Cookie")
+}
+
+fn with_cookie(mut req: Request, token: &str) -> Request {
+    req.headers
+        .insert("cookie".into(), format!("{}={}", SESSION_COOKIE, token));
+    req
+}
+
 #[test]
 fn test_redact_keeps_password() {
     let text = redact(CONFIG);
@@ -629,6 +650,90 @@ fn settings_form_lehnt_kaputte_werte_ab() {
         );
     }
     assert_eq!(std::fs::read_to_string(path).unwrap(), CONFIG);
+}
+
+#[test]
+fn login_sperrt_daten_und_admin_verwaltet_benutzer() {
+    let _guard = admin_lock();
+    let dir = temp_dir("login");
+    let mut cfg = config_for(&dir);
+    cfg.webui.admin_pass = "startpass".into();
+    cfg.webui.admin_attempts = 5;
+    cfg.webui.admin_lockout_secs = 60;
+    let path = dir.join("config.toml");
+    std::fs::write(&path, CONFIG).unwrap();
+    let path = path.to_str().unwrap();
+
+    // Seite lädt (Login nötig), Daten nicht
+    assert_eq!(route(&cfg, path, &request("GET", "/")).status, 200);
+    assert_eq!(route(&cfg, path, &request("GET", "/api/state")).status, 401);
+    assert_eq!(route(&cfg, path, &request("GET", "/api/me")).status, 401);
+
+    // Start-Admin aus der Config, dann Benutzer anlegen
+    let admin = login_cookie(&cfg, path, "admin", "startpass");
+    let mut req = with_cookie(request("POST", "/api/users"), &admin);
+    req.body =
+        serde_json::to_vec(&json!({"user": "anna", "pass": "geheim123", "role": "user"})).unwrap();
+    assert_eq!(route(&cfg, path, &req).status, 200);
+    let users = std::fs::read_to_string(dir.join("users.toml")).unwrap();
+    assert!(
+        users.contains("pbkdf2$") && !users.contains("geheim123"),
+        "{}",
+        users
+    );
+
+    // Benutzer sieht Daten, aber weder Einstellungen noch Benutzerverwaltung
+    let anna = login_cookie(&cfg, path, "anna", "geheim123");
+    assert_eq!(
+        route(
+            &cfg,
+            path,
+            &with_cookie(request("GET", "/api/state"), &anna)
+        )
+        .status,
+        200
+    );
+    assert_eq!(
+        route(
+            &cfg,
+            path,
+            &with_cookie(request("GET", "/api/settings"), &anna)
+        )
+        .status,
+        403
+    );
+    assert_eq!(
+        route(
+            &cfg,
+            path,
+            &with_cookie(request("GET", "/api/users"), &anna)
+        )
+        .status,
+        403
+    );
+    // Admin-Sitzung kommt an die Einstellungen
+    assert_eq!(
+        route(
+            &cfg,
+            path,
+            &with_cookie(request("GET", "/api/settings"), &admin)
+        )
+        .status,
+        200
+    );
+
+    // falsches Passwort bleibt draußen
+    let mut bad = request("POST", "/api/login");
+    bad.body = serde_json::to_vec(&json!({"user": "anna", "pass": "falsch123"})).unwrap();
+    assert_eq!(route(&cfg, path, &bad).status, 401);
+
+    // der letzte Admin der Benutzerdatei lässt sich nicht löschen
+    let mut req = with_cookie(request("POST", "/api/users"), &admin);
+    req.body = serde_json::to_vec(&json!({"user": "anna", "role": "admin"})).unwrap();
+    assert_eq!(route(&cfg, path, &req).status, 200);
+    let mut req = with_cookie(request("DELETE", "/api/users"), &admin);
+    req.body = serde_json::to_vec(&json!({"user": "anna"})).unwrap();
+    assert_eq!(route(&cfg, path, &req).status, 400);
 }
 
 #[test]

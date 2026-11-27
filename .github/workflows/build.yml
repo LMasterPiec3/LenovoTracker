@@ -64,7 +64,9 @@ jobs:
       - name: Größen-Obergrenze prüfen
         run: |
           BIN=rust-tracker/target/release/lenovo-tracker
-          MAX=2000000   # ~2,0 MB (Web-UI-Variante, Ist-Stand 1,94 MB)
+          # 2,2 MB: Anmeldung + Benutzerverwaltung (PBKDF2 via sha2) kosten
+          # ~80 KB gegenueber dem 1,94-MB-Stand ohne Login.
+          MAX=2200000
           SIZE=$(stat -c %s "$BIN")
           echo "Binary: $SIZE Bytes (Obergrenze: $MAX Bytes)"
           if [ "$SIZE" -gt "$MAX" ]; then

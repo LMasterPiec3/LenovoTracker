@@ -16,6 +16,9 @@ image = { version = "0.25", default-features = false, features = ["jpeg"] }
 # Nur der MIME-Builder: den SMTP-Transport (inkl. STARTTLS/AUTH) macht curl,
 # das im Container ohnehin liegt – das spart rustls+ring+Root-Store (~900 KB).
 lettre = { version = "0.11", default-features = false, features = ["builder"] }
+# Passwort-Hashes (PBKDF2-HMAC-SHA256): reines Rust, ohne asm – hält das
+# Binary klein. Argon2 waere besser, kostet aber ~60 KB mehr.
+sha2 = { version = "0.10", default-features = false }
 
 [profile.release]
 # "s" statt 3: gemessen gleiche Parse-Zeit (3,55 ms Minimum am 3,26-MB-Body),

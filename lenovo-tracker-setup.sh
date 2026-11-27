@@ -1222,6 +1222,7 @@ referer = "https://support.lenovo.com/de/de/parts-lookup/clearance-sale"
 timeout_seconds = 60
 retries = 3
 curl_path = "${APP_DIR}/curl-impersonate"
+image_curl_path = "${APP_DIR}/curl-impersonate"
 impersonate_target = "chrome124"
 
 [tracker]

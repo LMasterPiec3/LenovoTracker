@@ -276,7 +276,9 @@ pub(crate) fn parts_json(
                 "mail": part_matches(id, p, specs, keywords),
                 // Liste: kleines, gecachtes Vorschaubild (das Original ist ~275 KB);
                 // der Bild-Dialog baut die Original-URLs selbst aus der ID.
-                "image": format!("/api/thumb/{id}"),
+                // `?v=2` verwirft die alten 404-Antworten im Browser-Cache
+                // (Platzhalter blieben sonst bis zu einer Stunde stehen).
+                "image": format!("/api/thumb/{id}?v=2"),
                 // Maschinentyps („20KU") – sagt, zu welchem Notebook das Board gehört.
                 "products": prod,
                 "cpu": f.cpu,
