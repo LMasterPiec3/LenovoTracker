@@ -69,6 +69,21 @@ pub fn keyword_matches(id: &str, name: &str, specs: &str, keywords: &[String]) -
             .any(|kw| ci_contains(name, kw) || ci_contains(id, kw) || ci_contains(specs, kw))
 }
 
+/// Keyword-Regel an einem Teil: Teilenummer, Name und Specs-Zeile zusammen.
+pub fn part_matches(
+    id: &str,
+    part: &PartState,
+    specs: &BTreeMap<String, String>,
+    keywords: &[String],
+) -> bool {
+    keyword_matches(
+        id,
+        &part.n,
+        specs.get(id).map_or("", String::as_str),
+        keywords,
+    )
+}
+
 /// Kanonischer Fingerprint der aktiven Filter (commodity_keys + name_keywords).
 /// Landet im state.json – ändert er sich, wird die Baseline neu gesetzt
 /// (sonst würde ein Filterwechsel als riesiger „Anstieg" alarmieren).

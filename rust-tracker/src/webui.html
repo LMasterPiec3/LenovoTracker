@@ -205,10 +205,15 @@
                transition: transform .18s; }
   .thumb:hover img { transform: scale(1.04); }
   .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .thumb .tags {
+    position: absolute; top: 8px; left: 8px; z-index: 2;
+    display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+  }
   .thumb .tag {
-    position: absolute; top: 8px; left: 8px; z-index: 2; background: var(--accent); color: #fff;
+    background: var(--accent); color: #fff;
     font-size: 9px; font-weight: 800; letter-spacing: .06em; border-radius: 5px; padding: 3px 6px;
   }
+  .thumb .tag.neu { background: var(--green-soft); color: var(--green); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
   .thumb .ph { width: 58px; height: 58px; color: var(--thumb-ph); stroke-width: 1.2; position: absolute; }
   .stock-badge {
     position: absolute; top: 8px; right: 8px; z-index: 2; background: rgba(15,20,25,.82); color: #fff;
@@ -274,7 +279,12 @@
   .lb-foot { display: flex; gap: 14px; align-items: center; padding: 12px 18px 16px; color: #dfe5eb; font-size: 12.5px; }
   .lb-foot a { color: #9dc1ff; }
   body.locked { overflow: hidden; }
+  .prices { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
   .price { font-size: 16px; font-weight: 750; font-variant-numeric: tabular-nums; }
+  .old-price {
+    font-size: 12.5px; font-weight: 600; color: var(--muted); text-decoration: line-through;
+    font-variant-numeric: tabular-nums;
+  }
   .delta {
     margin-left: auto; font-size: 12px; font-weight: 750; padding: 2px 8px; border-radius: 999px;
     background: var(--green-soft); color: var(--green);
@@ -441,6 +451,9 @@
               <option value="stock">Bestand ↓</option>
               <option value="stockAsc">Bestand ↑</option>
             </optgroup>
+            <optgroup label="Neu">
+              <option value="new">NEU zuerst</option>
+            </optgroup>
             <optgroup label="Technik">
               <option value="perf">Leistung ↓</option>
               <option value="gpu">GPU-Leistung ↓</option>
@@ -509,6 +522,7 @@
       <p>
         Die Seite verfolgt <b>alle</b> Teile des Abrufs (eigener Bestand, eigener Verlauf) – unabhängig davon,
         welche Teile per E-Mail gemeldet werden. „Mail“ zeigt nur die Teile, die deine Keywords treffen.
+        Der Server hält den Live-Stand im Speicher und erneuert ihn jede Minute, solange eine Seite ihn abruft – deshalb ist die Seite sofort da.
         „Laden“ fragt die Lenovo-API direkt ab – ohne Mail und ohne den gespeicherten State zu ändern.
       </p>
     </details>
@@ -568,7 +582,7 @@ const BENCH_SRC = {
   r15: "Cinebench R15 → R23-Skala",
   gb6: "Geekbench 6 → R23-Skala",
 };
-const SORTS = ["stock", "stockAsc", "perf", "gpu", "cpu", "ram", "price", "priceAsc", "name", "nameDesc"];
+const SORTS = ["new", "stock", "stockAsc", "perf", "gpu", "cpu", "ram", "price", "priceAsc", "name", "nameDesc"];
 if (!SORTS.includes(F.sort)) F.sort = "stock";
 if (!["cards", "table"].includes(F.view)) F.view = "cards";
 if (!["all", "mail"].includes(F.scope)) F.scope = "all";
@@ -776,6 +790,8 @@ function selected() {
   // Teile ohne Preis stehen beim Preissortieren immer am Ende.
   const pa = (p) => (p.price == null ? Number.MAX_SAFE_INTEGER : p.price);
   const cmp = {
+    /* Teile, die im gespeicherten State fehlen, zuerst; danach Bestand. */
+    new: (a, b) => ((b.new ? 1 : 0) - (a.new ? 1 : 0)) || b.stock - a.stock || perfCmp(a, b),
     stock: (a, b) => b.stock - a.stock || perfCmp(a, b),
     stockAsc: (a, b) => a.stock - b.stock || perfCmp(a, b),
     perf: perfCmp,
@@ -832,11 +848,18 @@ function thumb(p) {
 function card(p) {
   const c = el("article", "card");
   const pic = thumb(p);
+  const tags = el("div", "tags");
+  if (p.new) {
+    const neu = el("span", "tag neu", "NEU");
+    neu.title = "Im gespeicherten Bestand noch nicht enthalten";
+    tags.append(neu);
+  }
   if (p.mail && data.mail_count < data.parts.length) {
     const tag = el("span", "tag", "MAIL");
     tag.title = "Teil trifft deine Mail-Keywords";
-    pic.append(tag);
+    tags.append(tag);
   }
+  if (tags.children.length) pic.append(tags);
   c.append(pic);
   const body = el("div", "body");
   const nameDiv = el("div", "name");
@@ -870,7 +893,14 @@ function card(p) {
   if (chips.children.length) body.append(chips);
   body.append(laptopLine(p));
   const foot = el("div", "foot");
-  const pr = el("div");
+  const pr = el("div", "prices");
+  // Est-Wert durchgestrichen vor dem Aktionspreis – nur wenn beide da sind und
+  // der Est-Wert höher liegt (ohne Aktionspreis gäbe es kein „statt“).
+  if (p.price != null && p.list_price > p.price) {
+    const old = el("span", "old-price", money(p.list_price, data.currency));
+    old.title = "Est-Wert / Listenpreis laut Lenovo";
+    pr.append(old);
+  }
   pr.append(el("span", "price", money(p.price, data.currency)));
   foot.append(pr);
   if (p.delta != null && p.delta !== 0) {
@@ -910,7 +940,8 @@ function tableRow(p) {
   tr.append(el("td", null, shortGpu(p) || "–"));
   tr.append(el("td", "num money", money(p.price, data.currency)));
   const d = el("td", "num");
-  if (p.delta) d.append(el("span", "delta" + (p.delta > 0 ? "" : " down"), (p.delta > 0 ? "+" : "") + p.delta));
+  if (p.new) d.append(el("span", "delta", "NEU"));
+  else if (p.delta) d.append(el("span", "delta" + (p.delta > 0 ? "" : " down"), (p.delta > 0 ? "+" : "") + p.delta));
   tr.append(d);
   return tr;
 }
@@ -1112,8 +1143,10 @@ function render() {
   renderSegs();
 }
 
-function applyAll() {
-  limit = STEP;
+// `reset` kürzt die Liste auf die erste Seite (nach neuem Abruf); die stille
+// Aktualisierung lässt „Mehr anzeigen“ und damit die Scrollposition stehen.
+function applyAll(reset = true) {
+  if (reset) limit = STEP;
   renderFilters();
   renderHead();
   render();
@@ -1124,33 +1157,50 @@ async function loadState(silent) {
   try {
     const d = await get("/api/state");
     Object.assign(data, d);
-    applyAll();
+    applyAll(!silent);
   } catch (e) {
     if (!silent) toast("State nicht lesbar: " + e.message, true);
   }
 }
-async function laden() {
+// Abruf über den Server (kein State, keine Mail). `silent` ist der
+// Hintergrund-Lauf: kein Spinner, kein Toast, Liste bleibt stehen. `fresh`
+// erneuert den Stand sofort, statt ihn aus dem Server-Speicher zu lesen.
+async function refreshLive(silent, fresh) {
   const btn = $("#live");
-  btn.disabled = true;
-  btn.classList.add("loading");
-  $("#liveLabel").textContent = "Lädt …";
-  document.body.classList.add("loading");
+  if (!silent) {
+    btn.disabled = true;
+    btn.classList.add("loading");
+    $("#liveLabel").textContent = "Lädt …";
+    document.body.classList.add("loading");
+  }
   try {
-    const d = await post("/api/live");
+    const d = await post("/api/live" + (fresh ? "?fresh=1" : ""));
+    // Der Server erneuert seinen Stand nur jede Minute – ist er gleich, wäre
+    // neu zeichnen nur Flackern.
+    const same = silent && data.source === "live" && d.checked_at === data.checked_at;
     Object.assign(data, d);
-    showTab("stock");
-    applyAll();
-    $("#stock").animate([{ transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: 280 });
-    toast("Live geladen: " + fmt(d.part_count) + " Teile, " + fmt(d.total_stock) + " Stück – keine Mail gesendet.");
+    if (silent) {
+      if (!same) applyAll(false);
+    } else {
+      showTab("stock");
+      applyAll();
+      $("#stock").animate([{ transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: 280 });
+      toast("Live geladen: " + fmt(d.part_count) + " Teile, " + fmt(d.total_stock) + " Stück – keine Mail gesendet.");
+    }
+    return true;
   } catch (e) {
-    toast("Laden fehlgeschlagen: " + e.message, true);
+    if (!silent) toast("Laden fehlgeschlagen: " + e.message, true);
+    return false;
   } finally {
-    btn.disabled = false;
-    btn.classList.remove("loading");
-    $("#liveLabel").textContent = "Laden";
-    document.body.classList.remove("loading");
+    if (!silent) {
+      btn.disabled = false;
+      btn.classList.remove("loading");
+      $("#liveLabel").textContent = "Laden";
+      document.body.classList.remove("loading");
+    }
   }
 }
+function laden() { return refreshLive(false, true); }
 
 /* ---------- Verlauf ---------- */
 async function loadHistory() {
@@ -1281,8 +1331,25 @@ $("#creload").addEventListener("click", loadConfig);
 $("#save").addEventListener("click", saveConfig);
 
 showTab("stock");
-loadState();
-setInterval(() => { if (!document.hidden && data.source === "state") loadState(true); }, 60000);
+// Beim Start genau ein Abruf: der Live-Stand aus dem Speicher des Servers
+// (Millisekunden). Nur wenn er fehlt oder scheitert, kommt der gespeicherte
+// Stand zum Zug.
+document.body.classList.add("loading");
+refreshLive(true).then((ok) => {
+  document.body.classList.remove("loading");
+  if (!ok) loadState();
+});
+// Jede Minute den Stand nachziehen – der Server hält ihn währenddessen aktuell,
+// ein Abruf zu Lenovo ist damit nicht mehr nötig.
+setInterval(() => {
+  if (document.hidden) return;
+  if (data.source !== "live") loadState(true);
+  else refreshLive(true);
+}, 60000);
+// Zurück im Tab sofort nachziehen, statt bis zur nächsten Minute zu warten.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && data.source === "live") refreshLive(true);
+});
 </script>
 </body>
 </html>

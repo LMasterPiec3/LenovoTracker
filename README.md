@@ -286,6 +286,10 @@ zusätzlicher Dienst, kein zusätzlicher Port nach außen im Standard):
   gespeichert.
 - **Laden** – fragt die Lenovo-API direkt ab, **ohne Mail** und ohne den State
   zu verändern; zeigt je Teil das Δ zum gespeicherten Stand.
+- **Live-Stand** – der Server hält den Abruf im Speicher und erneuert ihn jede
+  Minute, solange eine Seite ihn abruft (die Seite lädt dadurch in
+  Millisekunden). 5 Minuten ohne Aufruf pausieren ihn – kein Lenovo-Traffic –,
+  der nächste Aufruf holt frisch und startet ihn wieder.
 - **Alle Teile statt nur Mail-Liste** – die Oberfläche führt einen eigenen
   Bestand (`data/tracked.json` + `data/tracked-history.csv`): jeder Lauf legt
   dort **alle** Teile des Abrufs ab, mit Technik-Daten und Preisen, unabhängig

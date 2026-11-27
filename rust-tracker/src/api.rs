@@ -97,6 +97,10 @@ pub struct FetchOutcome {
     pub boards: BTreeMap<String, PartState>,
     /// Aktions-/Listenpreis je Teil (nur Teile mit Preisangabe).
     pub prices: PriceMap,
+    /// Listenpreis („Est-Wert“ der Lenovo-Karte, Feld `price`) je Teil in Cent.
+    /// Getrennt vom Aktionspreis, damit die Oberfläche „1.899,20 € → 115,85 €“
+    /// zeigen kann; für die Mail-Kosten zählt weiterhin `prices`.
+    pub list_prices: PriceMap,
     /// Maschinentyps je Teil („20KU") – sagt, zu welchem Notebook das Board
     /// gehört. Steht direkt in der Liste, ein Detail-Abruf ist dafür unnötig.
     pub products: BTreeMap<String, Vec<String>>,
@@ -207,6 +211,7 @@ pub fn parse_clearance(text: &str, keys: &[String]) -> FetchOutcome {
             total_parts: 0,
             boards: BTreeMap::new(),
             prices: BTreeMap::new(),
+            list_prices: BTreeMap::new(),
             products: BTreeMap::new(),
         })
 }
@@ -227,6 +232,7 @@ impl<'de, 'a> Visitor<'de> for EnvelopeVisitor<'a> {
         let mut total_parts: usize = 0;
         let mut boards: BTreeMap<String, PartState> = BTreeMap::new();
         let mut prices: PriceMap = BTreeMap::new();
+        let mut list_prices: PriceMap = BTreeMap::new();
         let mut products: BTreeMap<String, Vec<String>> = BTreeMap::new();
         while let Some(key) = map.next_key::<String>()? {
             match key.as_str() {
@@ -237,6 +243,7 @@ impl<'de, 'a> Visitor<'de> for EnvelopeVisitor<'a> {
                         total: &mut total_parts,
                         boards: &mut boards,
                         prices: &mut prices,
+                        list_prices: &mut list_prices,
                         products: &mut products,
                     })?;
                 }
@@ -250,6 +257,7 @@ impl<'de, 'a> Visitor<'de> for EnvelopeVisitor<'a> {
             total_parts,
             boards,
             prices,
+            list_prices,
             products,
         })
     }
@@ -260,6 +268,7 @@ struct ListSeed<'a> {
     total: &'a mut usize,
     boards: &'a mut BTreeMap<String, PartState>,
     prices: &'a mut PriceMap,
+    list_prices: &'a mut PriceMap,
     products: &'a mut BTreeMap<String, Vec<String>>,
 }
 
@@ -289,6 +298,7 @@ impl<'de, 'a> Visitor<'de> for ListVisitor<'a> {
             total,
             boards,
             prices,
+            list_prices,
             products,
         } = seed;
         while seq
@@ -297,6 +307,7 @@ impl<'de, 'a> Visitor<'de> for ListVisitor<'a> {
                 total: &mut *total,
                 boards: &mut *boards,
                 prices: &mut *prices,
+                list_prices: &mut *list_prices,
                 products: &mut *products,
             })?
             .is_some()
@@ -310,6 +321,7 @@ struct PartSeed<'a> {
     total: &'a mut usize,
     boards: &'a mut BTreeMap<String, PartState>,
     prices: &'a mut PriceMap,
+    list_prices: &'a mut PriceMap,
     products: &'a mut BTreeMap<String, Vec<String>>,
 }
 
@@ -465,6 +477,7 @@ impl<'de, 'a> Visitor<'de> for PartVisitor<'a> {
             total,
             boards,
             prices,
+            list_prices,
             products,
         } = seed;
         let mut id: Option<PartId> = None;
@@ -527,12 +540,17 @@ impl<'de, 'a> Visitor<'de> for PartVisitor<'a> {
             products.insert(id.to_string(), prods);
         }
         // Aktionspreis, sonst Listenpreis; 0 heißt „kein Preis bekannt".
+        let list = to_cents(price);
         let unit = match to_cents(promo) {
-            0 => to_cents(price),
+            0 => list,
             sale => sale,
         };
         if unit > 0 {
             prices.insert(id.to_string(), unit);
+        }
+        // Est-Wert zusätzlich behalten – auch wenn eine Aktion ihn überlagert.
+        if list > 0 {
+            list_prices.insert(id.to_string(), list);
         }
         Ok(())
     }
