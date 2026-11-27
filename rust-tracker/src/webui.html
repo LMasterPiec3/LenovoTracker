@@ -155,6 +155,14 @@
     appearance: none; cursor: pointer; max-width: 210px;
   }
   input:focus, select:focus, textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--focus); }
+  .login { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .login[hidden] { display: none; }
+  .login input {
+    font: inherit; width: 190px; padding: 8px 11px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--surface); color: var(--ink);
+  }
+  #cerr { margin: 0 0 12px; }
+  #cerr[hidden] { display: none; }
   .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 2px 2px 14px; color: var(--muted); font-size: 13px; }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-left: auto; }
   .seg button { border: 0; background: var(--surface); font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; color: var(--muted); }
@@ -549,8 +557,16 @@
       <button id="creload" class="btn ghost">Verwerfen &amp; neu laden</button>
       <span class="hint" id="cpath"></span>
     </div>
+    <p class="hint" id="cerr" hidden></p>
+    <div class="login" id="clogin" hidden>
+      <input id="cuser" placeholder="Benutzer" autocomplete="username" spellcheck="false">
+      <input id="cpass" type="password" placeholder="Passwort" autocomplete="current-password">
+      <button id="cgo" class="btn primary">Anmelden</button>
+    </div>
     <p class="hint" style="margin-top:0">
       Änderungen gelten sofort für Live-Abrufe und ab dem nächsten Cron-Lauf für die Mails.
+      Nach zu vielen Fehlversuchen ist die Anmeldung kurz gesperrt – einstellbar über
+      <code>admin_attempts</code> und <code>admin_lockout_secs</code>.
       Das SMTP-Passwort wird nicht angezeigt und bleibt beim Speichern erhalten.
       Die alte Datei wird als <code>config.toml.bak</code> gesichert.
     </p>
@@ -633,19 +649,26 @@ function toast(msg, isErr) {
 async function errText(r) {
   try { const j = await r.json(); return j.error || ("HTTP " + r.status); } catch { return "HTTP " + r.status; }
 }
-async function get(url) {
-  const r = await fetch(url, { headers: { "X-Requested-With": "lenovo-tracker" } });
-  if (!r.ok) throw new Error(await errText(r));
+async function get(url, headers) {
+  const r = await fetch(url, { headers: { "X-Requested-With": "lenovo-tracker", ...(headers || {}) } });
+  if (!r.ok) throw await fail(r);
   return r.json();
 }
-async function post(url, body) {
+async function post(url, body, headers) {
   const r = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Requested-With": "lenovo-tracker" },
+    headers: { "Content-Type": "application/json", "X-Requested-With": "lenovo-tracker", ...(headers || {}) },
     body: JSON.stringify(body || {})
   });
-  if (!r.ok) throw new Error(await errText(r));
+  if (!r.ok) throw await fail(r);
   return r.json();
+}
+// Fehler mit Status, damit die Einstellungen 401 (Login) von 403 (kein Admin) trennen können.
+async function fail(r) {
+  const e = new Error(await errText(r));
+  e.status = r.status;
+  e.retryAfter = Number(r.headers.get("Retry-After")) || 0;
+  return e;
 }
 
 /* ---------- Kopf + Warnung ---------- */
@@ -1260,27 +1283,98 @@ async function loadHistory() {
   }
 }
 
-/* ---------- Config ---------- */
+/* ---------- Config (nur mit Admin-Login) ---------- */
+// Die Anmeldung lebt nur im Speicher dieser Seite: kein localStorage, damit
+// das Passwort den Tab nicht überlebt.
+let adminAuth = "";
+
+const adminHeaders = () => (adminAuth ? { Authorization: adminAuth } : {});
+
+function adminLogin() {
+  const user = $("#cuser").value.trim();
+  // btoa kennt nur Latin-1 – Umlaute im Passwort erst als UTF-8 kodieren.
+  let raw = "";
+  for (const b of new TextEncoder().encode(user + ":" + $("#cpass").value)) raw += String.fromCharCode(b);
+  adminAuth = "Basic " + btoa(raw);
+  $("#cpass").value = "";
+  loadConfig();
+}
+
+/// Einstellungen zu: Textfeld leeren und sperren. `withLogin` blendet das
+/// Anmeldefeld ein (401), sonst steht dort nur der Hinweis (403).
+function adminLocked(msg, withLogin) {
+  $("#clogin").hidden = !withLogin;
+  $("#cerr").hidden = !msg;
+  $("#cerr").textContent = msg || "";
+  $("#ctext").value = "";
+  $("#ctext").disabled = true;
+  $("#save").disabled = true;
+  $("#cpath").textContent = "";
+  if (withLogin) $("#cuser").focus();
+}
+
+// Nach 429 (Bremse) zählt der Knopf herunter, statt weitere Versuche zu schicken.
+function startCooldown(secs) {
+  const btn = $("#cgo");
+  clearTimeout(btn._t);
+  let left = Math.max(1, secs | 0);
+  const tick = () => {
+    if (left <= 0) {
+      btn.disabled = false;
+      btn.textContent = "Anmelden";
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = "Anmelden (" + left + " s)";
+    left -= 1;
+    btn._t = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+function stopCooldown() {
+  const btn = $("#cgo");
+  clearTimeout(btn._t);
+  btn.disabled = false;
+  btn.textContent = "Anmelden";
+}
+
 async function loadConfig() {
   try {
-    const d = await get("/api/config");
+    const d = await get("/api/config", adminHeaders());
     $("#ctext").value = d.text || "";
+    $("#ctext").disabled = false;
+    $("#save").disabled = false;
     $("#cpath").textContent = d.path || "";
+    $("#clogin").hidden = true;
+    $("#cerr").hidden = true;
+    stopCooldown();
   } catch (e) {
-    toast("Config nicht lesbar: " + e.message, true);
+    adminAuth = "";
+    // 403 = kein Admin in der Config, 401 = Anmeldung fehlt/falsch, 429 = Bremse
+    adminLocked(e.message, e.status !== 403);
+    if (e.status === 429) startCooldown(e.retryAfter);
   }
 }
+
 async function saveConfig() {
   const btn = $("#save");
   btn.disabled = true;
   document.body.classList.add("loading");
   try {
-    await post("/api/config", { text: $("#ctext").value });
+    await post("/api/config", { text: $("#ctext").value }, adminHeaders());
     toast("Config gespeichert – gilt ab dem nächsten Lauf (Backup: config.toml.bak).");
   } catch (e) {
-    toast("Speichern fehlgeschlagen: " + e.message, true);
+    if (e.status === 401 || e.status === 429) {
+      adminAuth = "";
+      adminLocked(e.message, true);
+      if (e.status === 429) startCooldown(e.retryAfter);
+    } else {
+      toast("Speichern fehlgeschlagen: " + e.message, true);
+    }
   } finally {
-    btn.disabled = false;
+    // gesperrter Editor bleibt gesperrt, sonst ist Speichern wieder frei
+    btn.disabled = $("#ctext").disabled;
     document.body.classList.remove("loading");
   }
 }
@@ -1329,6 +1423,9 @@ $("#live").addEventListener("click", laden);
 $("#hreload").addEventListener("click", loadHistory);
 $("#creload").addEventListener("click", loadConfig);
 $("#save").addEventListener("click", saveConfig);
+$("#cgo").addEventListener("click", adminLogin);
+$("#cuser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#cpass").focus(); });
+$("#cpass").addEventListener("keydown", (e) => { if (e.key === "Enter") adminLogin(); });
 
 showTab("stock");
 // Beim Start genau ein Abruf: der Live-Stand aus dem Speicher des Servers

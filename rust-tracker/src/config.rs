@@ -84,14 +84,27 @@ pub struct MailCfg {
 }
 
 /// Web-UI (`--serve`). Standard ist Loopback, weil die Oberfläche die Config
-/// schreiben darf; eine andere Adresse nur zusammen mit `token`.
+/// schreiben darf; eine andere Adresse nur zusammen mit `token` oder
+/// `admin_pass`.
 #[derive(Deserialize)]
 pub struct WebuiCfg {
     #[serde(default = "default_webui_bind")]
     pub bind: String,
-    /// HTTP-Basic-Token (Benutzername egal). Leer = ohne Login, nur Loopback.
+    /// HTTP-Basic-Token für die ganze Seite (Benutzername egal). Leer = offen.
     #[serde(default)]
     pub token: String,
+    /// Benutzer für den Admin-Login der Einstellungen.
+    #[serde(default = "default_admin_user")]
+    pub admin_user: String,
+    /// Passwort für die Einstellungen. Leer = Einstellungen gesperrt.
+    #[serde(default)]
+    pub admin_pass: String,
+    /// Fehlversuche bis zur kurzen Sperre des Logins (0 = keine Bremse).
+    #[serde(default = "default_admin_attempts")]
+    pub admin_attempts: u32,
+    /// Sperrdauer in Sekunden nach zu vielen Fehlversuchen (0 = keine Bremse).
+    #[serde(default = "default_admin_lockout")]
+    pub admin_lockout_secs: u64,
 }
 
 // `#[serde(default)]` auf dem Feld nutzt `Default::default()` – hier muss der
@@ -101,6 +114,10 @@ impl Default for WebuiCfg {
         WebuiCfg {
             bind: default_webui_bind(),
             token: String::new(),
+            admin_user: default_admin_user(),
+            admin_pass: String::new(),
+            admin_attempts: default_admin_attempts(),
+            admin_lockout_secs: default_admin_lockout(),
         }
     }
 }
@@ -147,6 +164,15 @@ fn default_name_keywords() -> Vec<String> {
 fn default_webui_bind() -> String {
     "127.0.0.1:8787".into()
 }
+fn default_admin_user() -> String {
+    "admin".into()
+}
+fn default_admin_attempts() -> u32 {
+    5
+}
+fn default_admin_lockout() -> u64 {
+    60
+}
 fn default_mode() -> String {
     "smtp".into()
 }
@@ -174,9 +200,12 @@ pub fn parse_config(text: &str) -> Result<Config> {
     if cfg.api.url.is_empty() {
         bail!("api.url fehlt in der Config");
     }
-    if !is_loopback_bind(&cfg.webui.bind) && cfg.webui.token.is_empty() {
+    if !is_loopback_bind(&cfg.webui.bind)
+        && cfg.webui.token.is_empty()
+        && cfg.webui.admin_pass.is_empty()
+    {
         bail!(
-            "webui.bind = {:?} ist nicht Loopback – setze webui.token oder lasse bind bei 127.0.0.1",
+            "webui.bind = {:?} ist nicht Loopback – setze webui.token oder webui.admin_pass oder lasse bind bei 127.0.0.1",
             cfg.webui.bind
         );
     }

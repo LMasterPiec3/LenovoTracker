@@ -42,9 +42,18 @@ smtp_pass = ""             # Token/App-Passwort – NIE das normale Mail-Passwor
 # Web-UI: `lenovo-tracker --serve`. Standard ist Loopback (nur per SSH-Tunnel
 # erreichbar), weil die Oberfläche die Config schreiben darf.
 bind = "127.0.0.1:8787"
-# HTTP-Basic-Token (Benutzername egal). Pflicht, sobald bind nicht Loopback ist:
-#   bind = "0.0.0.0:8787"  +  token = "langes-zufallswort"
+# HTTP-Basic-Token für die ganze Seite (Benutzername egal). Leer = offen.
 token = ""
+# Admin-Login nur für den Reiter „Einstellungen“ (config.toml bearbeiten).
+# Ohne admin_pass bleibt der Reiter gesperrt; alles andere ist ohne Anmeldung
+# erreichbar. Pflicht neben token, sobald bind nicht Loopback ist:
+#   bind = "0.0.0.0:8787"  +  token oder admin_pass
+admin_user = "admin"
+admin_pass = ""
+# Bremse für den Admin-Login: nach so vielen Fehlversuchen ist die Anmeldung
+# kurz gesperrt (Antwort 429 mit Retry-After). 0 = keine Bremse.
+admin_attempts = 5
+admin_lockout_secs = 60
 
 [paths]
 state_dir = "/var/lib/lenovotracker"   # state.json + history.csv

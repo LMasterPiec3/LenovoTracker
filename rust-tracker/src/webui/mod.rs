@@ -115,15 +115,8 @@ fn handle(mut stream: TcpStream, config_path: &str) {
             return;
         }
     };
-    if !authorized(&cfg, &req.headers) {
-        let resp = Response {
-            status: 401,
-            ctype: "text/plain; charset=utf-8",
-            body: b"Login erforderlich".to_vec(),
-            extra: "WWW-Authenticate: Basic realm=\"Lenovo Tracker\"\r\nContent-Security-Policy: default-src 'none'\r\n".into(),
-            cache: None,
-        };
-        send(&mut stream, &resp);
+    if let Some(denied) = site_gate(&cfg, &req) {
+        send(&mut stream, &denied);
         return;
     }
     // Schreibende Anfragen nur aus der eigenen Seite: der Custom-Header löst
@@ -329,8 +322,18 @@ fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
         ("GET", "/api/state") => state_json(cfg, req),
         ("GET", "/api/history") => history_json(cfg, query_limit(&req.query)),
         ("POST", "/api/live") => live_json(cfg, req),
-        ("GET", "/api/config") => config_json(config_path),
-        ("POST", "/api/config") => save_config_text(config_path, &req.body),
+        // Einstellungen sind der einzige geschützte Bereich – alles andere
+        // darf jeder sehen, die Config niemand ohne Admin-Login.
+        ("GET", "/api/config") | ("POST", "/api/config") => {
+            if let Some(denied) = admin_gate(cfg, req) {
+                return denied;
+            }
+            if req.method == "GET" {
+                config_json(config_path)
+            } else {
+                save_config_text(config_path, &req.body)
+            }
+        }
         _ => Response::error(404, "nicht gefunden"),
     }
 }
@@ -356,6 +359,65 @@ fn thumb_response(cfg: &Config, raw: &str) -> Response {
         // fehlenden Teile bei jedem Seitenaufbau erneut an.
         None => Response::error(404, "kein Bild").with_cache("public, max-age=3600"),
     }
+}
+
+/// Site-Token für die ganze Seite (falls gesetzt). Der Admin-Zugang zählt mit
+/// – es gibt nur einen `Authorization`-Kopf – und wird dabei gebremst, sonst
+/// wäre 401 gegen 200 ein unbegrenztes Orakel für das Admin-Passwort.
+fn site_gate(cfg: &Config, req: &Request) -> Option<Response> {
+    if authorized(cfg, &req.headers) || admin_ok(cfg, &req.headers) {
+        return None;
+    }
+    Some(login_brake(cfg).unwrap_or_else(site_unauthorized))
+}
+
+/// 401 mit Anmelde-Dialog für den Browser (Site-Token).
+fn site_unauthorized() -> Response {
+    Response {
+        status: 401,
+        ctype: "text/plain; charset=utf-8",
+        body: b"Login erforderlich".to_vec(),
+        extra: "WWW-Authenticate: Basic realm=\"Lenovo Tracker\"\r\n\
+                Content-Security-Policy: default-src 'none'\r\n"
+            .into(),
+        cache: None,
+    }
+}
+
+/// Login-Bremse: `Some(429)`, wenn gerade gesperrt ist – auch gleich beim
+/// Fehlversuch, der die Sperre auslöst.
+fn login_brake(cfg: &Config) -> Option<Response> {
+    if let Some(wait) = login_wait() {
+        return Some(too_many(wait));
+    }
+    note_fail(cfg);
+    login_wait().map(too_many)
+}
+
+/// Antwort für abgelehnte Admin-Anfragen: 401 mit Anmelde-Hinweis (die Seite
+/// blendet dann das Login ein), 403 wenn gar kein Admin eingerichtet ist.
+fn admin_gate(cfg: &Config, req: &Request) -> Option<Response> {
+    if admin_ok(cfg, &req.headers) {
+        note_ok();
+        return None;
+    }
+    // Ohne Admin in der Config hilft auch Warten nicht.
+    if cfg.webui.admin_pass.is_empty() {
+        return Some(Response::error(
+            403,
+            "Einstellungen gesperrt: setze [webui] admin_pass in der Config",
+        ));
+    }
+    Some(login_brake(cfg).unwrap_or_else(|| Response::error(401, "Anmeldung erforderlich.")))
+}
+
+/// 429 plus `Retry-After`, damit die Seite einen Countdown zeigen kann.
+fn too_many(wait: Duration) -> Response {
+    // aufrunden: sonst steht nach 59,9 s noch "59" und der Client versucht zu früh
+    let secs = wait.as_millis().div_ceil(1000).max(1) as u64;
+    let mut resp = Response::error(429, &format!("zu viele Fehlversuche – noch {} s", secs));
+    resp.extra = format!("Retry-After: {}\r\n", secs);
+    resp
 }
 
 fn query_limit(query: &str) -> usize {

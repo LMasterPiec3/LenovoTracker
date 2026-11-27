@@ -298,9 +298,12 @@ zusätzlicher Dienst, kein zusätzlicher Port nach außen im Standard):
   Mails, Diff und die Rückgangs-Sperre bleiben unverändert auf der gefilterten
   Liste – die Web-UI ist davon getrennt.
 - **Verlauf** – Sparkline + letzte Zeilen aus `history.csv`.
-- **Einstellungen** – `config.toml` bearbeiten; wird vor dem Schreiben geprüft,
-  die alte Datei bleibt als `config.toml.bak`. Das SMTP-Passwort wird nie
-  angezeigt und bleibt beim Speichern erhalten.
+- **Einstellungen** – nur nach Admin-Login (`[webui] admin_user`/`admin_pass`,
+  HTTP-Basic): `config.toml` bearbeiten; wird vor dem Schreiben geprüft, die alte
+  Datei bleibt als `config.toml.bak`. SMTP- und Admin-Passwort werden nie
+  angezeigt und bleiben beim Speichern erhalten. Alles andere – Bestand, Verlauf, Laden,
+  Live-Abruf – ist ohne Anmeldung erreichbar; die Zugangsdaten liegen nur im
+  Speicher des Tabs und sind nach einem Neuladen wieder weg.
 
 Die Stückpreise legt der Tracker im State ab (Anzeige only – ein Preiswechsel
 schreibt `state.json` neu, löst aber keine Mail aus). `tracked.json` wird bei
@@ -311,8 +314,20 @@ liegen im `specs-cache.json` und werden nur einmal je Teil geladen.
 ```toml
 [webui]
 bind = "127.0.0.1:8787"   # Standard: nur per SSH-Tunnel erreichbar
-token = ""                # HTTP-Basic-Token (Benutzername egal)
+token = ""                # HTTP-Basic-Token für die ganze Seite (leer = offen)
+admin_user = "admin"      # Login nur für die Einstellungen
+admin_pass = ""           # leer = Einstellungen gesperrt
+admin_attempts = 5        # danach ist der Login kurz gesperrt (0 = keine Bremse)
+admin_lockout_secs = 60   # Sperrdauer in Sekunden
 ```
+
+Die Bremse zählt Fehlversuche im Speicher (ein Neustart hebt sie auf) und
+antwortet ab `admin_attempts` mit **429** plus `Retry-After`; die Seite zeigt
+dann einen Countdown am Anmeldeknopf. Die Sperre trifft nur Rateversuche –
+richtige Zugangsdaten kommen weiterhin durch (sonst könnte jeder den Admin
+aussperren) und setzen den Zähler zurück. Gesetztes `token` und Admin-Zugang
+schließen sich nicht aus: der Admin-Login öffnet die ganze Seite mit, weil es
+nur einen `Authorization`-Kopf gibt.
 
 ```bash
 # im CT starten (z. B. per cron-Watchdog, siehe unten)

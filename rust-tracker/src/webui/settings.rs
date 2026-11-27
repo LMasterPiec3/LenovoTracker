@@ -47,37 +47,63 @@ pub(crate) fn save_config_text(config_path: &str, body: &[u8]) -> Response {
     }
 }
 
+/// Felder, die die Seite nur als Platzhalter sieht: Passwörter bleiben auf dem
+/// Server, auch wenn die Einstellungen offen sind.
+const SECRET_KEYS: [&str; 2] = ["smtp_pass", "admin_pass"];
+
+/// Geheimzeile (`key = "…"`): Schlüssel und Wert ohne Anführungszeichen.
+fn secret_line(line: &str) -> Option<(&'static str, String)> {
+    let trimmed = line.trim_start();
+    let key = SECRET_KEYS.into_iter().find(|key| {
+        trimmed
+            .strip_prefix(key)
+            .is_some_and(|rest| rest.trim_start().starts_with('='))
+    })?;
+    let value = trimmed.split_once('=')?.1.trim().trim_matches('"');
+    Some((key, value.to_string()))
+}
+
 pub(crate) fn redact(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for line in text.lines() {
-        if line.trim_start().starts_with("smtp_pass") {
-            out.push_str(&format!("smtp_pass = \"{}\"\n", REDACTED));
-        } else {
-            out.push_str(line);
-            out.push('\n');
+        match secret_line(line) {
+            Some((key, _)) => out.push_str(&format!("{} = \"{}\"\n", key, REDACTED)),
+            None => {
+                out.push_str(line);
+                out.push('\n');
+            }
         }
     }
     out
 }
 
+/// Platzhalter je Zeile durch den alten Wert *desselben* Schlüssels ersetzen –
+/// sonst landete beim Speichern das SMTP-Passwort im Admin-Feld.
 pub(crate) fn unredact(text: &str, old: &str) -> String {
     if !text.contains(REDACTED) {
         return text.to_string();
     }
-    let secret = secret_value(old).unwrap_or_default();
-    text.replace(&format!("\"{}\"", REDACTED), &format!("\"{}\"", secret))
-}
-
-/// Wert von `smtp_pass = "…"` aus der alten Config (nur die Anführungszeichen
-/// werden entfernt; der Text ist ein einfaches TOML-String-Literal).
-pub(crate) fn secret_value(text: &str) -> Option<String> {
+    let mut out = String::with_capacity(text.len());
     for line in text.lines() {
-        let Some(rest) = line.trim_start().strip_prefix("smtp_pass") else {
-            continue;
-        };
-        if let Some(value) = rest.trim_start().strip_prefix('=') {
-            return Some(value.trim().trim_matches('"').to_string());
+        match secret_line(line) {
+            Some((key, _)) if line.contains(REDACTED) => {
+                let secret = secret_value(old, key).unwrap_or_default();
+                out.push_str(&line.replace(REDACTED, &secret));
+                out.push('\n');
+            }
+            _ => {
+                out.push_str(line);
+                out.push('\n');
+            }
         }
     }
-    None
+    out
+}
+
+/// Wert von `key = "…"` aus der alten Config.
+fn secret_value(text: &str, key: &str) -> Option<String> {
+    text.lines().find_map(|line| match secret_line(line)? {
+        (found, value) if found == key => Some(value),
+        _ => None,
+    })
 }
