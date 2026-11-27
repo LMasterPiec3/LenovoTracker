@@ -2,14 +2,14 @@
 
 use crate::util::*;
 use anyhow::{bail, Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Config {
     pub api: ApiCfg,
     #[serde(default)]
@@ -21,7 +21,7 @@ pub struct Config {
     pub webui: WebuiCfg,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct ApiCfg {
     pub url: String,
     #[serde(default = "default_referer")]
@@ -47,7 +47,7 @@ pub struct ApiCfg {
     pub specs_batch: usize,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct TrackerCfg {
     // Wird nur für Config-Kompatibilität mitgelesen (cron steuert das Intervall).
     #[serde(default = "default_interval")]
@@ -61,7 +61,7 @@ pub struct TrackerCfg {
     pub name_keywords: Vec<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct MailCfg {
     #[serde(default = "default_mode")]
     pub mode: String,
@@ -86,7 +86,7 @@ pub struct MailCfg {
 /// Web-UI (`--serve`). Standard ist Loopback, weil die Oberfläche die Config
 /// schreiben darf; eine andere Adresse nur zusammen mit `token` oder
 /// `admin_pass`.
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct WebuiCfg {
     #[serde(default = "default_webui_bind")]
     pub bind: String,
@@ -122,7 +122,7 @@ impl Default for WebuiCfg {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct PathsCfg {
     #[serde(default = "default_state_dir")]
     pub state_dir: String,

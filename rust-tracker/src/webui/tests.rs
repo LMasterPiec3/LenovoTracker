@@ -540,6 +540,98 @@ fn site_token_bremst_admin_raten() {
 }
 
 #[test]
+fn settings_form_liefert_felder_und_schreibt_werte() {
+    let _guard = admin_lock();
+    let dir = temp_dir("form");
+    let mut cfg = config_for(&dir);
+    cfg.webui.admin_pass = "streng".into();
+    let path = dir.join("config.toml");
+    let original = format!(
+        "# Kopfkommentar bleibt stehen\n{}\n[webui]\nadmin_user = \"admin\"\nadmin_pass = \"geheim2\"\n",
+        CONFIG
+    );
+    std::fs::write(&path, &original).unwrap();
+    let path = path.to_str().unwrap();
+
+    // ohne Login kein Formular
+    assert_eq!(
+        route(&cfg, path, &request("GET", "/api/settings")).status,
+        401
+    );
+
+    let resp = route(&cfg, path, &admin_request("GET", "/api/settings"));
+    assert_eq!(resp.status, 200);
+    let body = String::from_utf8(resp.body).unwrap();
+    assert!(body.contains("\"section\":\"api\"") && body.contains("\"section\":\"webui\""));
+    assert!(body.contains("\"kind\":\"secret\""));
+    // nur die Adresse braucht einen Neustart
+    assert!(body.contains("\"restart\":true") && body.contains("\"restart\":false"));
+    // Passwörter gehen nie ins Formular
+    assert!(!body.contains("geheim2") && !body.contains("\\\"geheim\\\""));
+
+    let values = serde_json::to_vec(&json!({
+        "values": {
+            "tracker.name_keywords": "RTX, Quadro",
+            "webui.admin_attempts": "7",
+            "mail.subject_prefix": "[Angebot]",
+            "mail.smtp_pass": "",
+            "webui.admin_pass": ""
+        }
+    }))
+    .unwrap();
+    let mut req = admin_request("POST", "/api/settings");
+    req.body = values;
+    let resp = route(&cfg, path, &req);
+    assert_eq!(resp.status, 200, "{}", String::from_utf8_lossy(&resp.body));
+
+    let saved = std::fs::read_to_string(path).unwrap();
+    assert!(saved.starts_with("# Kopfkommentar bleibt stehen"));
+    assert!(saved.contains("name_keywords = [\"RTX\", \"Quadro\"]"));
+    assert!(saved.contains("admin_attempts = 7"));
+    assert!(saved.contains("subject_prefix = \"[Angebot]\""));
+    // Geheimnisse bleiben, wenn das Feld leer bzw. maskiert zurückkommt
+    assert!(saved.contains("smtp_pass = \"geheim\""));
+    assert!(saved.contains("admin_pass = \"geheim2\""));
+    assert!(parse_config(&saved).is_ok());
+}
+
+#[test]
+fn settings_form_lehnt_kaputte_werte_ab() {
+    let _guard = admin_lock();
+    let dir = temp_dir("form-fehler");
+    let mut cfg = config_for(&dir);
+    cfg.webui.admin_pass = "streng".into();
+    let path = dir.join("config.toml");
+    std::fs::write(&path, CONFIG).unwrap();
+    let path = path.to_str().unwrap();
+
+    for (bad, field) in [
+        (
+            json!({ "values": { "api.timeout_seconds": "abc" } }),
+            "api.timeout_seconds",
+        ),
+        (json!({ "values": { "gibt.es": "1" } }), "gibt.es"),
+        (
+            json!({ "values": { "mail.from": "zwei\nZeilen" } }),
+            "mail.from",
+        ),
+    ] {
+        let mut req = admin_request("POST", "/api/settings");
+        req.body = serde_json::to_vec(&bad).unwrap();
+        let resp = route(&cfg, path, &req);
+        assert_eq!(resp.status, 400, "{}", bad);
+        // Feldname für die Markierung + Klartext-Label in der Meldung
+        let body = String::from_utf8(resp.body).unwrap();
+        assert!(
+            body.contains(&format!("\"field\":\"{}\"", field)),
+            "{}",
+            body
+        );
+    }
+    assert_eq!(std::fs::read_to_string(path).unwrap(), CONFIG);
+}
+
+#[test]
 fn test_loopback_bind() {
     assert!(is_loopback_bind("127.0.0.1:8787"));
     assert!(is_loopback_bind("localhost:8787"));

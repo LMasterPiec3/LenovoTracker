@@ -162,6 +162,28 @@
     border-radius: 10px; background: var(--surface); color: var(--ink);
   }
   #cerr { margin: 0 0 12px; }
+  .set { border: 1px solid var(--line); border-radius: 10px; margin: 0 0 12px; padding: 10px 14px 12px; }
+  .set legend { padding: 0 6px; font-weight: 650; }
+  .row { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 4px 12px; align-items: center; padding: 4px 0; }
+  .row .k { color: var(--ink-2); }
+  .row .hint { grid-column: 2; margin: 0; font-size: .78rem; }
+  .row input {
+    font: inherit; width: 100%; padding: 7px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--surface-2); color: var(--ink);
+  }
+  .row.dirty .k { color: var(--ink); font-weight: 650; }
+  .row.dirty .k::after { content: " •"; color: var(--accent); }
+  .row.bad input { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .row.restart .hint { color: var(--amber); }
+  #cbar {
+    position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
+    margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(8px) saturate(1.2); box-shadow: var(--shadow);
+  }
+  #cbar[hidden] { display: none; }
+  #cbar .hint { margin-right: auto; }
+  #cbar .hint.warn { color: var(--amber); font-weight: 600; }
   #cerr[hidden] { display: none; }
   .meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 2px 2px 14px; color: var(--muted); font-size: 13px; }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-left: auto; }
@@ -553,8 +575,7 @@
 
   <section id="tab-config" hidden>
     <div class="meta" style="margin-top:0">
-      <button id="save" class="btn primary">Speichern</button>
-      <button id="creload" class="btn ghost">Verwerfen &amp; neu laden</button>
+      <button id="creload" class="btn ghost">Neu laden</button>
       <span class="hint" id="cpath"></span>
     </div>
     <p class="hint" id="cerr" hidden></p>
@@ -565,12 +586,23 @@
     </div>
     <p class="hint" style="margin-top:0">
       Änderungen gelten sofort für Live-Abrufe und ab dem nächsten Cron-Lauf für die Mails.
-      Nach zu vielen Fehlversuchen ist die Anmeldung kurz gesperrt – einstellbar über
-      <code>admin_attempts</code> und <code>admin_lockout_secs</code>.
-      Das SMTP-Passwort wird nicht angezeigt und bleibt beim Speichern erhalten.
-      Die alte Datei wird als <code>config.toml.bak</code> gesichert.
+      Passwörter werden nie angezeigt – ein leeres Feld heißt „unverändert“. Gespeichert
+      wird mit Sicherung als <code>config.toml.bak</code>.
     </p>
-    <textarea id="ctext" spellcheck="false"></textarea>
+    <div id="cform" hidden></div>
+    <div id="cbar" hidden>
+      <span class="hint" id="cstate">Alles gespeichert.</span>
+      <button id="cdiscard" class="btn ghost">Verwerfen</button>
+      <button id="save" class="btn primary">Speichern</button>
+    </div>
+    <details id="craw" hidden>
+      <summary>Rohdatei (TOML) bearbeiten – für Kommentare und Sonderfälle</summary>
+      <div class="meta" style="margin:10px 0">
+        <button id="saveRaw" class="btn primary">Rohdatei speichern</button>
+        <span class="hint">Kommentare und unbekannte Schlüssel bleiben erhalten</span>
+      </div>
+      <textarea id="ctext" spellcheck="false"></textarea>
+    </details>
   </section>
 </main>
 
@@ -647,7 +679,11 @@ function toast(msg, isErr) {
   toast._t = setTimeout(() => { t.className = ""; }, isErr ? 8000 : 4000);
 }
 async function errText(r) {
-  try { const j = await r.json(); return j.error || ("HTTP " + r.status); } catch { return "HTTP " + r.status; }
+  try {
+    const j = await r.json();
+    r.field = j.field;
+    return j.error || ("HTTP " + r.status);
+  } catch { return "HTTP " + r.status; }
 }
 async function get(url, headers) {
   const r = await fetch(url, { headers: { "X-Requested-With": "lenovo-tracker", ...(headers || {}) } });
@@ -667,6 +703,7 @@ async function post(url, body, headers) {
 async function fail(r) {
   const e = new Error(await errText(r));
   e.status = r.status;
+  e.field = r.field;
   e.retryAfter = Number(r.headers.get("Retry-After")) || 0;
   return e;
 }
@@ -1297,18 +1334,23 @@ function adminLogin() {
   for (const b of new TextEncoder().encode(user + ":" + $("#cpass").value)) raw += String.fromCharCode(b);
   adminAuth = "Basic " + btoa(raw);
   $("#cpass").value = "";
-  loadConfig();
+  loadSettings();
 }
 
 /// Einstellungen zu: Textfeld leeren und sperren. `withLogin` blendet das
 /// Anmeldefeld ein (401), sonst steht dort nur der Hinweis (403).
+let adminOk = false;
+
 function adminLocked(msg, withLogin) {
+  adminOk = false;
+  $("#cbar").hidden = true;
   $("#clogin").hidden = !withLogin;
   $("#cerr").hidden = !msg;
   $("#cerr").textContent = msg || "";
   $("#ctext").value = "";
   $("#ctext").disabled = true;
-  $("#save").disabled = true;
+  $("#cform").hidden = true;
+  $("#craw").hidden = true;
   $("#cpath").textContent = "";
   if (withLogin) $("#cuser").focus();
 }
@@ -1339,15 +1381,94 @@ function stopCooldown() {
   btn.textContent = "Anmelden";
 }
 
-async function loadConfig() {
+const SECTION_TITLES = { api: "Lenovo-API", tracker: "Filter", mail: "Mail", paths: "Daten", webui: "Web-Interface" };
+
+// Formular aus den Feldangaben des Servers bauen (eine Quelle für Werte + TOML).
+function renderSettings(fields) {
+  const box = $("#cform");
+  box.textContent = "";
+  let section = "";
+  let group = null;
+  for (const f of fields) {
+    if (f.section !== section) {
+      section = f.section;
+      group = el("fieldset", "set");
+      group.append(el("legend", "", SECTION_TITLES[section] || section));
+      box.append(group);
+    }
+    const row = el("label", "row");
+    row.append(el("span", "k", f.label));
+    const input = el("input");
+    input.type = f.kind === "secret" ? "password" : f.kind === "number" ? "number" : "text";
+    input.dataset.field = f.section + "." + f.key;
+    input.value = f.value === "__KEEP__" ? "" : f.value;
+    input.dataset.orig = input.value;
+    if (f.value === "__KEEP__") input.placeholder = "gespeichert – leer = unverändert";
+    else if (f.kind === "list") input.placeholder = "durch Komma getrennt";
+    row.append(input);
+    const hint = f.restart ? (f.help ? f.help + " · " : "") + "wirkt erst nach Neustart" : f.help;
+    row.append(el("span", "hint", hint || ""));
+    if (f.restart) row.classList.add("restart");
+    group.append(row);
+  }
+}
+
+// Markiert geänderte Zeilen und liefert die zu schreibenden Werte samt Anzahl.
+function dirtyValues() {
+  const values = {};
+  let count = 0;
+  for (const input of document.querySelectorAll("#cform input[data-field]")) {
+    const changed = input.value !== input.dataset.orig;
+    input.closest(".row").classList.toggle("dirty", changed);
+    if (changed) count++;
+    // leere Passwortfelder heißen „unverändert“
+    if (changed && (input.type !== "password" || input.value)) {
+      values[input.dataset.field] = input.value;
+    }
+  }
+  return { values, count };
+}
+
+// Knöpfe und Statusleiste an den Änderungsstand anpassen.
+function syncDirty() {
+  const { count: dirty } = dirtyValues();
+  const state = $("#cstate");
+  state.textContent = dirty
+    ? dirty + (dirty === 1 ? " Änderung nicht gespeichert" : " Änderungen nicht gespeichert")
+    : "Alles gespeichert.";
+  state.classList.toggle("warn", dirty > 0);
+  for (const id of ["#save", "#cdiscard"]) {
+    $(id).disabled = !adminOk || dirty === 0;
+  }
+}
+
+// Fehlerzeile hervorheben und dorthin springen.
+function markField(name, message) {
+  document.querySelectorAll("#cform .row.bad").forEach((row) => row.classList.remove("bad"));
+  const input = name && document.querySelector('#cform input[data-field="' + name + '"]');
+  if (!input) return;
+  input.closest(".row").classList.add("bad");
+  input.scrollIntoView({ block: "center" });
+  input.focus();
+  if (message) toast(message, true);
+}
+
+async function loadSettings() {
   try {
-    const d = await get("/api/config", adminHeaders());
+    const d = await get("/api/settings", adminHeaders());
+    renderSettings(d.fields || []);
+    $("#cform").hidden = false;
+    $("#craw").hidden = false;
     $("#ctext").value = d.text || "";
     $("#ctext").disabled = false;
     $("#save").disabled = false;
+    $("#saveRaw").disabled = false;
     $("#cpath").textContent = d.path || "";
     $("#clogin").hidden = true;
     $("#cerr").hidden = true;
+    $("#cbar").hidden = false;
+    adminOk = true;
+    syncDirty();
     stopCooldown();
   } catch (e) {
     adminAuth = "";
@@ -1357,8 +1478,33 @@ async function loadConfig() {
   }
 }
 
+async function saveSettings() {
+  const { values } = dirtyValues();
+  if (!Object.keys(values).length) return;
+  $("#save").disabled = true;
+  document.body.classList.add("loading");
+  try {
+    await post("/api/settings", { values }, adminHeaders());
+    toast("Einstellungen gespeichert (Backup: config.toml.bak).");
+    await loadSettings();
+  } catch (e) {
+    if (e.status === 401 || e.status === 429) {
+      adminAuth = "";
+      adminLocked(e.message, true);
+      if (e.status === 429) startCooldown(e.retryAfter);
+    } else if (e.status === 400 && e.field) {
+      markField(e.field, e.message);
+    } else {
+      toast("Speichern fehlgeschlagen: " + e.message, true);
+    }
+  } finally {
+    document.body.classList.remove("loading");
+    syncDirty();
+  }
+}
+
 async function saveConfig() {
-  const btn = $("#save");
+  const btn = $("#saveRaw");
   btn.disabled = true;
   document.body.classList.add("loading");
   try {
@@ -1403,7 +1549,7 @@ function showTab(name) {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
   for (const id of ["stock", "history", "config"]) $("#tab-" + id).hidden = (id !== name);
   if (name === "history") loadHistory();
-  if (name === "config") loadConfig();
+  if (name === "config") loadSettings();
 }
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 document.querySelectorAll(".seg.view button").forEach(b => b.addEventListener("click", () => {
@@ -1421,8 +1567,22 @@ $("#fSort").addEventListener("change", (e) => { F.sort = e.target.value; limit =
 $("#reset").addEventListener("click", () => { resetFilters(); toast("Filter zurückgesetzt."); });
 $("#live").addEventListener("click", laden);
 $("#hreload").addEventListener("click", loadHistory);
-$("#creload").addEventListener("click", loadConfig);
-$("#save").addEventListener("click", saveConfig);
+$("#creload").addEventListener("click", loadSettings);
+$("#save").addEventListener("click", saveSettings);
+$("#cdiscard").addEventListener("click", () => {
+  for (const input of document.querySelectorAll("#cform input[data-field]")) input.value = input.dataset.orig;
+  document.querySelectorAll("#cform .row.bad").forEach((row) => row.classList.remove("bad"));
+  syncDirty();
+  toast("Änderungen verworfen.");
+});
+$("#cform").addEventListener("input", syncDirty);
+$("#cform").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    saveSettings();
+  }
+});
+$("#saveRaw").addEventListener("click", saveConfig);
 $("#cgo").addEventListener("click", adminLogin);
 $("#cuser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#cpass").focus(); });
 $("#cpass").addEventListener("keydown", (e) => { if (e.key === "Enter") adminLogin(); });

@@ -220,13 +220,18 @@ impl Response {
     }
 
     fn error(status: u16, message: &str) -> Response {
-        Response {
-            status,
-            ctype: "application/json; charset=utf-8",
-            body: serde_json::to_vec(&json!({ "error": message })).unwrap_or_default(),
-            extra: String::new(),
-            cache: None,
-        }
+        Response::error_field(status, message, None)
+    }
+
+    /// Fehler mit Feldnamen – die Seite markiert damit die betroffene Zeile.
+    fn error_field(status: u16, message: &str, field: Option<&str>) -> Response {
+        let body = match field {
+            Some(field) => json!({ "error": message, "field": field }),
+            None => json!({ "error": message }),
+        };
+        let mut resp = Response::json(&body);
+        resp.status = status;
+        resp
     }
 
     /// Cache-Control der Antwort; ohne Angabe antwortet `send` mit `no-store`.
@@ -324,9 +329,19 @@ fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
         ("POST", "/api/live") => live_json(cfg, req),
         // Einstellungen sind der einzige geschützte Bereich – alles andere
         // darf jeder sehen, die Config niemand ohne Admin-Login.
-        ("GET", "/api/config") | ("POST", "/api/config") => {
+        ("GET", "/api/config")
+        | ("POST", "/api/config")
+        | ("GET", "/api/settings")
+        | ("POST", "/api/settings") => {
             if let Some(denied) = admin_gate(cfg, req) {
                 return denied;
+            }
+            if req.path == "/api/settings" {
+                return if req.method == "GET" {
+                    settings_json(config_path)
+                } else {
+                    save_settings(config_path, &req.body)
+                };
             }
             if req.method == "GET" {
                 config_json(config_path)

@@ -299,9 +299,12 @@ zusätzlicher Dienst, kein zusätzlicher Port nach außen im Standard):
   Liste – die Web-UI ist davon getrennt.
 - **Verlauf** – Sparkline + letzte Zeilen aus `history.csv`.
 - **Einstellungen** – nur nach Admin-Login (`[webui] admin_user`/`admin_pass`,
-  HTTP-Basic): `config.toml` bearbeiten; wird vor dem Schreiben geprüft, die alte
-  Datei bleibt als `config.toml.bak`. SMTP- und Admin-Passwort werden nie
-  angezeigt und bleiben beim Speichern erhalten. Alles andere – Bestand, Verlauf, Laden,
+  HTTP-Basic): ein Formular mit allen Werten (API, Filter, Mail, Daten,
+  Web-Interface), gruppiert mit Kurzhinweisen. Gespeichert wird Feld für Feld in
+  `config.toml`; Kommentare und unbekannte Schlüssel bleiben stehen, vorher wird
+  geprüft, die alte Datei bleibt als `config.toml.bak`. SMTP- und Admin-Passwort
+  erscheinen nie (leeres Feld = unverändert). Darunter liegt „Rohdatei (TOML)
+  bearbeiten“ für Sonderfälle. Alles andere – Bestand, Verlauf, Laden,
   Live-Abruf – ist ohne Anmeldung erreichbar; die Zugangsdaten liegen nur im
   Speicher des Tabs und sind nach einem Neuladen wieder weg.
 
