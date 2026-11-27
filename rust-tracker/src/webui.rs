@@ -93,6 +93,7 @@ fn handle(mut stream: TcpStream, config_path: &str) {
             ctype: "text/plain; charset=utf-8",
             body: b"Login erforderlich".to_vec(),
             extra: "WWW-Authenticate: Basic realm=\"Lenovo Tracker\"\r\nContent-Security-Policy: default-src 'none'\r\n".into(),
+            cache: None,
         };
         send(&mut stream, &resp);
         return;
@@ -181,6 +182,9 @@ struct Response {
     ctype: &'static str,
     body: Vec<u8>,
     extra: String,
+    /// Cache-Control der Antwort; `None` = no-store (Standard für alles, was
+    /// Daten oder Einstellungen zeigt).
+    cache: Option<&'static str>,
 }
 
 impl Response {
@@ -190,6 +194,7 @@ impl Response {
             ctype: "application/json; charset=utf-8",
             body: serde_json::to_vec(value).unwrap_or_default(),
             extra: String::new(),
+            cache: None,
         }
     }
 
@@ -199,7 +204,34 @@ impl Response {
             ctype: "application/json; charset=utf-8",
             body: serde_json::to_vec(&json!({ "error": message })).unwrap_or_default(),
             extra: String::new(),
+            cache: None,
         }
+    }
+
+    /// Cache-Control der Antwort; ohne Angabe antwortet `send` mit `no-store`.
+    fn with_cache(mut self, value: &'static str) -> Self {
+        self.cache = Some(value);
+        self
+    }
+
+    /// ETag plus `no-cache`: der Browser fragt nach, bekommt bei gleichem
+    /// Stand aber nur einen leeren 304 statt des ganzen JSON.
+    fn with_etag(mut self, etag: &str) -> Self {
+        self.extra = format!("ETag: {}\r\n", etag);
+        self.cache = Some("no-cache");
+        self
+    }
+
+    /// 304 ohne Body – der Client hat den Stand schon.
+    fn not_modified(etag: &str) -> Response {
+        Response {
+            status: 304,
+            ctype: "application/json; charset=utf-8",
+            body: Vec::new(),
+            extra: String::new(),
+            cache: None,
+        }
+        .with_etag(etag)
     }
 }
 
@@ -208,6 +240,7 @@ fn send(stream: &mut TcpStream, resp: &Response) {
         200 => "OK",
         400 => "Bad Request",
         401 => "Unauthorized",
+        304 => "Not Modified",
         403 => "Forbidden",
         404 => "Not Found",
         500 => "Internal Server Error",
@@ -216,11 +249,12 @@ fn send(stream: &mut TcpStream, resp: &Response) {
     };
     let head = format!(
         "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n\
-         Cache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n{}\r\n",
+         Cache-Control: {}\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n{}\r\n",
         resp.status,
         reason,
         resp.ctype,
         resp.body.len(),
+        resp.cache.unwrap_or("no-store"),
         resp.extra
     );
     let _ = stream.write_all(head.as_bytes());
@@ -311,8 +345,9 @@ fn route(cfg: &Config, config_path: &str, req: &Request) -> Response {
                     img-src 'self' https://download.lenovo.com data:; form-action 'none'; \
                     frame-ancestors 'none'\r\n"
                 .into(),
+            cache: None,
         },
-        ("GET", "/api/state") => state_json(cfg),
+        ("GET", "/api/state") => state_json(cfg, req),
         ("GET", "/api/history") => history_json(cfg, query_limit(&req.query)),
         ("POST", "/api/live") => live_json(cfg),
         ("GET", "/api/config") => config_json(config_path),
@@ -329,15 +364,18 @@ fn thumb_response(cfg: &Config, raw: &str) -> Response {
         return Response::error(400, "ungültige Teile-ID");
     }
     match crate::thumb::thumb(cfg, id, crate::thumb::THUMB_WIDTH) {
-        Some(bytes) => Response {
+        // Vorschaubilder ändern sich praktisch nie: der Browser nimmt sie aus
+        // dem eigenen Cache, statt 96 Bilder bei jedem Reload neu zu holen.
+        Some(body) => Response {
             status: 200,
             ctype: "image/jpeg",
-            body: bytes,
-            extra: "Cache-Control: public, max-age=604800\r\n\
-                    X-Content-Type-Options: nosniff\r\n"
-                .into(),
+            body,
+            extra: String::new(),
+            cache: Some("public, max-age=604800"),
         },
-        None => Response::error(404, "kein Bild"),
+        // Auch das „kein Bild“ kurz cachen – sonst fragt der Browser die
+        // fehlenden Teile bei jedem Seitenaufbau erneut an.
+        None => Response::error(404, "kein Bild").with_cache("public, max-age=3600"),
     }
 }
 
@@ -403,7 +441,31 @@ fn load_tracked_view(cfg: &Config) -> TrackedView {
         .unwrap_or_default()
 }
 
-fn state_json(cfg: &Config) -> Response {
+/// Änderungsmarke für `/api/state`: Pfad, Größe und mtime der Dateien, aus
+/// denen die Antwort gebaut wird. Gleiche Marke = 304 statt 464 KB JSON.
+fn state_etag(cfg: &Config) -> String {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    for path in [
+        state_paths(cfg).0,
+        tracked_paths(cfg).0,
+        specs_cache_path(cfg),
+        pending_path(cfg),
+    ] {
+        path.hash(&mut h);
+        if let Ok(meta) = std::fs::metadata(&path) {
+            meta.len().hash(&mut h);
+            meta.modified().ok().hash(&mut h);
+        }
+    }
+    format!("\"{:016x}\"", h.finish())
+}
+
+fn state_json(cfg: &Config, req: &Request) -> Response {
+    let etag = state_etag(cfg);
+    if req.headers.get("if-none-match").is_some_and(|v| v == &etag) {
+        return Response::not_modified(&etag);
+    }
     let view = load_state_view(cfg);
     let tracked = load_tracked_view(cfg);
     let specs = load_specs_cache(&specs_cache_path(cfg));
@@ -472,6 +534,7 @@ fn state_json(cfg: &Config) -> Response {
         "gone": gone,
         "pending": pending,
     }))
+    .with_etag(&etag)
 }
 
 fn history_json(cfg: &Config, limit: usize) -> Response {

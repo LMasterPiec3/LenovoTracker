@@ -6,7 +6,7 @@
 //! Teil. Die Originale werden ausschließlich im Bild-Dialog geladen.
 
 use crate::config::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Kantenlänge der Vorschau: quadratisch eingepasst, Seitenverhältnis bleibt.
@@ -22,6 +22,16 @@ fn image_url(id: &str) -> String {
     format!("https://download.lenovo.com/Images/Parts/{id}/{id}_A.jpg")
 }
 
+/// True, wenn die Datei existiert und jünger als eine Woche ist.
+fn recent(path: &Path) -> bool {
+    const WEEK: std::time::Duration = std::time::Duration::from_secs(7 * 86_400);
+    path.metadata()
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.elapsed().ok())
+        .is_some_and(|age| age < WEEK)
+}
+
 /// Vorschau als JPEG-Bytes: aus dem Cache, sonst frisch gebaut.
 /// `None`, wenn das Teil kein Bild hat (Lenovo liefert dann 404).
 pub fn thumb(cfg: &Config, id: &str, width: u32) -> Option<Vec<u8>> {
@@ -34,11 +44,20 @@ pub fn thumb(cfg: &Config, id: &str, width: u32) -> Option<Vec<u8>> {
             return Some(bytes);
         }
     }
-    let raw = download(cfg, &image_url(id))?;
-    let small = shrink(&raw, width)?;
-    if let Some(parent) = path.parent() {
-        let _ = std::fs::create_dir_all(parent);
+    // Teile ohne Bild: Lenovo antwortet dann 404. Der Marker neben dem Cache
+    // gilt eine Woche und verhindert, dass jeder Seitenaufbau neu fragt.
+    let miss = path.with_extension("missing");
+    if recent(&miss) {
+        return None;
     }
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let Some(raw) = download(cfg, &image_url(id)) else {
+        let _ = std::fs::write(&miss, b"");
+        return None;
+    };
+    let small = shrink(&raw, width)?;
     let _ = std::fs::write(&path, &small);
     Some(small)
 }
@@ -81,6 +100,24 @@ mod tests {
     fn cache_pfad_enthaelt_id_und_breite() {
         let p = cache_path("/tmp/lt-thumb", "5B21K93288", 320);
         assert!(p.ends_with("thumbs/5B21K93288_320w.jpg"), "{:?}", p);
+    }
+
+    #[test]
+    fn marker_liegt_neben_dem_cache_und_gilt_eine_woche() {
+        let marker = cache_path("/tmp/lt-thumb", "5B21K93288", 320).with_extension("missing");
+        assert!(
+            marker.ends_with("thumbs/5B21K93288_320w.missing"),
+            "{:?}",
+            marker
+        );
+        let dir = std::env::temp_dir().join(format!("lt-thumb-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("Temp-Verzeichnis");
+        let marker = dir.join("A_320w.missing");
+        let _ = std::fs::remove_file(&marker);
+        assert!(!recent(&marker), "fehlender Marker gilt nicht");
+        std::fs::write(&marker, b"").expect("Marker");
+        assert!(recent(&marker), "frischer Marker gilt");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
